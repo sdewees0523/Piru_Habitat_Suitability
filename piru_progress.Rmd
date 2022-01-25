@@ -245,6 +245,235 @@ ggplot(growth, aes(date, mean_stem)) +
   theme_classic()
 ```
 
+```{r}
+
+watering_gopher <- watering %>% 
+  select(ID, Watering.2.Date, Alive.1, Notes.1) %>% 
+  rename("watering_date" = "Watering.2.Date",
+         "watering_alive" = "Alive.1", 
+         "watering_notes" = "Notes.1") 
+measuring_gopher <- measuring %>% 
+  select(!Plant) %>% 
+  rename("measuring_height" = "Height",
+         "measuring_width_1" = "Width.1",
+         "measuring_width_2" = "Width.2",
+         "measuring_stem_diameter" = "Stem.Diameter",
+         "measuring_date" = "Date.Measured",
+         "measuring_notes" = "Notes")
+measuring_gopher_2 <- measuring_2 %>% 
+  select(!Plant) %>%
+  rename("measuring_2_height" = "Height",
+         "measuring_2_width_1" = "Width.1",
+         "measuring_2_width_2" = "Width.2",
+         "measuring_2_stem_diameter" = "Stem.Diameter",
+         "measuring_2_date" = "Date.Measured",
+         "measuring_2_notes" = "Notes")
+measuring_gopher_3 <- measuring_3 %>% 
+  select(!Plant) %>%
+  rename("measuring_3_height" = "Height",
+         "measuring_3_width_1" = "Width.1",
+         "measuring_3_width_2" = "Width.2",
+         "measuring_3_stem_diameter" = "Stem.Diameter",
+         "measuring_3_date" = "Date.Measured",
+         "measuring_3_notes" = "Notes")
+
+survival_gopher <- right_join(planting, watering_gopher, by = "ID") %>% 
+  right_join(measuring_gopher, by = "ID") %>% 
+  right_join(measuring_gopher_2, by = "ID") %>% 
+  right_join(measuring_gopher_3, by = "ID") %>%  
+  filter(watering_notes != "gopher", 
+         watering_notes != "gopher activity", 
+         watering_notes != "GOPHER", 
+         watering_notes != "GOPHER ACTIVITY", 
+         watering_notes != "5/15 np") %>% 
+  filter(measuring_notes != "np", 
+         measuring_notes != "np, g", 
+         measuring_notes != "np, buried", 
+         measuring_notes != "g.a.",
+         measuring_notes != "dead, g.a.", 
+         measuring_notes != "np, g.a.", 
+         measuring_notes != "dead, g", 
+         measuring_notes != "np, g (no coin catch#2)", 
+         measuring_notes != "np,g",
+         measuring_notes!= "herbivorized, g.a.") %>% 
+  filter(measuring_2_notes != "NP", 
+         measuring_2_notes != "MISSING", 
+         measuring_2_notes != "NP ", 
+         measuring_2_notes != "GOPHER", 
+         measuring_2_notes != "NP? NO TAG", 
+         measuring_2_notes != "MISSNG") %>%
+  filter(measuring_3_notes != "NP")
+
+planting_survival_gopher <- survival_gopher %>% 
+  select(Plant, Height, Date.Planted) %>% 
+  mutate(Plant = str_replace_all(string = Plant, pattern = "(White + Pink)", replacement = "")) %>% 
+  mutate(Plant = case_when(Plant == "ENCA (Pink)" ~ "ENCA",
+                           Plant == "CEOL (Orange)" ~ "CEOL",
+                           Plant == "HEWH (White)" ~ "HEWH",
+                           Plant == "SAME (Orange + Pink)" ~ "SAME",
+                           Plant == "SANI (Orange + Yellow)" ~ "SANI",
+                           Plant == "RHOV (White + Pink)" ~ "RHOV",
+                           Plant == "SAAP (White + Green)" ~ "SAAP",
+                           Plant == "MALA (White + Yellow)" ~ "MALA",
+                           Plant == "HEAR" ~ "HEAR",
+                           Plant == "ADFA (Orange + Green)" ~ "ADFA",
+                           Plant == "RHOV SAAP (White + Pink)" ~ "SAAP",
+                           Plant == "ENCA CEOL (Pink)" ~ "CEOL", 
+                           Plant == "HEWH (White) RHOV" ~ "RHOV",
+                           Plant == "NO PLANT" ~ "No Plant")) %>% 
+  filter(Plant != "No Plant", Height != "") %>% 
+  mutate(date = my(0320),
+         alive = 1) %>% 
+  select(Plant, alive, date)
+
+watering_survival_gopher <- survival_gopher %>%
+  select(Plant, watering_alive, watering_date) %>% 
+  mutate(Plant = case_when(Plant == "ENCA (Pink)" ~ "ENCA",
+                           Plant == "CEOL (Orange)" ~ "CEOL",
+                           Plant == "HEWH (White)" ~ "HEWH",
+                           Plant == "SAME (Orange + Pink)" ~ "SAME",
+                           Plant == "SANI (Orange + Yellow)" ~ "SANI",
+                           Plant == "RHOV (White + Pink)" ~ "RHOV",
+                           Plant == "SANI (Orange + Yellow) CEOL" ~ "CEOL",
+                           Plant == "SAAP (White + Green)" ~ "SAAP",
+                           Plant == "MALA (White + Yellow)" ~ "MALA",
+                           Plant == "SANI  MALA" ~ "MALA",
+                           Plant == "HEAR" ~ "HEAR",
+                           Plant == "ADFA (Orange + Green)" ~ "ADFA",
+                           Plant == "HEWH (White) ENCA" ~ "ENCA",
+                           Plant == "ADFA" ~ "ADFA",
+                           Plant == "SANI" ~ "SANI",
+                           Plant == "SAME" ~ "SAME",
+                           Plant == "SANI " ~ "SANI",
+                           Plant == "" ~"No plant")) %>% 
+  filter(Plant != "No plant") %>% 
+  mutate(alive = case_when(watering_alive == "y" ~ 1,
+                           watering_alive == "Y" ~ 1,
+                           watering_alive == "n" ~ 0,
+                           watering_alive == "np" ~ 0,
+                           watering_alive == "" ~ 0,
+                           watering_alive == "N" ~ 0,
+                           watering_alive == "NP" ~ 0),
+         date = my(0520)) %>% 
+  select(Plant, alive, date)
+
+measuring_survival_gopher <- survival_gopher %>% 
+  select(Plant, measuring_height, measuring_date) %>% 
+  mutate(Plant = case_when(Plant == "ENCA (Pink)" ~ "ENCA",
+                           Plant == "CEOL (Orange)" ~ "CEOL",
+                           Plant == "HEWH (White)" ~ "HEWH",
+                           Plant == "SAME (Orange + Pink)" ~ "SAME",
+                           Plant == "SANI (Orange + Yellow)" ~ "SANI", 
+                           Plant == "RHOV (White + Pink)" ~ "RHOV",
+                           Plant == "SAAP (White + Green)" ~ "SAAP",
+                           Plant == "MALA (White + Yellow)" ~ "MALA",
+                           Plant == "ADFA (Orange + Green)" ~ "ADFA",
+                           Plant == "HEAR" ~ "HEAR",
+                           Plant == "ENCA CEOL (Pink)" ~ "CEOL",
+                           Plant == "NO PLANT" ~ "No Plant",
+                           Plant == "HEWH (White) RHOV" ~ "RHOV",
+                           Plant == "HEWH" ~ "HEWH"),
+         alive = case_when(measuring_height > 0 ~ 1),
+         date = my(0720)) %>% 
+  filter(Plant != "No Plant") %>% 
+  select(Plant, alive, date)
+
+measuring_survival_gopher_2 <- survival_gopher %>% 
+  select(Plant, measuring_2_height, measuring_2_date) %>% 
+  mutate(Plant = str_replace(Plant, " ", ""),
+         Plant = case_when(Plant == "ENCA(Pink)" ~ "ENCA",
+                           Plant == "CEOL(Orange)" ~ "CEOL",
+                           Plant == "HEWH(White)" ~ "HEWH",
+                           Plant == "SAME(Orange + Pink)" ~ "SAME",
+                           Plant == "SANI(Orange + Yellow)" ~ "SANI", 
+                           Plant == "RHOV(White + Pink)" ~ "RHOV",
+                           Plant == "SAAP(White + Green)" ~ "SAAP",
+                           Plant == "MALA(White + Yellow)" ~ "MALA",
+                           Plant == "ADFA(Orange + Green)" ~ "ADFA",
+                           Plant == "HEAR" ~ "HEAR",
+                           Plant == "ENCACEOL (Pink)" ~ "CEOL",
+                           Plant == "NOPLANT" ~ "No Plant",
+                           Plant == "HEWH(White) RHOV" ~ "RHOV",
+                           Plant == "HEWH" ~ "HEWH",
+                           TRUE ~ Plant),
+         alive = case_when(measuring_2_height > 0 ~ 1),
+         date = my(1120)) %>% 
+  filter(Plant != "") %>% 
+  select(Plant, alive, date)
+
+measuring_survival_gopher_3 <- survival_gopher %>% 
+  select(Plant, measuring_3_height, measuring_3_date) %>% 
+  mutate(Plant = case_when(Plant == "ENCA (Pink)" ~ "ENCA",
+                           Plant == "CEOL (Orange)" ~ "CEOL",
+                           Plant == "HEWH (White)" ~ "HEWH",
+                           Plant == "SAME (Orange + Pink)" ~ "SAME",
+                           Plant == "SANI (Orange + Yellow)" ~ "SANI", 
+                           Plant == "RHOV (White + Pink)" ~ "RHOV",
+                           Plant == "SAAP (White + Green)" ~ "SAAP",
+                           Plant == "MALA (White + Yellow)" ~ "MALA",
+                           Plant == "ADFA (Orange + Green)" ~ "ADFA",
+                           Plant == "HEAR" ~ "HEAR",
+                           Plant == "ENCA CEOL (Pink)" ~ "CEOL",
+                           Plant == "NO PLANT" ~ "No Plant",
+                           Plant == "HEWH (White) RHOV" ~ "RHOV",
+                           Plant == "HEWH" ~ "HEWH"),alive = case_when(measuring_3_height > 0 ~ 1),
+        date = my(1221)) %>% 
+  filter(Plant != "") %>% 
+  select(Plant, alive, date)
+
+survival_gopher_clean <- rbind(planting_survival_gopher,
+                  watering_survival_gopher,
+                  measuring_survival_gopher, 
+                  measuring_survival_gopher_2, 
+                  measuring_survival_gopher_3) %>% 
+  group_by(Plant, date) %>% 
+  summarise(alive = sum(alive, na.rm = TRUE)) %>% 
+  ungroup() %>% 
+  filter(Plant != "No Plant") %>% 
+  mutate(alive_percent = case_when(Plant == "ADFA" ~ alive/118 * 100,
+                                   Plant == "CEOL" ~ alive/97 * 100,
+                                   Plant == "ENCA" ~ alive/83 * 100,
+                                   Plant == "HEAR" ~ alive/61 * 100,
+                                   Plant == "HEWH" ~ alive/80 * 100,
+                                   Plant == "MALA" ~ alive/43 * 100,
+                                   Plant == "RHOV" ~ alive/75 * 100,
+                                   Plant == "SAAP" ~ alive/45 * 100,
+                                   Plant == "SAME" ~ alive/48 * 100, 
+                                   Plant == "SANI" ~ alive/62 * 100),
+         Plant = case_when(Plant == "ADFA" ~ "Adenostoma fasciculatum",
+                                   Plant == "CEOL" ~ "Ceanothus oliganthus",
+                                   Plant == "ENCA" ~ "Encelia californica",
+                                   Plant == "HEAR" ~ "Heteromeles arbutifolia",
+                                   Plant == "HEWH" ~ "Hesperoyucca whipplei",
+                                   Plant == "MALA" ~ "Malosma laurina",
+                                   Plant == "RHOV" ~ "Rhus ovata",
+                                   Plant == "SAAP" ~ "Salvia apiana",
+                                   Plant == "SAME" ~ "Salvia mellifera", 
+                                   Plant == "SANI" ~ "Sambucus nigra"))
+
+survival_gopher_total <- survival_gopher_clean %>% 
+  group_by(date) %>% 
+  summarise(alive = sum(alive))
+
+ggplot(survival_gopher_clean, aes(date, alive_percent)) +
+  geom_point() +
+  geom_line () +
+  facet_wrap(~Plant, nrow = 5, ncol = 2) +
+  labs(y = "Percent Alive") +
+  theme_classic()
+
+ggplot(survival, aes(date, alive)) +
+  geom_point() +
+  geom_line () +
+  facet_wrap(~Plant, nrow = 5, ncol = 2) +
+  theme_classic()
+
+ggplot(survival_total, aes(date, alive)) +
+  geom_point() +
+  geom_line() +
+  labs(y = "Number plants alive") +
+  theme_classic()
+```
 
 
 
