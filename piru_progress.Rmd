@@ -1,0 +1,257 @@
+---
+title: "Piru Progress"
+author: "Shane Dewees"
+date: "12/15/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(here)
+library(tidyverse)
+library(lubridate)
+```
+
+```{r}
+planting <- read.csv(here("data", "planting.csv"))
+watering <- read.csv(here("data","watering.csv"))
+measuring <- read.csv(here("data", "measuring.csv"))
+measuring_2 <- read.csv(here("data", "measuring_2.csv"))
+measuring_3 <- read.csv(here("data", "measuring_3.csv"))
+
+planting_survival <- planting %>% 
+  select(Plant, Height, Date.Planted) %>% 
+  mutate(Plant = str_replace_all(string = Plant, pattern = "(White + Pink)", replacement = "")) %>% 
+  mutate(Plant = case_when(Plant == "ENCA (Pink)" ~ "ENCA",
+                           Plant == "CEOL (Orange)" ~ "CEOL",
+                           Plant == "HEWH (White)" ~ "HEWH",
+                           Plant == "SAME (Orange + Pink)" ~ "SAME",
+                           Plant == "SANI (Orange + Yellow)" ~ "SANI",
+                           Plant == "RHOV (White + Pink)" ~ "RHOV",
+                           Plant == "SAAP (White + Green)" ~ "SAAP",
+                           Plant == "MALA (White + Yellow)" ~ "MALA",
+                           Plant == "HEAR" ~ "HEAR",
+                           Plant == "ADFA (Orange + Green)" ~ "ADFA",
+                           Plant == "RHOV SAAP (White + Pink)" ~ "SAAP",
+                           Plant == "ENCA CEOL (Pink)" ~ "CEOL", 
+                           Plant == "HEWH (White) RHOV" ~ "RHOV",
+                           Plant == "NO PLANT" ~ "No Plant")) %>% 
+  filter(Plant != "No Plant", Height != "") %>% 
+  mutate(date = my(0320),
+         alive = 1) %>% 
+  select(Plant, alive, date)
+
+watering_survival <- watering %>% 
+  mutate(Plant = case_when(Plant == "ENCA (Pink)" ~ "ENCA",
+                           Plant == "CEOL (Orange)" ~ "CEOL",
+                           Plant == "HEWH (White)" ~ "HEWH",
+                           Plant == "SAME (Orange + Pink)" ~ "SAME",
+                           Plant == "SANI (Orange + Yellow)" ~ "SANI",
+                           Plant == "RHOV (White + Pink)" ~ "RHOV",
+                           Plant == "SANI (Orange + Yellow) CEOL" ~ "CEOL",
+                           Plant == "SAAP (White + Green)" ~ "SAAP",
+                           Plant == "MALA (White + Yellow)" ~ "MALA",
+                           Plant == "SANI  MALA" ~ "MALA",
+                           Plant == "HEAR" ~ "HEAR",
+                           Plant == "ADFA (Orange + Green)" ~ "ADFA",
+                           Plant == "HEWH (White) ENCA" ~ "ENCA",
+                           Plant == "ADFA" ~ "ADFA",
+                           Plant == "SANI" ~ "SANI",
+                           Plant == "SAME" ~ "SAME",
+                           Plant == "SANI " ~ "SANI",
+                           Plant == "" ~"No plant")) %>% 
+  filter(Plant != "No plant") %>% 
+  mutate(alive = case_when(Alive.1 == "y" ~ 1,
+                           Alive.1 == "Y" ~ 1,
+                           Alive.1 == "n" ~ 0,
+                           Alive.1 == "np" ~ 0,
+                           Alive.1 == "" ~ 0,
+                           Alive.1 == "N" ~ 0,
+                           Alive.1 == "NP" ~ 0),
+         date = my(0520)) %>% 
+  select(Plant, alive, date)
+
+measuring_survival <- measuring %>% 
+  mutate(Plant = case_when(Plant == "ENCA (Pink)" ~ "ENCA",
+                           Plant == "CEOL (Orange)" ~ "CEOL",
+                           Plant == "HEWH (White)" ~ "HEWH",
+                           Plant == "SAME (Orange + Pink)" ~ "SAME",
+                           Plant == "SANI (Orange + Yellow)" ~ "SANI", 
+                           Plant == "RHOV (White + Pink)" ~ "RHOV",
+                           Plant == "SAAP (White + Green)" ~ "SAAP",
+                           Plant == "MALA (White + Yellow)" ~ "MALA",
+                           Plant == "ADFA (Orange + Green)" ~ "ADFA",
+                           Plant == "HEAR" ~ "HEAR",
+                           Plant == "ENCA CEOL (Pink)" ~ "CEOL",
+                           Plant == "NO PLANT" ~ "No Plant",
+                           Plant == "HEWH (White) RHOV" ~ "RHOV",
+                           Plant == "HEWH" ~ "HEWH"),
+         alive = case_when(Height > 0 ~ 1),
+         date = my(0720)) %>% 
+  filter(Plant != "No Plant") %>% 
+  select(Plant, alive, date)
+
+measuring_survival_2 <- measuring_2 %>% 
+  mutate(Plant = str_replace(Plant, " ", ""),
+         alive = case_when(Height > 0 ~ 1),
+         date = my(1120)) %>% 
+  filter(Plant != "") %>% 
+  select(Plant, alive, date)
+
+measuring_survival_3 <- measuring_3 %>% 
+  mutate(alive = case_when(Height > 0 ~ 1),
+        date = my(1221)) %>% 
+  filter(Plant != "") %>% 
+  select(Plant, alive, date)
+
+survival <- rbind(planting_survival,watering_survival,measuring_survival, measuring_survival_2, measuring_survival_3) %>% 
+  group_by(Plant, date) %>% 
+  summarise(alive = sum(alive, na.rm = TRUE)) %>% 
+  mutate(alive_percent = case_when(Plant == "ADFA" ~ alive/148 * 100,
+                                   Plant == "CEOL" ~ alive/250 * 100,
+                                   Plant == "ENCA" ~ alive/204 * 100,
+                                   Plant == "HEAR" ~ alive/121 * 100,
+                                   Plant == "HEWH" ~ alive/247 * 100,
+                                   Plant == "MALA" ~ alive/89 * 100,
+                                   Plant == "RHOV" ~ alive/195 * 100,
+                                   Plant == "SAAP" ~ alive/95 * 100,
+                                   Plant == "SAME" ~ alive/130 * 100, 
+                                   Plant == "SANI" ~ alive/160 * 100),
+         Plant = case_when(Plant == "ADFA" ~ "Adenostoma fasciculatum",
+                                   Plant == "CEOL" ~ "Ceanothus oliganthus",
+                                   Plant == "ENCA" ~ "Encelia californica",
+                                   Plant == "HEAR" ~ "Heteromeles arbutifolia",
+                                   Plant == "HEWH" ~ "Hesperoyucca whipplei",
+                                   Plant == "MALA" ~ "Malosma laurina",
+                                   Plant == "RHOV" ~ "Rhus ovata",
+                                   Plant == "SAAP" ~ "Salvia apiana",
+                                   Plant == "SAME" ~ "Salvia mellifera", 
+                                   Plant == "SANI" ~ "Sambucus nigra"))
+
+survival_total <- survival %>% 
+  group_by(date) %>% 
+  summarise(alive = sum(alive))
+
+ggplot(survival, aes(date, alive_percent)) +
+  geom_point() +
+  geom_line () +
+  facet_wrap(~Plant, nrow = 5, ncol = 2) +
+  labs(y = "Percent Alive") +
+  theme_classic()
+
+ggplot(survival, aes(date, alive)) +
+  geom_point() +
+  geom_line () +
+  facet_wrap(~Plant, nrow = 5, ncol = 2) +
+  theme_classic()
+
+ggplot(survival_total, aes(date, alive)) +
+  geom_point() +
+  geom_line() +
+  labs(y = "Number plants alive") +
+  theme_classic()
+  
+```
+
+
+```{r}
+planting_growth <- planting %>% 
+  mutate(Plant = str_replace_all(string = Plant, pattern = "(White + Pink)", replacement = "")) %>% 
+  mutate(Plant = case_when(Plant == "ENCA (Pink)" ~ "ENCA",
+                           Plant == "CEOL (Orange)" ~ "CEOL",
+                           Plant == "HEWH (White)" ~ "HEWH",
+                           Plant == "SAME (Orange + Pink)" ~ "SAME",
+                           Plant == "SANI (Orange + Yellow)" ~ "SANI",
+                           Plant == "RHOV (White + Pink)" ~ "RHOV",
+                           Plant == "SAAP (White + Green)" ~ "SAAP",
+                           Plant == "MALA (White + Yellow)" ~ "MALA",
+                           Plant == "HEAR" ~ "HEAR",
+                           Plant == "ADFA (Orange + Green)" ~ "ADFA",
+                           Plant == "RHOV SAAP (White + Pink)" ~ "SAAP",
+                           Plant == "ENCA CEOL (Pink)" ~ "CEOL", 
+                           Plant == "HEWH (White) RHOV" ~ "RHOV",
+                           Plant == "NO PLANT" ~ "No Plant")) %>% 
+  filter(Plant != "No Plant", Height != "") %>% 
+  mutate(date = my(0320)) %>% 
+  select(Plant, Height, Width.1, Width.2, Stem.Diameter, date)
+
+measuring_growth <- measuring %>% 
+  mutate(Plant = case_when(Plant == "ENCA (Pink)" ~ "ENCA",
+                           Plant == "CEOL (Orange)" ~ "CEOL",
+                           Plant == "HEWH (White)" ~ "HEWH",
+                           Plant == "SAME (Orange + Pink)" ~ "SAME",
+                           Plant == "SANI (Orange + Yellow)" ~ "SANI", 
+                           Plant == "RHOV (White + Pink)" ~ "RHOV",
+                           Plant == "SAAP (White + Green)" ~ "SAAP",
+                           Plant == "MALA (White + Yellow)" ~ "MALA",
+                           Plant == "ADFA (Orange + Green)" ~ "ADFA",
+                           Plant == "HEAR" ~ "HEAR",
+                           Plant == "ENCA CEOL (Pink)" ~ "CEOL",
+                           Plant == "NO PLANT" ~ "No Plant",
+                           Plant == "HEWH (White) RHOV" ~ "RHOV",
+                           Plant == "HEWH" ~ "HEWH"),
+         date = my(0720)) %>% 
+  filter(Plant != "No Plant") %>% 
+  select(Plant, Height, Width.1, Width.2, Stem.Diameter, date)
+
+measuring_growth_2 <- measuring_2 %>% 
+  mutate(Plant = str_replace(Plant, " ", ""),
+         date = my(1120)) %>% 
+  filter(Plant != "") %>% 
+  select(Plant, Height, Width.1, Width.2, Stem.Diameter, date)
+
+measuring_growth_3 <- measuring_3 %>% 
+  mutate(date = my(1221)) %>% 
+  filter(Plant != "") %>% 
+  select(Plant, Height, Width.1, Width.2, Stem.Diameter, date)
+
+growth <- rbind(planting_growth, measuring_growth, measuring_growth_2, measuring_growth_3) %>% 
+  mutate(Height = as.numeric(Height),
+         Width.1 = as.numeric(Width.1),
+         Width.2 = as.numeric(Width.2),
+         Stem.Diameter = as.numeric(Stem.Diameter)) %>% 
+  group_by(Plant, date) %>% 
+  summarise(mean_height = mean(Height, na.rm = TRUE),
+            sd_height = sd(Height, na.rm = TRUE),
+            mean_width_1 = mean(Width.1, na.rm = TRUE),
+            sd_width_1 = sd(Width.1, na.rm = TRUE),
+            mean_width_2 = mean(Width.2, na.rm = TRUE),
+            sd_width_2 = sd(Width.2, na.rm = TRUE),
+            mean_stem = mean(Stem.Diameter, na.rm = TRUE),
+            sd_stem = sd(Stem.Diameter, na.rm = TRUE))
+
+ggplot(growth, aes(date, mean_height)) + 
+  geom_point()+
+  geom_errorbar(aes(ymin = mean_height - sd_height, ymax = mean_height + sd_height), width = 0.2) +
+  geom_line()+
+  labs(y = "Stem Height (cm)") +
+  facet_wrap(~Plant, nrow = 5, ncol = 2) +
+  theme_classic()
+
+ggplot(growth, aes(date, mean_width_1)) + 
+  geom_point()+
+  geom_errorbar(aes(ymin = mean_width_1 - sd_width_1, ymax = mean_width_1 + sd_width_1), width = 0.2) +
+  geom_line()+
+  labs(y = "Plant Width (cm)") +
+  facet_wrap(~Plant, nrow = 5, ncol = 2) +
+  theme_classic()
+
+ggplot(growth, aes(date, mean_stem)) + 
+  geom_point()+
+  geom_errorbar(aes(ymin = mean_stem - sd_stem, ymax = mean_stem + sd_stem), width = 0.2) +
+  geom_line()+
+  labs(y = "Stem Diameter (cm)") +
+  facet_wrap(~Plant, nrow = 5, ncol = 2) +
+  theme_classic()
+```
+
+
+
+
+
+
+
+
+
+
+
