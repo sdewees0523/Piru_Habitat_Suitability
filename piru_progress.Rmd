@@ -8,19 +8,27 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(here)
-library(tidyverse)
 library(lubridate)
+library(sf)
+library(raster)
+library(tidyverse)
+library(stats)
 ```
 
 ```{r}
-planting <- read.csv(here("data", "planting.csv"))
-watering <- read.csv(here("data","watering.csv"))
-measuring <- read.csv(here("data", "measuring.csv"))
-measuring_2 <- read.csv(here("data", "measuring_2.csv"))
-measuring_3 <- read.csv(here("data", "measuring_3.csv"))
+planting <- read.csv(here("data", "planting.csv")) %>% 
+  rename("plot_number" = "ID")
+watering <- read.csv(here("data","watering.csv"))%>% 
+  rename("plot_number" = "ID")
+measuring <- read.csv(here("data", "measuring.csv"))%>% 
+  rename("plot_number" = "ID")
+measuring_2 <- read.csv(here("data", "measuring_2.csv"))%>% 
+  rename("plot_number" = "ID")
+measuring_3 <- read.csv(here("data", "measuring_3.csv"))%>% 
+  rename("plot_number" = "ID")
 
 planting_survival <- planting %>% 
-  select(Plant, Height, Date.Planted) %>% 
+  dplyr::select(plot_number, Plant, Height, Date.Planted) %>% 
   mutate(Plant = str_replace_all(string = Plant, pattern = "(White + Pink)", replacement = "")) %>% 
   mutate(Plant = case_when(Plant == "ENCA (Pink)" ~ "ENCA",
                            Plant == "CEOL (Orange)" ~ "CEOL",
@@ -39,7 +47,7 @@ planting_survival <- planting %>%
   filter(Plant != "No Plant", Height != "") %>% 
   mutate(date = my(0320),
          alive = 1) %>% 
-  select(Plant, alive, date)
+  dplyr::select(plot_number,Plant, alive, date)
 
 watering_survival <- watering %>% 
   mutate(Plant = case_when(Plant == "ENCA (Pink)" ~ "ENCA",
@@ -69,7 +77,7 @@ watering_survival <- watering %>%
                            Alive.1 == "N" ~ 0,
                            Alive.1 == "NP" ~ 0),
          date = my(0520)) %>% 
-  select(Plant, alive, date)
+  dplyr::select(plot_number,Plant, alive, date)
 
 measuring_survival <- measuring %>% 
   mutate(Plant = case_when(Plant == "ENCA (Pink)" ~ "ENCA",
@@ -89,20 +97,20 @@ measuring_survival <- measuring %>%
          alive = case_when(Height > 0 ~ 1),
          date = my(0720)) %>% 
   filter(Plant != "No Plant") %>% 
-  select(Plant, alive, date)
+  dplyr::select(plot_number,Plant, alive, date)
 
 measuring_survival_2 <- measuring_2 %>% 
   mutate(Plant = str_replace(Plant, " ", ""),
          alive = case_when(Height > 0 ~ 1),
          date = my(1120)) %>% 
   filter(Plant != "") %>% 
-  select(Plant, alive, date)
+  dplyr::select(plot_number,Plant, alive, date)
 
 measuring_survival_3 <- measuring_3 %>% 
   mutate(alive = case_when(Height > 0 ~ 1),
         date = my(1221)) %>% 
   filter(Plant != "") %>% 
-  select(Plant, alive, date)
+  dplyr::select(plot_number,Plant, alive, date)
 
 survival <- rbind(planting_survival,watering_survival,measuring_survival, measuring_survival_2, measuring_survival_3) %>% 
   group_by(Plant, date) %>% 
@@ -173,7 +181,7 @@ planting_growth <- planting %>%
                            Plant == "NO PLANT" ~ "No Plant")) %>% 
   filter(Plant != "No Plant", Height != "") %>% 
   mutate(date = my(0320)) %>% 
-  select(Plant, Height, Width.1, Width.2, Stem.Diameter, date)
+  dplyr::select(plot_number,Plant, Height, Width.1, Width.2, Stem.Diameter, date)
 
 measuring_growth <- measuring %>% 
   mutate(Plant = case_when(Plant == "ENCA (Pink)" ~ "ENCA",
@@ -192,18 +200,18 @@ measuring_growth <- measuring %>%
                            Plant == "HEWH" ~ "HEWH"),
          date = my(0720)) %>% 
   filter(Plant != "No Plant") %>% 
-  select(Plant, Height, Width.1, Width.2, Stem.Diameter, date)
+  dplyr::select(plot_number,Plant, Height, Width.1, Width.2, Stem.Diameter, date)
 
 measuring_growth_2 <- measuring_2 %>% 
   mutate(Plant = str_replace(Plant, " ", ""),
          date = my(1120)) %>% 
   filter(Plant != "") %>% 
-  select(Plant, Height, Width.1, Width.2, Stem.Diameter, date)
+  dplyr::select(plot_number,Plant, Height, Width.1, Width.2, Stem.Diameter, date)
 
 measuring_growth_3 <- measuring_3 %>% 
   mutate(date = my(1221)) %>% 
   filter(Plant != "") %>% 
-  select(Plant, Height, Width.1, Width.2, Stem.Diameter, date)
+  dplyr::select(plot_number,Plant, Height, Width.1, Width.2, Stem.Diameter, date)
 
 growth <- rbind(planting_growth, measuring_growth, measuring_growth_2, measuring_growth_3) %>% 
   mutate(Height = as.numeric(Height),
@@ -248,12 +256,12 @@ ggplot(growth, aes(date, mean_stem)) +
 ```{r}
 
 watering_gopher <- watering %>% 
-  select(ID, Watering.2.Date, Alive.1, Notes.1) %>% 
+  dplyr::select(plot_number, Watering.2.Date, Alive.1, Notes.1) %>% 
   rename("watering_date" = "Watering.2.Date",
          "watering_alive" = "Alive.1", 
          "watering_notes" = "Notes.1") 
 measuring_gopher <- measuring %>% 
-  select(!Plant) %>% 
+  dplyr::select(!Plant) %>% 
   rename("measuring_height" = "Height",
          "measuring_width_1" = "Width.1",
          "measuring_width_2" = "Width.2",
@@ -261,7 +269,7 @@ measuring_gopher <- measuring %>%
          "measuring_date" = "Date.Measured",
          "measuring_notes" = "Notes")
 measuring_gopher_2 <- measuring_2 %>% 
-  select(!Plant) %>%
+  dplyr::select(!Plant) %>%
   rename("measuring_2_height" = "Height",
          "measuring_2_width_1" = "Width.1",
          "measuring_2_width_2" = "Width.2",
@@ -269,7 +277,7 @@ measuring_gopher_2 <- measuring_2 %>%
          "measuring_2_date" = "Date.Measured",
          "measuring_2_notes" = "Notes")
 measuring_gopher_3 <- measuring_3 %>% 
-  select(!Plant) %>%
+  dplyr::select(!Plant) %>%
   rename("measuring_3_height" = "Height",
          "measuring_3_width_1" = "Width.1",
          "measuring_3_width_2" = "Width.2",
@@ -277,10 +285,10 @@ measuring_gopher_3 <- measuring_3 %>%
          "measuring_3_date" = "Date.Measured",
          "measuring_3_notes" = "Notes")
 
-survival_gopher <- right_join(planting, watering_gopher, by = "ID") %>% 
-  right_join(measuring_gopher, by = "ID") %>% 
-  right_join(measuring_gopher_2, by = "ID") %>% 
-  right_join(measuring_gopher_3, by = "ID") %>%  
+survival_gopher <- right_join(planting, watering_gopher, by = "plot_number") %>% 
+  right_join(measuring_gopher, by = "plot_number") %>% 
+  right_join(measuring_gopher_2, by = "plot_number") %>% 
+  right_join(measuring_gopher_3, by = "plot_number") %>%  
   filter(watering_notes != "gopher", 
          watering_notes != "gopher activity", 
          watering_notes != "GOPHER", 
@@ -305,7 +313,7 @@ survival_gopher <- right_join(planting, watering_gopher, by = "ID") %>%
   filter(measuring_3_notes != "NP")
 
 planting_survival_gopher <- survival_gopher %>% 
-  select(Plant, Height, Date.Planted) %>% 
+  dplyr::select(plot_number,Plant, Height, Date.Planted) %>% 
   mutate(Plant = str_replace_all(string = Plant, pattern = "(White + Pink)", replacement = "")) %>% 
   mutate(Plant = case_when(Plant == "ENCA (Pink)" ~ "ENCA",
                            Plant == "CEOL (Orange)" ~ "CEOL",
@@ -324,10 +332,10 @@ planting_survival_gopher <- survival_gopher %>%
   filter(Plant != "No Plant", Height != "") %>% 
   mutate(date = my(0320),
          alive = 1) %>% 
-  select(Plant, alive, date)
+  dplyr::select(plot_number,Plant, alive, date)
 
 watering_survival_gopher <- survival_gopher %>%
-  select(Plant, watering_alive, watering_date) %>% 
+  dplyr::select(plot_number,Plant, watering_alive, watering_date) %>% 
   mutate(Plant = case_when(Plant == "ENCA (Pink)" ~ "ENCA",
                            Plant == "CEOL (Orange)" ~ "CEOL",
                            Plant == "HEWH (White)" ~ "HEWH",
@@ -355,10 +363,10 @@ watering_survival_gopher <- survival_gopher %>%
                            watering_alive == "N" ~ 0,
                            watering_alive == "NP" ~ 0),
          date = my(0520)) %>% 
-  select(Plant, alive, date)
+  dplyr::select(plot_number,Plant, alive, date)
 
 measuring_survival_gopher <- survival_gopher %>% 
-  select(Plant, measuring_height, measuring_date) %>% 
+  dplyr::select(plot_number,Plant, measuring_height, measuring_date) %>% 
   mutate(Plant = case_when(Plant == "ENCA (Pink)" ~ "ENCA",
                            Plant == "CEOL (Orange)" ~ "CEOL",
                            Plant == "HEWH (White)" ~ "HEWH",
@@ -373,13 +381,14 @@ measuring_survival_gopher <- survival_gopher %>%
                            Plant == "NO PLANT" ~ "No Plant",
                            Plant == "HEWH (White) RHOV" ~ "RHOV",
                            Plant == "HEWH" ~ "HEWH"),
-         alive = case_when(measuring_height > 0 ~ 1),
+         alive = case_when(measuring_height > 0 ~ 1, 
+                           TRUE ~0),
          date = my(0720)) %>% 
   filter(Plant != "No Plant") %>% 
-  select(Plant, alive, date)
+  dplyr::select(plot_number,Plant, alive, date)
 
 measuring_survival_gopher_2 <- survival_gopher %>% 
-  select(Plant, measuring_2_height, measuring_2_date) %>% 
+  dplyr::select(plot_number,Plant, measuring_2_height, measuring_2_date) %>% 
   mutate(Plant = str_replace(Plant, " ", ""),
          Plant = case_when(Plant == "ENCA(Pink)" ~ "ENCA",
                            Plant == "CEOL(Orange)" ~ "CEOL",
@@ -396,13 +405,14 @@ measuring_survival_gopher_2 <- survival_gopher %>%
                            Plant == "HEWH(White) RHOV" ~ "RHOV",
                            Plant == "HEWH" ~ "HEWH",
                            TRUE ~ Plant),
-         alive = case_when(measuring_2_height > 0 ~ 1),
+         alive = case_when(measuring_2_height > 0 ~ 1,
+                           TRUE ~ 0),
          date = my(1120)) %>% 
   filter(Plant != "") %>% 
-  select(Plant, alive, date)
+  dplyr::select(plot_number,Plant, alive, date)
 
 measuring_survival_gopher_3 <- survival_gopher %>% 
-  select(Plant, measuring_3_height, measuring_3_date) %>% 
+  dplyr::select(plot_number,Plant, measuring_3_height, measuring_3_date) %>% 
   mutate(Plant = case_when(Plant == "ENCA (Pink)" ~ "ENCA",
                            Plant == "CEOL (Orange)" ~ "CEOL",
                            Plant == "HEWH (White)" ~ "HEWH",
@@ -416,10 +426,12 @@ measuring_survival_gopher_3 <- survival_gopher %>%
                            Plant == "ENCA CEOL (Pink)" ~ "CEOL",
                            Plant == "NO PLANT" ~ "No Plant",
                            Plant == "HEWH (White) RHOV" ~ "RHOV",
-                           Plant == "HEWH" ~ "HEWH"),alive = case_when(measuring_3_height > 0 ~ 1),
+                           Plant == "HEWH" ~ "HEWH"),
+         alive = case_when(measuring_3_height > 0 ~ 1, 
+                           TRUE ~ 0),
         date = my(1221)) %>% 
   filter(Plant != "") %>% 
-  select(Plant, alive, date)
+  dplyr::select(plot_number,Plant, alive, date)
 
 survival_gopher_clean <- rbind(planting_survival_gopher,
                   watering_survival_gopher,
@@ -472,6 +484,141 @@ ggplot(survival_total, aes(date, alive)) +
   geom_point() +
   geom_line() +
   labs(y = "Number plants alive") +
+  theme_classic()
+```
+
+```{r}
+plots <- st_read(here("data", "plot_gps_points.shp")) %>% 
+  rename("plot_number" = "plt_nmb")
+elevation <- raster(here("data", "elevation.tif"))
+aspect <- raster(here("data", "aspect.tif"))
+slope <- raster(here("data", "slope.tif"))
+solar_radiation <- brick(here("data", "sol_rad.tif"))
+plots_topography <- plots %>% 
+  mutate(elevation = extract(elevation, plots),
+         aspect = extract(aspect, plots),
+         slope = extract(slope, plots),
+         summer_solar_radiation = extract(solar_radiation[[3]], plots),
+         spring_solar_radiation = extract(solar_radiation[[2]], plots),
+         winter_solar_radiation = extract(solar_radiation[[1]], plots)) %>% 
+  drop_na()
+
+planting_survival_gopher_topography <- right_join(planting_survival_gopher, plots_topography, by = "plot_number") %>% 
+  drop_na() %>% 
+  group_by(Plant, date) %>% 
+  summarise(elevation_mean = mean(elevation, na.rm =TRUE),
+            aspect_mean = mean(aspect, na.rm = TRUE),
+            slope_mean = mean(slope, na.rm = TRUE),
+            summer_solar_radiation_mean = mean(summer_solar_radiation, na.rm = TRUE),
+            spring_solar_radiation_mean = mean(spring_solar_radiation, na.rm = TRUE),
+            winter_solar_radiation_mean = mean(winter_solar_radiation, na.rm = TRUE),
+            elevation_sd = sd(elevation, na.rm =TRUE),
+            aspect_sd = sd(aspect, na.rm = TRUE),
+            slope_sd = sd(slope, na.rm = TRUE),
+            summer_solar_radiation_sd = sd(summer_solar_radiation, na.rm = TRUE),
+            spring_solar_radiation_sd = sd(spring_solar_radiation, na.rm = TRUE),
+            winter_solar_radiation_sd = sd(winter_solar_radiation, na.rm = TRUE))
+watering_survival_gopher_topography <- right_join(watering_survival_gopher, plots_topography, by = "plot_number") %>% 
+  drop_na() %>% 
+  group_by(Plant, date, alive) %>% 
+  summarise(elevation_mean = mean(elevation, na.rm =TRUE),
+            aspect_mean = mean(aspect, na.rm = TRUE),
+            slope_mean = mean(slope, na.rm = TRUE),
+            summer_solar_radiation_mean = mean(summer_solar_radiation, na.rm = TRUE),
+            spring_solar_radiation_mean = mean(spring_solar_radiation, na.rm = TRUE),
+            winter_solar_radiation_mean = mean(winter_solar_radiation, na.rm = TRUE),
+            elevation_sd = sd(elevation, na.rm =TRUE),
+            aspect_sd = sd(aspect, na.rm = TRUE),
+            slope_sd = sd(slope, na.rm = TRUE),
+            summer_solar_radiation_sd = sd(summer_solar_radiation, na.rm = TRUE),
+            spring_solar_radiation_sd = sd(spring_solar_radiation, na.rm = TRUE),
+            winter_solar_radiation_sd = sd(winter_solar_radiation, na.rm = TRUE))
+
+measuring_survival_gopher_topography <- right_join(measuring_survival_gopher, plots_topography, by = "plot_number") %>% 
+  drop_na() %>% 
+  group_by(Plant, date, alive) %>% 
+  summarise(elevation_mean = mean(elevation, na.rm =TRUE),
+            aspect_mean = mean(aspect, na.rm = TRUE),
+            slope_mean = mean(slope, na.rm = TRUE),
+            summer_solar_radiation_mean = mean(summer_solar_radiation, na.rm = TRUE),
+            spring_solar_radiation_mean = mean(spring_solar_radiation, na.rm = TRUE),
+            winter_solar_radiation_mean = mean(winter_solar_radiation, na.rm = TRUE),
+            elevation_sd = sd(elevation, na.rm =TRUE),
+            aspect_sd = sd(aspect, na.rm = TRUE),
+            slope_sd = sd(slope, na.rm = TRUE),
+            summer_solar_radiation_sd = sd(summer_solar_radiation, na.rm = TRUE),
+            spring_solar_radiation_sd = sd(spring_solar_radiation, na.rm = TRUE),
+            winter_solar_radiation_sd = sd(winter_solar_radiation, na.rm = TRUE))
+
+measuring_survival_gopher_2_topography <- right_join(measuring_survival_gopher_2, plots_topography, by = "plot_number") %>% 
+  drop_na() %>% 
+  group_by(Plant, date, alive) %>% 
+  summarise(elevation_mean = mean(elevation, na.rm =TRUE),
+            aspect_mean = mean(aspect, na.rm = TRUE),
+            slope_mean = mean(slope, na.rm = TRUE),
+            summer_solar_radiation_mean = mean(summer_solar_radiation, na.rm = TRUE),
+            spring_solar_radiation_mean = mean(spring_solar_radiation, na.rm = TRUE),
+            winter_solar_radiation_mean = mean(winter_solar_radiation, na.rm = TRUE),
+            elevation_sd = sd(elevation, na.rm =TRUE),
+            aspect_sd = sd(aspect, na.rm = TRUE),
+            slope_sd = sd(slope, na.rm = TRUE),
+            summer_solar_radiation_sd = sd(summer_solar_radiation, na.rm = TRUE),
+            spring_solar_radiation_sd = sd(spring_solar_radiation, na.rm = TRUE),
+            winter_solar_radiation_sd = sd(winter_solar_radiation, na.rm = TRUE))
+
+measuring_survival_gopher_3_topography <- right_join(measuring_survival_gopher_3, plots_topography, by = "plot_number") %>% 
+  drop_na() %>% 
+  group_by(Plant, date, alive) %>% 
+  summarise(elevation_mean = mean(elevation, na.rm =TRUE),
+            aspect_mean = mean(aspect, na.rm = TRUE),
+            slope_mean = mean(slope, na.rm = TRUE),
+            summer_solar_radiation_mean = mean(summer_solar_radiation, na.rm = TRUE),
+            spring_solar_radiation_mean = mean(spring_solar_radiation, na.rm = TRUE),
+            winter_solar_radiation_mean = mean(winter_solar_radiation, na.rm = TRUE),
+            elevation_sd = sd(elevation, na.rm =TRUE),
+            aspect_sd = sd(aspect, na.rm = TRUE),
+            slope_sd = sd(slope, na.rm = TRUE),
+            summer_solar_radiation_sd = sd(summer_solar_radiation, na.rm = TRUE),
+            spring_solar_radiation_sd = sd(spring_solar_radiation, na.rm = TRUE),
+            winter_solar_radiation_sd = sd(winter_solar_radiation, na.rm = TRUE))
+
+topography_gopher_survival <- rbind(planting_survival_gopher_topography, 
+                                    watering_survival_gopher_topography) %>% 
+  rbind(measuring_survival_gopher_topography) %>% 
+  rbind(measuring_survival_gopher_2_topography) %>% 
+  rbind(measuring_survival_gopher_3_topography)  %>% 
+  mutate(alive = replace_na(alive, 1),
+         alive = as.factor(alive)) %>% 
+  filter(Plant != "No Plant")
+  
+ggplot(topography_gopher_survival, aes (x = date, y = elevation_mean, col = alive)) +
+  geom_point()+
+  facet_wrap(~Plant) +
+  theme_classic()
+
+ggplot(topography_gopher_survival, aes (x = date, y = aspect_mean, col = alive)) +
+  geom_point()+
+  facet_wrap(~Plant) +
+  theme_classic()
+
+ggplot(topography_gopher_survival, aes (x = date, y = slope_mean, col = alive)) +
+  geom_point()+
+  facet_wrap(~Plant) +
+  theme_classic()
+
+ggplot(topography_gopher_survival, aes (x = date, y = summer_solar_radiation_mean, col = alive)) +
+  geom_point()+
+  facet_wrap(~Plant) +
+  theme_classic()
+
+ggplot(topography_gopher_survival, aes (x = date, y = spring_solar_radiation_mean, col = alive)) +
+  geom_point()+
+  facet_wrap(~Plant) +
+  theme_classic()
+
+ggplot(topography_gopher_survival, aes (x = date, y = winter_solar_radiation_mean, col = alive)) +
+  geom_point()+
+  facet_wrap(~Plant) +
   theme_classic()
 ```
 
