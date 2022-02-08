@@ -256,6 +256,7 @@ ggplot(growth, aes(date, mean_stem)) +
 
 ## Looking at survival without gopher kill 
   - unituitally labelled gopher
+  -add an anotation 
   
 
 ```{r}
