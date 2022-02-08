@@ -161,6 +161,7 @@ ggplot(survival_total, aes(date, alive)) +
   
 ```
 
+## Cleaning and initial visualization of growth data
 
 ```{r}
 planting_growth <- planting %>% 
@@ -252,6 +253,10 @@ ggplot(growth, aes(date, mean_stem)) +
   facet_wrap(~Plant, nrow = 5, ncol = 2) +
   theme_classic()
 ```
+
+## Looking at survival without gopher kill 
+  - unituitally labelled gopher
+  
 
 ```{r}
 
