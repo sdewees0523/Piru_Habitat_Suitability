@@ -639,18 +639,37 @@ topography_gopher_survival <- rbind(planting_survival_gopher_topography,
   filter(Plant != "No Plant")
   
 topography_gopher_may <- topography_gopher_survival %>% 
-  filter(date == "2020-05-01")
+  filter(date == "2020-05-01") 
+
+may_alive <- topography_gopher_may %>% 
+  filter(alive == 1) %>% 
+  select(plot_number)
 
 topography_gopher_july <- topography_gopher_survival %>% 
-  filter(date == "2020-05-01"| date== "2020-07-01") %>% 
-  filter(date == "2020-07-01" | alive == 1)
-  filter(date == "2020-0701")
+  filter(date == "2020-07-01") %>% 
+  filter(plot_number %in% may_alive$plot_number)
+
+july_alive <- topography_gopher_july %>% 
+  filter(alive == 1) %>% 
+  select(plot_number)
+
+topography_gopher_november <- topography_gopher_survival %>% 
+  filter(date == "2020-11-01") %>% 
+  filter(plot_number %in% july_alive$plot_number)
+
+november_alive <- topography_gopher_november %>% 
+  filter(alive == 1) %>% 
+  select(plot_number)
+
+topography_gopher_2021 <- topography_gopher_survival %>% 
+  filter(date == "2021-12-01") %>% 
+  filter(plot_number %in% november_alive$plot_number)
 ```
 
 ## Binomial regression for may survival
 
 ```{r}
-watering_binomial <- watering_survival_gopher_topography %>% 
+watering_binomial <- topography_gopher_may %>% 
   dplyr::select(!plot_number & !date & !geometry)  
   
 watering_elevation <- glm(family = "binomial", as.factor(alive)~elevation, data = watering_binomial)
@@ -740,7 +759,7 @@ effect_plot(watering_topographic_position,
 ## Binomial regression for July survival
 
 ```{r}
-july_binomial <- measuring_survival_gopher_topography %>% 
+july_binomial <- topography_gopher_july %>% 
   dplyr::select(!plot_number & !date & !geometry)  
   
 july_elevation <- glm(family = "binomial", as.factor(alive)~elevation, data = july_binomial)
@@ -827,8 +846,189 @@ effect_plot(july_topographic_position,
             interval = TRUE)
 ```
 
+## Binomial regression for november survival
 
+```{r}
+november_binomial <- topography_gopher_november %>% 
+  dplyr::select(!plot_number & !date & !geometry)  
+  
+november_elevation <- glm(family = "binomial", as.factor(alive)~elevation, data = november_binomial)
+november_aspect <- glm(family = "binomial", as.factor(alive)~aspect, data = november_binomial)
+november_slope <- glm(family = "binomial", as.factor(alive)~slope, data = november_binomial)
+november_summer_solar_radiation <- glm(family = "binomial", as.factor(alive)~summer_solar_radiation, data = november_binomial)
+november_spring_solar_radiation <- glm(family = "binomial", as.factor(alive)~spring_solar_radiation, data = november_binomial)
+november_winter_solar_radiation <- glm(family = "binomial", as.factor(alive)~winter_solar_radiation, data = november_binomial)
+november_diurnal_heat <- glm(family = "binomial", as.factor(alive)~diurnal_heat, data = november_binomial)
+november_heat_load <- glm(family = "binomial", as.factor(alive)~heat_load, data = november_binomial)
+november_hierarchical_slope_position <- glm(family = "binomial", as.factor(alive)~hierarchical_slope_position, data = november_binomial)
+november_integrated_moisture <- glm(family = "binomial", as.factor(alive)~integrated_moisture, data = november_binomial)
+november_ruggedness_vector <- glm(family = "binomial", as.factor(alive)~ruggedness_vector, data = november_binomial)
+november_sol_rad_aspect <- glm(family = "binomial", as.factor(alive)~sol_rad_aspect, data = november_binomial)
+november_terrain_ruggedness <- glm(family = "binomial", as.factor(alive)~terrain_ruggedness, data = november_binomial)
+november_terrain_roughness <- glm(family = "binomial", as.factor(alive)~terrain_roughness, data = november_binomial)
+november_terrain_texture <- glm(family = "binomial", as.factor(alive)~terrain_texture, data = november_binomial)
+november_topographic_position <- glm(family = "binomial", as.factor(alive)~topographic_position, data = november_binomial)
 
+summary(november_elevation)
+summary(november_aspect)
+summary(november_slope)
+summary(november_summer_solar_radiation)
+summary(november_spring_solar_radiation)
+summary(november_winter_solar_radiation)
+summary(november_diurnal_heat)
+summary(november_heat_load)
+summary(november_hierarchical_slope_position)
+summary(november_integrated_moisture)
+summary(november_ruggedness_vector)
+summary(november_sol_rad_aspect)
+summary(november_terrain_ruggedness)
+summary(november_terrain_roughness)
+summary(november_terrain_texture)
+summary(november_topographic_position)
+
+effect_plot(november_elevation, 
+            pred = elevation, 
+            interval = TRUE)
+effect_plot(november_aspect, 
+            pred = aspect, 
+            interval = TRUE)
+effect_plot(november_slope, 
+            pred = slope, 
+            interval = TRUE)
+effect_plot(november_summer_solar_radiation, 
+            pred = summer_solar_radiation, 
+            interval = TRUE)
+effect_plot(november_spring_solar_radiation, 
+            pred = spring_solar_radiation, 
+            interval = TRUE)
+effect_plot(november_winter_solar_radiation, 
+            pred = winter_solar_radiation, 
+            interval = TRUE)
+effect_plot(november_diurnal_heat, 
+            pred = diurnal_heat, 
+            interval = TRUE)
+effect_plot(november_heat_load, 
+            pred = heat_load, 
+            interval = TRUE)
+effect_plot(november_hierarchical_slope_position, 
+            pred = hierarchical_slope_position, 
+            interval = TRUE)
+effect_plot(november_integrated_moisture, 
+            pred = integrated_moisture, 
+            interval = TRUE)
+effect_plot(november_ruggedness_vector, 
+            pred = ruggedness_vector, 
+            interval = TRUE)
+effect_plot(november_sol_rad_aspect, 
+            pred = sol_rad_aspect, 
+            interval = TRUE)
+effect_plot(november_terrain_ruggedness, 
+            pred = terrain_ruggedness, 
+            interval = TRUE)
+effect_plot(november_terrain_roughness, 
+            pred = terrain_roughness, 
+            interval = TRUE)
+effect_plot(november_terrain_texture, 
+            pred = terrain_texture, 
+            interval = TRUE)
+effect_plot(november_topographic_position, 
+            pred = topographic_position, 
+            interval = TRUE)
+```
+
+## Binomial regression for December 2021
+
+```{r}
+december_binomial <- topography_gopher_2021 %>% 
+  dplyr::select(!plot_number & !date & !geometry)  
+  
+december_elevation <- glm(family = "binomial", as.factor(alive)~elevation, data = december_binomial)
+december_aspect <- glm(family = "binomial", as.factor(alive)~aspect, data = december_binomial)
+december_slope <- glm(family = "binomial", as.factor(alive)~slope, data = december_binomial)
+december_summer_solar_radiation <- glm(family = "binomial", as.factor(alive)~summer_solar_radiation, data = december_binomial)
+december_spring_solar_radiation <- glm(family = "binomial", as.factor(alive)~spring_solar_radiation, data = december_binomial)
+december_winter_solar_radiation <- glm(family = "binomial", as.factor(alive)~winter_solar_radiation, data = december_binomial)
+december_diurnal_heat <- glm(family = "binomial", as.factor(alive)~diurnal_heat, data = december_binomial)
+december_heat_load <- glm(family = "binomial", as.factor(alive)~heat_load, data = december_binomial)
+december_hierarchical_slope_position <- glm(family = "binomial", as.factor(alive)~hierarchical_slope_position, data = december_binomial)
+december_integrated_moisture <- glm(family = "binomial", as.factor(alive)~integrated_moisture, data = december_binomial)
+december_ruggedness_vector <- glm(family = "binomial", as.factor(alive)~ruggedness_vector, data = december_binomial)
+december_sol_rad_aspect <- glm(family = "binomial", as.factor(alive)~sol_rad_aspect, data = december_binomial)
+december_terrain_ruggedness <- glm(family = "binomial", as.factor(alive)~terrain_ruggedness, data = december_binomial)
+december_terrain_roughness <- glm(family = "binomial", as.factor(alive)~terrain_roughness, data = december_binomial)
+december_terrain_texture <- glm(family = "binomial", as.factor(alive)~terrain_texture, data = december_binomial)
+december_topographic_position <- glm(family = "binomial", as.factor(alive)~topographic_position, data = december_binomial)
+
+summary(december_elevation)
+summary(december_aspect)
+summary(december_slope)
+summary(december_summer_solar_radiation)
+summary(december_spring_solar_radiation)
+summary(december_winter_solar_radiation)
+summary(december_diurnal_heat)
+summary(december_heat_load)
+summary(december_hierarchical_slope_position)
+summary(december_integrated_moisture)
+summary(december_ruggedness_vector)
+summary(december_sol_rad_aspect)
+summary(december_terrain_ruggedness)
+summary(december_terrain_roughness)
+summary(december_terrain_texture)
+summary(december_topographic_position)
+
+effect_plot(december_elevation, 
+            pred = elevation, 
+            interval = TRUE)
+effect_plot(december_aspect, 
+            pred = aspect, 
+            interval = TRUE)
+effect_plot(december_slope, 
+            pred = slope, 
+            interval = TRUE)
+effect_plot(december_summer_solar_radiation, 
+            pred = summer_solar_radiation, 
+            interval = TRUE)
+effect_plot(december_spring_solar_radiation, 
+            pred = spring_solar_radiation, 
+            interval = TRUE)
+effect_plot(december_winter_solar_radiation, 
+            pred = winter_solar_radiation, 
+            interval = TRUE)
+effect_plot(december_diurnal_heat, 
+            pred = diurnal_heat, 
+            interval = TRUE)
+effect_plot(december_heat_load, 
+            pred = heat_load, 
+            interval = TRUE)
+effect_plot(december_hierarchical_slope_position, 
+            pred = hierarchical_slope_position, 
+            interval = TRUE)
+effect_plot(december_integrated_moisture, 
+            pred = integrated_moisture, 
+            interval = TRUE)
+effect_plot(december_ruggedness_vector, 
+            pred = ruggedness_vector, 
+            interval = TRUE)
+effect_plot(december_sol_rad_aspect, 
+            pred = sol_rad_aspect, 
+            interval = TRUE)
+effect_plot(december_terrain_ruggedness, 
+            pred = terrain_ruggedness, 
+            interval = TRUE)
+effect_plot(december_terrain_roughness, 
+            pred = terrain_roughness, 
+            interval = TRUE)
+effect_plot(december_terrain_texture, 
+            pred = terrain_texture, 
+            interval = TRUE)
+effect_plot(december_topographic_position, 
+            pred = topographic_position, 
+            interval = TRUE)
+```
+
+```{r}
+╔
+```
 
 
 
