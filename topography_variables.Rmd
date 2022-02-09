@@ -1,0 +1,38 @@
+---
+title: "Making topographic variables"
+author: "Shane Dewees"
+date: "2/9/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(sf)
+library(raster)
+library(spatialEco)
+library(here)
+```
+
+```{r}
+elevation <- raster(here("data", "elevation.tif"))
+heat_load_index <- hli(elevation)
+hierarchical_slope_position <- hsp(elevation)
+diurnal_heat_index <- dahi(elevation)
+topographic_position <- tpi(elevation, scale = 7)
+sol_rad_aspect <- trasp(elevation)
+terrain_ruggedness <- tri(elevation, s = 7)
+ruggedness_vector <- vrm(elevation, s= 7)
+```
+
+```{r}
+writeRaster(heat_load_index, filename = here("data", "heat_load_index.tif"))
+writeRaster(hierarchical_slope_position, filename = here("data", "hierarchical_slope_position.tif"))
+writeRaster(diurnal_heat_index, filename = here("data", "diurnal_heat.tif"))
+writeRaster(topographic_position, filename = here("data", "topographic_position.tif"))
+writeRaster(sol_rad_aspect, filename = here("data", "sol_rad_aspect.tif"))
+writeRaster(terrain_ruggedness, filename = here("data", "terrain_ruggedness.tif"))
+writeRaster(ruggedness_vector, filename = here("data", "ruggedness_vector.tif"))
+```
+
+
+
