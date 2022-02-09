@@ -14,6 +14,8 @@ library(raster)
 library(tidyverse)
 library(stats)
 library(jtools)
+library(ggparty)
+library(partykit)
 ```
 
 ```{r}
@@ -1027,9 +1029,70 @@ effect_plot(december_topographic_position,
 ```
 
 ```{r}
-╔
+set.seed(123)
+may_survival_tree_data <- topography_gopher_may %>%
+  mutate(Plant = str_remove(Plant, " ")) %>% 
+  select(!plot_number & !date & !geometry) %>% 
+  mutate(Plant = as.factor(Plant))
+may_survival_tree <- partykit::ctree(alive ~., data = may_survival_tree_data)
+
+ggparty(may_survival_tree) +
+  geom_edge() +
+  geom_edge_label(id = -c(3,4), size = 3)+
+  geom_edge_label(size = 3, aes(label = paste(substr(breaks_label,start = 1, stop = 15))),
+                  id = c(3,4))+
+  geom_node_splitvar()+
+  geom_node_plot(gglist = list(geom_bar(aes(x=  "", fill = alive),
+                                        position = position_fill()),
+                               xlab("alive")))
 ```
 
+```{r}
+set.seed(123)
+july_survival_tree_data <- topography_gopher_july %>% 
+  select(!plot_number & !date & !geometry) %>% 
+  mutate(Plant = as.factor(Plant))
+july_survival_tree <- partykit::ctree(alive ~., data = july_survival_tree_data)
 
+ggparty(july_survival_tree) +
+  geom_edge() +
+  geom_edge_label(size = 2) +
+  geom_node_splitvar()+
+  geom_node_plot(gglist = list(geom_bar(aes(x=  "", fill = alive),
+                                        position = position_fill()),
+                               xlab("alive")))
+```
+```{r}
+set.seed(123)
+november_survival_tree_data <- topography_gopher_november %>% 
+  select(!plot_number & !date & !geometry) %>% 
+  mutate(Plant = as.factor(Plant))
+november_survival_tree <- partykit::ctree(alive ~., data = november_survival_tree_data)
+
+ggparty(november_survival_tree) +
+  geom_edge() +
+  geom_edge_label(size = 3, aes(label = paste(substr(breaks_label,start = 1, stop = 15))),
+                  id = c(1:5))+
+  geom_node_splitvar()+
+  geom_node_plot(gglist = list(geom_bar(aes(x=  "", fill = alive),
+                                        position = position_fill()),
+                               xlab("alive")))
+```
+
+```{r}
+set.seed(123)
+december_survival_tree_data <- topography_gopher_2021 %>% 
+  select(!plot_number & !date & !geometry) %>% 
+  mutate(Plant = as.factor(Plant))
+december_survival_tree <- partykit::ctree(alive ~., data = december_survival_tree_data)
+
+ggparty(december_survival_tree) +
+  geom_edge() +
+  geom_edge_label(size = 2)+
+  geom_node_splitvar()+
+  geom_node_plot(gglist = list(geom_bar(aes(x=  "", fill = alive),
+                                        position = position_fill()),
+                               xlab("alive")))
+```
 
 
