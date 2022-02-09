@@ -13,6 +13,7 @@ library(sf)
 library(raster)
 library(tidyverse)
 library(stats)
+library(jtools)
 ```
 
 ```{r}
@@ -255,9 +256,7 @@ ggplot(growth, aes(date, mean_stem)) +
 ```
 
 ## Looking at survival without gopher kill 
-  - unituitally labelled gopher
-  -add an anotation 
-  
+  - unintuitably labelled gopher
 
 ```{r}
 
@@ -493,24 +492,61 @@ ggplot(survival_total, aes(date, alive)) +
   theme_classic()
 ```
 
+
+
+## Reading in gps points and topgraphy data
+
+
 ```{r}
 plots <- st_read(here("data", "plot_gps_points.shp")) %>% 
   rename("plot_number" = "plt_nmb")
 elevation <- raster(here("data", "elevation.tif"))
 aspect <- raster(here("data", "aspect.tif"))
+aspect <- cos((aspect * pi/180) - (225 * pi/180))
 slope <- raster(here("data", "slope.tif"))
 solar_radiation <- brick(here("data", "sol_rad.tif"))
-plots_topography <- plots %>% 
-  mutate(elevation = extract(elevation, plots),
-         aspect = extract(aspect, plots),
-         slope = extract(slope, plots),
-         summer_solar_radiation = extract(solar_radiation[[3]], plots),
-         spring_solar_radiation = extract(solar_radiation[[2]], plots),
-         winter_solar_radiation = extract(solar_radiation[[1]], plots)) %>% 
-  drop_na()
+diurnal_heat <- raster(here("data", "diurnal_heat.tif"))
+heat_load <- raster(here("data", "heat_load_index.tif"))
+hierarchical_slope_position <- raster(here("data", "hierarchical_slope_position.tif"))
+integrated_moisture <- raster(here("data", "integrated_moisture_index.tif"))
+ruggedness_vector <- raster(here("data", "ruggedness_vector.tif"))
+sol_rad_aspect <- raster(here("data", "sol_rad_aspect.tif"))
+terrain_roughness <- raster(here("data", "terrain_roughness.tif"))
+terrain_ruggedness <- raster(here("data", "terrain_ruggedness.tif"))
+terrain_texture <- raster(here("data", "terrain_texture.tif"))
+topographic_position <- raster(here("data", "topographic_position.tif"))
+```
 
+
+## Extracting topographic data to plot points
+
+```{r}
+plots_topography <- plots %>% 
+  mutate(elevation = raster::extract(elevation, plots),
+         aspect = raster::extract(aspect, plots),
+         slope = raster::extract(slope, plots),
+         summer_solar_radiation = raster::extract(solar_radiation[[3]], plots),
+         spring_solar_radiation = raster::extract(solar_radiation[[2]], plots),
+         winter_solar_radiation = raster::extract(solar_radiation[[1]], plots),
+         diurnal_heat = raster::extract(diurnal_heat, plots),
+         heat_load = raster::extract(heat_load, plots),
+         hierarchical_slope_position = raster::extract(hierarchical_slope_position, plots), 
+         integrated_moisture = raster::extract(integrated_moisture, plots),
+         ruggedness_vector = raster::extract(ruggedness_vector, plots),
+         sol_rad_aspect = raster::extract(sol_rad_aspect, plots),
+         terrain_ruggedness = raster::extract(terrain_ruggedness, plots),
+         terrain_roughness = raster::extract(terrain_roughness, plots),
+         terrain_texture = raster::extract(terrain_texture, plots),
+         topographic_position = raster::extract(topographic_position, plots)) 
+```
+
+## Combining spatial/topography data with survival data
+
+
+```{r}
 planting_survival_gopher_topography <- right_join(planting_survival_gopher, plots_topography, by = "plot_number") %>% 
-  drop_na() %>% 
+  drop_na(Plant)
+planting_gopher_topography_summary <- planting_survival_gopher_topography %>% 
   group_by(Plant, date) %>% 
   summarise(elevation_mean = mean(elevation, na.rm =TRUE),
             aspect_mean = mean(aspect, na.rm = TRUE),
@@ -524,8 +560,10 @@ planting_survival_gopher_topography <- right_join(planting_survival_gopher, plot
             summer_solar_radiation_sd = sd(summer_solar_radiation, na.rm = TRUE),
             spring_solar_radiation_sd = sd(spring_solar_radiation, na.rm = TRUE),
             winter_solar_radiation_sd = sd(winter_solar_radiation, na.rm = TRUE))
+
 watering_survival_gopher_topography <- right_join(watering_survival_gopher, plots_topography, by = "plot_number") %>% 
-  drop_na() %>% 
+  drop_na(Plant) 
+watering_gopher_topography_summary <- watering_survival_gopher_topography %>% 
   group_by(Plant, date, alive) %>% 
   summarise(elevation_mean = mean(elevation, na.rm =TRUE),
             aspect_mean = mean(aspect, na.rm = TRUE),
@@ -541,7 +579,8 @@ watering_survival_gopher_topography <- right_join(watering_survival_gopher, plot
             winter_solar_radiation_sd = sd(winter_solar_radiation, na.rm = TRUE))
 
 measuring_survival_gopher_topography <- right_join(measuring_survival_gopher, plots_topography, by = "plot_number") %>% 
-  drop_na() %>% 
+  drop_na() 
+measuring_gopher_topography_summary <- measuring_survival_gopher_topography %>% 
   group_by(Plant, date, alive) %>% 
   summarise(elevation_mean = mean(elevation, na.rm =TRUE),
             aspect_mean = mean(aspect, na.rm = TRUE),
@@ -557,7 +596,8 @@ measuring_survival_gopher_topography <- right_join(measuring_survival_gopher, pl
             winter_solar_radiation_sd = sd(winter_solar_radiation, na.rm = TRUE))
 
 measuring_survival_gopher_2_topography <- right_join(measuring_survival_gopher_2, plots_topography, by = "plot_number") %>% 
-  drop_na() %>% 
+  drop_na()
+measuring_gopher_topography_summary_2 <- measuring_survival_gopher_2_topography %>% 
   group_by(Plant, date, alive) %>% 
   summarise(elevation_mean = mean(elevation, na.rm =TRUE),
             aspect_mean = mean(aspect, na.rm = TRUE),
@@ -573,7 +613,8 @@ measuring_survival_gopher_2_topography <- right_join(measuring_survival_gopher_2
             winter_solar_radiation_sd = sd(winter_solar_radiation, na.rm = TRUE))
 
 measuring_survival_gopher_3_topography <- right_join(measuring_survival_gopher_3, plots_topography, by = "plot_number") %>% 
-  drop_na() %>% 
+  drop_na()
+measuring_gopher_topography_summary_3 <- measuring_survival_gopher_3_topography %>% 
   group_by(Plant, date, alive) %>% 
   summarise(elevation_mean = mean(elevation, na.rm =TRUE),
             aspect_mean = mean(aspect, na.rm = TRUE),
@@ -597,39 +638,194 @@ topography_gopher_survival <- rbind(planting_survival_gopher_topography,
          alive = as.factor(alive)) %>% 
   filter(Plant != "No Plant")
   
-ggplot(topography_gopher_survival, aes (x = date, y = elevation_mean, col = alive)) +
-  geom_point()+
-  facet_wrap(~Plant) +
-  theme_classic()
+topography_gopher_may <- topography_gopher_survival %>% 
+  filter(date == "2020-05-01")
 
-ggplot(topography_gopher_survival, aes (x = date, y = aspect_mean, col = alive)) +
-  geom_point()+
-  facet_wrap(~Plant) +
-  theme_classic()
-
-ggplot(topography_gopher_survival, aes (x = date, y = slope_mean, col = alive)) +
-  geom_point()+
-  facet_wrap(~Plant) +
-  theme_classic()
-
-ggplot(topography_gopher_survival, aes (x = date, y = summer_solar_radiation_mean, col = alive)) +
-  geom_point()+
-  facet_wrap(~Plant) +
-  theme_classic()
-
-ggplot(topography_gopher_survival, aes (x = date, y = spring_solar_radiation_mean, col = alive)) +
-  geom_point()+
-  facet_wrap(~Plant) +
-  theme_classic()
-
-ggplot(topography_gopher_survival, aes (x = date, y = winter_solar_radiation_mean, col = alive)) +
-  geom_point()+
-  facet_wrap(~Plant) +
-  theme_classic()
+topography_gopher_july <- topography_gopher_survival %>% 
+  filter(date == "2020-05-01"| date== "2020-07-01") %>% 
+  filter(date == "2020-07-01" | alive == 1)
+  filter(date == "2020-0701")
 ```
 
+## Binomial regression for may survival
 
+```{r}
+watering_binomial <- watering_survival_gopher_topography %>% 
+  dplyr::select(!plot_number & !date & !geometry)  
+  
+watering_elevation <- glm(family = "binomial", as.factor(alive)~elevation, data = watering_binomial)
+watering_aspect <- glm(family = "binomial", as.factor(alive)~aspect, data = watering_binomial)
+watering_slope <- glm(family = "binomial", as.factor(alive)~slope, data = watering_binomial)
+watering_summer_solar_radiation <- glm(family = "binomial", as.factor(alive)~summer_solar_radiation, data = watering_binomial)
+watering_spring_solar_radiation <- glm(family = "binomial", as.factor(alive)~spring_solar_radiation, data = watering_binomial)
+watering_winter_solar_radiation <- glm(family = "binomial", as.factor(alive)~winter_solar_radiation, data = watering_binomial)
+watering_diurnal_heat <- glm(family = "binomial", as.factor(alive)~diurnal_heat, data = watering_binomial)
+watering_heat_load <- glm(family = "binomial", as.factor(alive)~heat_load, data = watering_binomial)
+watering_hierarchical_slope_position <- glm(family = "binomial", as.factor(alive)~hierarchical_slope_position, data = watering_binomial)
+watering_integrated_moisture <- glm(family = "binomial", as.factor(alive)~integrated_moisture, data = watering_binomial)
+watering_ruggedness_vector <- glm(family = "binomial", as.factor(alive)~ruggedness_vector, data = watering_binomial)
+watering_sol_rad_aspect <- glm(family = "binomial", as.factor(alive)~sol_rad_aspect, data = watering_binomial)
+watering_terrain_ruggedness <- glm(family = "binomial", as.factor(alive)~terrain_ruggedness, data = watering_binomial)
+watering_terrain_roughness <- glm(family = "binomial", as.factor(alive)~terrain_roughness, data = watering_binomial)
+watering_terrain_texture <- glm(family = "binomial", as.factor(alive)~terrain_texture, data = watering_binomial)
+watering_topographic_position <- glm(family = "binomial", as.factor(alive)~topographic_position, data = watering_binomial)
 
+summary(watering_elevation)
+summary(watering_aspect)
+summary(watering_slope)
+summary(watering_summer_solar_radiation)
+summary(watering_spring_solar_radiation)
+summary(watering_winter_solar_radiation)
+summary(watering_diurnal_heat)
+summary(watering_heat_load)
+summary(watering_hierarchical_slope_position)
+summary(watering_integrated_moisture)
+summary(watering_ruggedness_vector)
+summary(watering_sol_rad_aspect)
+summary(watering_terrain_ruggedness)
+summary(watering_terrain_roughness)
+summary(watering_terrain_texture)
+summary(watering_topographic_position)
+
+effect_plot(watering_elevation, 
+            pred = elevation, 
+            interval = TRUE)
+effect_plot(watering_aspect, 
+            pred = aspect, 
+            interval = TRUE)
+effect_plot(watering_slope, 
+            pred = slope, 
+            interval = TRUE)
+effect_plot(watering_summer_solar_radiation, 
+            pred = summer_solar_radiation, 
+            interval = TRUE)
+effect_plot(watering_spring_solar_radiation, 
+            pred = spring_solar_radiation, 
+            interval = TRUE)
+effect_plot(watering_winter_solar_radiation, 
+            pred = winter_solar_radiation, 
+            interval = TRUE)
+effect_plot(watering_diurnal_heat, 
+            pred = diurnal_heat, 
+            interval = TRUE)
+effect_plot(watering_heat_load, 
+            pred = heat_load, 
+            interval = TRUE)
+effect_plot(watering_hierarchical_slope_position, 
+            pred = hierarchical_slope_position, 
+            interval = TRUE)
+effect_plot(watering_integrated_moisture, 
+            pred = integrated_moisture, 
+            interval = TRUE)
+effect_plot(watering_ruggedness_vector, 
+            pred = ruggedness_vector, 
+            interval = TRUE)
+effect_plot(watering_sol_rad_aspect, 
+            pred = sol_rad_aspect, 
+            interval = TRUE)
+effect_plot(watering_terrain_ruggedness, 
+            pred = terrain_ruggedness, 
+            interval = TRUE)
+effect_plot(watering_terrain_roughness, 
+            pred = terrain_roughness, 
+            interval = TRUE)
+effect_plot(watering_terrain_texture, 
+            pred = terrain_texture, 
+            interval = TRUE)
+effect_plot(watering_topographic_position, 
+            pred = topographic_position, 
+            interval = TRUE)
+```
+
+## Binomial regression for July survival
+
+```{r}
+july_binomial <- measuring_survival_gopher_topography %>% 
+  dplyr::select(!plot_number & !date & !geometry)  
+  
+july_elevation <- glm(family = "binomial", as.factor(alive)~elevation, data = july_binomial)
+july_aspect <- glm(family = "binomial", as.factor(alive)~aspect, data = july_binomial)
+july_slope <- glm(family = "binomial", as.factor(alive)~slope, data = july_binomial)
+july_summer_solar_radiation <- glm(family = "binomial", as.factor(alive)~summer_solar_radiation, data = july_binomial)
+july_spring_solar_radiation <- glm(family = "binomial", as.factor(alive)~spring_solar_radiation, data = july_binomial)
+july_winter_solar_radiation <- glm(family = "binomial", as.factor(alive)~winter_solar_radiation, data = july_binomial)
+july_diurnal_heat <- glm(family = "binomial", as.factor(alive)~diurnal_heat, data = july_binomial)
+july_heat_load <- glm(family = "binomial", as.factor(alive)~heat_load, data = july_binomial)
+july_hierarchical_slope_position <- glm(family = "binomial", as.factor(alive)~hierarchical_slope_position, data = july_binomial)
+july_integrated_moisture <- glm(family = "binomial", as.factor(alive)~integrated_moisture, data = july_binomial)
+july_ruggedness_vector <- glm(family = "binomial", as.factor(alive)~ruggedness_vector, data = july_binomial)
+july_sol_rad_aspect <- glm(family = "binomial", as.factor(alive)~sol_rad_aspect, data = july_binomial)
+july_terrain_ruggedness <- glm(family = "binomial", as.factor(alive)~terrain_ruggedness, data = july_binomial)
+july_terrain_roughness <- glm(family = "binomial", as.factor(alive)~terrain_roughness, data = july_binomial)
+july_terrain_texture <- glm(family = "binomial", as.factor(alive)~terrain_texture, data = july_binomial)
+july_topographic_position <- glm(family = "binomial", as.factor(alive)~topographic_position, data = july_binomial)
+
+summary(july_elevation)
+summary(july_aspect)
+summary(july_slope)
+summary(july_summer_solar_radiation)
+summary(july_spring_solar_radiation)
+summary(july_winter_solar_radiation)
+summary(july_diurnal_heat)
+summary(july_heat_load)
+summary(july_hierarchical_slope_position)
+summary(july_integrated_moisture)
+summary(july_ruggedness_vector)
+summary(july_sol_rad_aspect)
+summary(july_terrain_ruggedness)
+summary(july_terrain_roughness)
+summary(july_terrain_texture)
+summary(july_topographic_position)
+
+effect_plot(july_elevation, 
+            pred = elevation, 
+            interval = TRUE)
+effect_plot(july_aspect, 
+            pred = aspect, 
+            interval = TRUE)
+effect_plot(july_slope, 
+            pred = slope, 
+            interval = TRUE)
+effect_plot(july_summer_solar_radiation, 
+            pred = summer_solar_radiation, 
+            interval = TRUE)
+effect_plot(july_spring_solar_radiation, 
+            pred = spring_solar_radiation, 
+            interval = TRUE)
+effect_plot(july_winter_solar_radiation, 
+            pred = winter_solar_radiation, 
+            interval = TRUE)
+effect_plot(july_diurnal_heat, 
+            pred = diurnal_heat, 
+            interval = TRUE)
+effect_plot(july_heat_load, 
+            pred = heat_load, 
+            interval = TRUE)
+effect_plot(july_hierarchical_slope_position, 
+            pred = hierarchical_slope_position, 
+            interval = TRUE)
+effect_plot(july_integrated_moisture, 
+            pred = integrated_moisture, 
+            interval = TRUE)
+effect_plot(july_ruggedness_vector, 
+            pred = ruggedness_vector, 
+            interval = TRUE)
+effect_plot(july_sol_rad_aspect, 
+            pred = sol_rad_aspect, 
+            interval = TRUE)
+effect_plot(july_terrain_ruggedness, 
+            pred = terrain_ruggedness, 
+            interval = TRUE)
+effect_plot(july_terrain_roughness, 
+            pred = terrain_roughness, 
+            interval = TRUE)
+effect_plot(july_terrain_texture, 
+            pred = terrain_texture, 
+            interval = TRUE)
+effect_plot(july_topographic_position, 
+            pred = topographic_position, 
+            interval = TRUE)
+```
 
 
 
