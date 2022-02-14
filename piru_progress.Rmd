@@ -105,7 +105,8 @@ measuring_survival <- measuring %>%
 
 measuring_survival_2 <- measuring_2 %>% 
   mutate(Plant = str_replace(Plant, " ", ""),
-         alive = case_when(Height > 0 ~ 1),
+         alive = case_when(Height > 0 ~ 1,
+                           TRUE ~ 0),
          date = my(1120)) %>% 
   filter(Plant != "") %>% 
   dplyr::select(plot_number,Plant, alive, date)
@@ -542,6 +543,22 @@ plots_topography <- plots %>%
          terrain_texture = raster::extract(terrain_texture, plots),
          topographic_position = raster::extract(topographic_position, plots)) 
 ```
+
+## Making shapefiles of survival data for mapping
+
+```{r}
+planting_survival_spatial <- right_join(planting_survival, plots_topography, by = "plot_number") %>% 
+  drop_na(Plant)
+may_survival_spatial <- right_join(watering_survival, plots_topography, by = "plot_number") %>% 
+  drop_na(Plant)
+july_survival_spatial <- right_join(measuring_survival, plots_topography, by = "plot_number") %>% 
+  drop_na(Plant)
+november_survival_spatial <- right_join(measuring_survival_2, plots_topography, by = "plot_number") %>% 
+  drop_na(Plant)
+december_survival_spatial <- right_join(measuring_survival_3, plots_topography, by = "plot_number") %>% 
+  drop_na(Plant)
+```
+
 
 ## Combining spatial/topography data with survival data
 
