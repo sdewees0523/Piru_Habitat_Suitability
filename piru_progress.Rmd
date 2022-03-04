@@ -31,6 +31,7 @@ measuring_2 <- read.csv(here("data", "measuring_2.csv"))%>%
 measuring_3 <- read.csv(here("data", "measuring_3.csv"))%>% 
   rename("plot_number" = "ID")
 
+# Table of only plants alive by March 2020
 planting_survival <- planting %>% 
   dplyr::select(plot_number, Plant, Height, Date.Planted) %>% 
   mutate(Plant = str_replace_all(string = Plant, pattern = "(White + Pink)", replacement = "")) %>% 
@@ -53,6 +54,7 @@ planting_survival <- planting %>%
          alive = 1) %>% 
   dplyr::select(plot_number,Plant, alive, date)
 
+# Table of plant survival as of May 2020
 watering_survival <- watering %>% 
   mutate(Plant = case_when(Plant == "ENCA (Pink)" ~ "ENCA",
                            Plant == "CEOL (Orange)" ~ "CEOL",
@@ -83,6 +85,7 @@ watering_survival <- watering %>%
          date = my(0520)) %>% 
   dplyr::select(plot_number,Plant, alive, date)
 
+# Table of plant survival as of July 2020
 measuring_survival <- measuring %>% 
   mutate(Plant = case_when(Plant == "ENCA (Pink)" ~ "ENCA",
                            Plant == "CEOL (Orange)" ~ "CEOL",
@@ -103,6 +106,7 @@ measuring_survival <- measuring %>%
   filter(Plant != "No Plant") %>% 
   dplyr::select(plot_number,Plant, alive, date)
 
+# Table of plant survival as of November 2020
 measuring_survival_2 <- measuring_2 %>% 
   mutate(Plant = str_replace(Plant, " ", ""),
          alive = case_when(Height > 0 ~ 1,
@@ -111,12 +115,14 @@ measuring_survival_2 <- measuring_2 %>%
   filter(Plant != "") %>% 
   dplyr::select(plot_number,Plant, alive, date)
 
+# Table of plant survival as of December 2021
 measuring_survival_3 <- measuring_3 %>% 
   mutate(alive = case_when(Height > 0 ~ 1),
         date = my(1221)) %>% 
   filter(Plant != "") %>% 
   dplyr::select(plot_number,Plant, alive, date)
 
+# Table of percent each species alive at all dates
 survival <- rbind(planting_survival,watering_survival,measuring_survival, measuring_survival_2, measuring_survival_3) %>% 
   group_by(Plant, date) %>% 
   summarise(alive = sum(alive, na.rm = TRUE)) %>% 
@@ -141,6 +147,7 @@ survival <- rbind(planting_survival,watering_survival,measuring_survival, measur
                                    Plant == "SAME" ~ "Salvia mellifera", 
                                    Plant == "SANI" ~ "Sambucus nigra"))
 
+# Table of percent alive for all species combined
 survival_total <- survival %>% 
   group_by(date) %>% 
   summarise(alive = sum(alive))
@@ -169,6 +176,7 @@ ggplot(survival_total, aes(date, alive)) +
 ## Cleaning and initial visualization of growth data
 
 ```{r}
+# Growth data as of March 2020
 planting_growth <- planting %>% 
   mutate(Plant = str_replace_all(string = Plant, pattern = "(White + Pink)", replacement = "")) %>% 
   mutate(Plant = case_when(Plant == "ENCA (Pink)" ~ "ENCA",
@@ -189,6 +197,7 @@ planting_growth <- planting %>%
   mutate(date = my(0320)) %>% 
   dplyr::select(plot_number,Plant, Height, Width.1, Width.2, Stem.Diameter, date)
 
+# Growth data as of July 2020
 measuring_growth <- measuring %>% 
   mutate(Plant = case_when(Plant == "ENCA (Pink)" ~ "ENCA",
                            Plant == "CEOL (Orange)" ~ "CEOL",
@@ -208,17 +217,20 @@ measuring_growth <- measuring %>%
   filter(Plant != "No Plant") %>% 
   dplyr::select(plot_number,Plant, Height, Width.1, Width.2, Stem.Diameter, date)
 
+# Growth data as of November 2020
 measuring_growth_2 <- measuring_2 %>% 
   mutate(Plant = str_replace(Plant, " ", ""),
          date = my(1120)) %>% 
   filter(Plant != "") %>% 
   dplyr::select(plot_number,Plant, Height, Width.1, Width.2, Stem.Diameter, date)
 
+# Growth data as of December 2021
 measuring_growth_3 <- measuring_3 %>% 
   mutate(date = my(1221)) %>% 
   filter(Plant != "") %>% 
   dplyr::select(plot_number,Plant, Height, Width.1, Width.2, Stem.Diameter, date)
 
+# Growth data grouped by species for all dates
 growth <- rbind(planting_growth, measuring_growth, measuring_growth_2, measuring_growth_3) %>% 
   mutate(Height = as.numeric(Height),
          Width.1 = as.numeric(Width.1),
@@ -263,12 +275,14 @@ ggplot(growth, aes(date, mean_stem)) +
   - unintuitably labelled gopher
 
 ```{r}
-
+# Survival in May 2020
 watering_gopher <- watering %>% 
   dplyr::select(plot_number, Watering.2.Date, Alive.1, Notes.1) %>% 
   rename("watering_date" = "Watering.2.Date",
          "watering_alive" = "Alive.1", 
          "watering_notes" = "Notes.1") 
+
+# Growth & survival by July 2020 (gophers incl.)
 measuring_gopher <- measuring %>% 
   dplyr::select(!Plant) %>% 
   rename("measuring_height" = "Height",
@@ -277,6 +291,8 @@ measuring_gopher <- measuring %>%
          "measuring_stem_diameter" = "Stem.Diameter",
          "measuring_date" = "Date.Measured",
          "measuring_notes" = "Notes")
+
+# Growth & survival by November 2020 (gophers incl.)
 measuring_gopher_2 <- measuring_2 %>% 
   dplyr::select(!Plant) %>%
   rename("measuring_2_height" = "Height",
@@ -285,6 +301,8 @@ measuring_gopher_2 <- measuring_2 %>%
          "measuring_2_stem_diameter" = "Stem.Diameter",
          "measuring_2_date" = "Date.Measured",
          "measuring_2_notes" = "Notes")
+
+# Growth & survival by December 2021 (gophers incl.)
 measuring_gopher_3 <- measuring_3 %>% 
   dplyr::select(!Plant) %>%
   rename("measuring_3_height" = "Height",
@@ -294,6 +312,7 @@ measuring_gopher_3 <- measuring_3 %>%
          "measuring_3_date" = "Date.Measured",
          "measuring_3_notes" = "Notes")
 
+# Joined table of growth/survival with all dates, gophers excluded
 survival_gopher <- right_join(planting, watering_gopher, by = "plot_number") %>% 
   right_join(measuring_gopher, by = "plot_number") %>% 
   right_join(measuring_gopher_2, by = "plot_number") %>% 
