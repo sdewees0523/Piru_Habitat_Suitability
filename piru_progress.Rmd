@@ -340,6 +340,7 @@ survival_gopher <- right_join(planting, watering_gopher, by = "plot_number") %>%
          measuring_2_notes != "MISSNG") %>%
   filter(measuring_3_notes != "NP")
 
+# Survival data as of March 2020, excl. gopher
 planting_survival_gopher <- survival_gopher %>% 
   dplyr::select(plot_number,Plant, Height, Date.Planted) %>% 
   mutate(Plant = str_replace_all(string = Plant, pattern = "(White + Pink)", replacement = "")) %>% 
@@ -362,6 +363,7 @@ planting_survival_gopher <- survival_gopher %>%
          alive = 1) %>% 
   dplyr::select(plot_number,Plant, alive, date)
 
+# Surival as of May 2020, excl. gopher
 watering_survival_gopher <- survival_gopher %>%
   dplyr::select(plot_number,Plant, watering_alive, watering_date) %>% 
   mutate(Plant = case_when(Plant == "ENCA (Pink)" ~ "ENCA",
@@ -393,6 +395,7 @@ watering_survival_gopher <- survival_gopher %>%
          date = my(0520)) %>% 
   dplyr::select(plot_number,Plant, alive, date)
 
+# Survival as of July 2020, excl. gopher
 measuring_survival_gopher <- survival_gopher %>% 
   dplyr::select(plot_number,Plant, measuring_height, measuring_date) %>% 
   mutate(Plant = case_when(Plant == "ENCA (Pink)" ~ "ENCA",
@@ -415,6 +418,7 @@ measuring_survival_gopher <- survival_gopher %>%
   filter(Plant != "No Plant") %>% 
   dplyr::select(plot_number,Plant, alive, date)
 
+# Survival as of November 2020
 measuring_survival_gopher_2 <- survival_gopher %>% 
   dplyr::select(plot_number,Plant, measuring_2_height, measuring_2_date) %>% 
   mutate(Plant = str_replace(Plant, " ", ""),
@@ -439,6 +443,7 @@ measuring_survival_gopher_2 <- survival_gopher %>%
   filter(Plant != "") %>% 
   dplyr::select(plot_number,Plant, alive, date)
 
+# Survival as of December 2021, excl. gopher
 measuring_survival_gopher_3 <- survival_gopher %>% 
   dplyr::select(plot_number,Plant, measuring_3_height, measuring_3_date) %>% 
   mutate(Plant = case_when(Plant == "ENCA (Pink)" ~ "ENCA",
@@ -461,6 +466,7 @@ measuring_survival_gopher_3 <- survival_gopher %>%
   filter(Plant != "") %>% 
   dplyr::select(plot_number,Plant, alive, date)
 
+# Survival grouped by species with all dates, excl. gopher, with pretty field names
 survival_gopher_clean <- rbind(planting_survival_gopher,
                   watering_survival_gopher,
                   measuring_survival_gopher, 
@@ -491,6 +497,7 @@ survival_gopher_clean <- rbind(planting_survival_gopher,
                                    Plant == "SAME" ~ "Salvia mellifera", 
                                    Plant == "SANI" ~ "Sambucus nigra"))
 
+# Survival of all species combined with all dates, excl. gopher, with pretty field names
 survival_gopher_total <- survival_gopher_clean %>% 
   group_by(date) %>% 
   summarise(alive = sum(alive))
@@ -521,6 +528,7 @@ ggplot(survival_total, aes(date, alive)) +
 
 
 ```{r}
+# Elevation, aspect, slope, etc raster creation
 plots <- st_read(here("data", "plot_gps_points.shp")) %>% 
   rename("plot_number" = "plt_nmb")
 elevation <- raster(here("data", "elevation.tif"))
@@ -668,6 +676,7 @@ measuring_gopher_topography_summary_3 <- measuring_survival_gopher_3_topography 
             spring_solar_radiation_sd = sd(spring_solar_radiation, na.rm = TRUE),
             winter_solar_radiation_sd = sd(winter_solar_radiation, na.rm = TRUE))
 
+# Survival data with topography data, all dates combined
 topography_gopher_survival <- rbind(planting_survival_gopher_topography, 
                                     watering_survival_gopher_topography) %>% 
   rbind(measuring_survival_gopher_topography) %>% 
