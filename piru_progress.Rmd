@@ -579,4 +579,11 @@ december_survival_spatial <- right_join(measuring_survival_3, plots_topography, 
   drop_na(Plant)
 ```
 
+## Make PCA for topographic data. 
+  - use plots_topography data frame
+  - there are a few nas you might have to drop first... 
+  
+```{r}
+
+```
 
