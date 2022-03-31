@@ -1,0 +1,44 @@
+---
+title: "environmental data"
+author: "Shane Dewees"
+date: "2/14/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(here)
+library(tidyverse)
+library(lubridate)
+```
+
+## Soil Moisture
+
+```{r}
+soil_moisture_1 <- read.csv(here("data", "Soil Moisture Data", "piru landscape TDR data - 1_7.csv")) %>% 
+  mutate(date = mdy(01172020)) %>% 
+  drop_na(m1) %>% 
+  rename("soil_moisture" = "average") %>% 
+  select(plot, soil_moisture, date)
+soil_moisture_2 <- read.csv(here("data", "Soil Moisture Data", "TDR_Data.csv")) %>% 
+  filter(Date == "4/10/2020") %>% 
+  rename("plot" = "Plot_Number",
+         "date" = "Date", 
+         "soil_moisture" = "Moisture..") %>% 
+  group_by(plot) %>% 
+  summarize(soil_moisture = mean(soil_moisture, na.rm = TRUE)) %>% 
+  mutate(date = mdy(04102020))
+soil_moisture_3 <- read.csv(here("data", "Soil Moisture Data", "piru landscape TDR data - 4_23.csv")) %>% 
+  mutate(date = mdy(04232020)) %>% 
+  rename("soil_moisture" = "average") %>% 
+  select(plot, soil_moisture, date)
+soil_moisture_4 <- read.csv(here("data", "Soil Moisture Data", "piru landscape TDR data - 5_21.csv")) %>% 
+  mutate(date = mdy(05212020)) %>% 
+  rename("soil_moisture" = "average") %>% 
+  select(plot, soil_moisture, date)
+soil_moisture <- rbind(soil_moisture_1, soil_moisture_2) %>% 
+  rbind(soil_moisture_3) %>% 
+  rbind(soil_moisture_4)
+write.csv(soil_moisture, here("data", "tdr_soil_moisture.csv"))
+```
+
