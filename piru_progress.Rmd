@@ -612,5 +612,21 @@ soil_moisture_3 <- read.csv(here("data", "soil_moisture_data", "piru landscape T
 
 soil_moisture <- rbind(soil_moisture_1, soil_moisture_2) %>% 
   rbind(soil_moisture_3)
+
+moisture_logger_1 <- read.csv(here("data", "soil_moisture_data", "Data_loggers", "EM12384 22Oct20-1548.csv")) %>% 
+  rename(date_time = Measurement.Time) %>% 
+  rename("1132" = X1132) %>% 
+  rename("1130" = X1130) %>% 
+  rename("1124" = X1124) %>% 
+  rename("1131" = X1131) %>% 
+  rename("1647" = X1647) %>% 
+  mutate(date_time = mdy_hm(date_time)) %>% 
+  separate(date_time, into = c("date", "time"), sep = " ") %>% 
+  pivot_longer(cols = c("1132", "1130", "1124", "1131", "1647"), names_to = "plot", values_to = "soil_moisture") %>% 
+  mutate(date = ymd(date), 
+         plot = as.numeric(plot), 
+         soil_moisture = as.numeric(soil_moisture)) %>% 
+  group_by(date, plot) %>% 
+  summarise(soil_moisutre = mean(soil_moisture))
 ```
 
