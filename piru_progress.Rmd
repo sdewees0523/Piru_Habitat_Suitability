@@ -16,7 +16,6 @@ library(stats)
 library(jtools)
 library(ggparty)
 library(partykit)
-library(randomForest)
 ```
 
 ```{r}
@@ -585,5 +584,33 @@ december_survival_spatial <- right_join(measuring_survival_3, plots_topography, 
   
 ```{r}
 
+```
+
+## Getting environmental data loaded in
+
+```{r}
+soil_moisture_1 <- read.csv(here("data", "soil_moisture_data", "piru landscape TDR data - 1_7.csv")) %>% select(plot, m1, m2, m3, m4, date) %>% 
+  group_by(plot) %>% 
+  mutate(date = mdy("01-07-2020"),
+         soil_moisture = mean(c(m1, m2, m3, m4), na.rm = TRUE)) %>% 
+  ungroup() %>% 
+  select(plot, soil_moisture, date)
+
+soil_moisture_2 <- read.csv(here("data", "soil_moisture_data", "piru landscape TDR data - 4_23.csv"))%>% select(plot, m1, m2, m3, m4, date) %>% 
+  group_by(plot) %>% 
+  mutate(date = mdy("04-23-2020"),
+         soil_moisture = mean(c(m1, m2, m3, m4), na.rm = TRUE)) %>% 
+  ungroup() %>% 
+  select(plot, soil_moisture, date)
+
+soil_moisture_3 <- read.csv(here("data", "soil_moisture_data", "piru landscape TDR data - 5_21.csv"))%>% select(plot, m1, m2, m3, m4, date) %>% 
+  group_by(plot) %>% 
+  mutate(date = mdy("05-21-2020"),
+         soil_moisture = mean(c(m1, m2, m3, m4), na.rm = TRUE)) %>% 
+  ungroup() %>% 
+  select(plot, soil_moisture, date)
+
+soil_moisture <- rbind(soil_moisture_1, soil_moisture_2) %>% 
+  rbind(soil_moisture_3)
 ```
 
