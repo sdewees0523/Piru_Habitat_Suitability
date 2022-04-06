@@ -627,6 +627,38 @@ moisture_logger_1 <- read.csv(here("data", "soil_moisture_data", "Data_loggers",
          plot = as.numeric(plot), 
          soil_moisture = as.numeric(soil_moisture)) %>% 
   group_by(date, plot) %>% 
-  summarise(soil_moisutre = mean(soil_moisture))
+  summarise(soil_moisture = mean(soil_moisture)) %>% 
+  na.omit()
+
+moisture_logger_2 <- read.csv(here("data", "soil_moisture_data", "Data_loggers", "Hobo_Station_1_(1,2,3,14,15).csv")) %>% 
+  rename("434" = "X434") %>% 
+  rename("1546" = "X1546") %>% 
+  rename("425" = "X425") %>% 
+  rename("417" = "X417") %>% 
+  rename("423" = "X423") %>% 
+  pivot_longer(cols = c("434", "1546", "425", "417", "423"), names_to = "plot", values_to = "soil_moisture") %>% 
+  mutate(date_time = mdy_hm(Date.Time..GMT.07.00)) %>% 
+  separate(date_time, into = c("date", "time"), sep = " ") %>% 
+  mutate(date = ymd(date),
+         plot = as.numeric(plot)) %>% 
+  group_by(date, plot) %>% 
+  summarise(soil_moisture = mean(soil_moisture))
+
+moisture_logger_3 <- read.csv(here("data", "soil_moisture_data", "Data_loggers", "Hobo_Station_2_(12,13,4,5)_0.csv")) %>% 
+  rename("155" = "X155") %>% 
+  rename("166" = "X166") %>% 
+  rename("190" = "X190") %>% 
+  rename("92" = "X92") %>% 
+  rename("203" = "X203") %>% 
+  pivot_longer(cols = c("155", "166", "190", "92", "203"), names_to = "plot", values_to = "soil_moisture") %>% 
+  mutate(date_time = mdy_hm(Date.Time..GMT.07.00)) %>% 
+  separate(date_time, into = c("date", "time"), sep = " ") %>% 
+  mutate(date = ymd(date),
+         plot = as.numeric(plot)) %>% 
+  group_by(date, plot) %>% 
+  summarise(soil_moisture = mean(soil_moisture))
+
+moisture_loggers <- rbind(moisture_logger_1, moisture_logger_2) %>% 
+  rbind(moisture_logger_3)
 ```
 
