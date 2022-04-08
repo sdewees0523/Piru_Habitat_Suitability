@@ -16,6 +16,7 @@ library(stats)
 library(jtools)
 library(ggparty)
 library(partykit)
+library(ggfortify)
 ```
 
 ```{r}
@@ -580,9 +581,84 @@ december_survival_spatial <- right_join(measuring_survival_3, plots_topography, 
 
 ## Make PCA for topographic data. 
   - use plots_topography data frame
-  - there are a few nas you might have to drop first... 
   
 ```{r}
+plots_topo_1 <-na.omit(st_set_geometry(plots_topography[,2:13],NULL))
+plots_topo_2 <-plots_topo_1[,1:9]
+plots_topo_3 <-plots_topo_1[,1:6]
+plots_topo_4 <-plots_topo_1[,1:3]
+plots_topo_5 <-plots_topo_1[,c(2,4:6)]
+
+# PCA for all continuous variables
+topo_pca_1 <-prcomp(plots_topo_1, scale=TRUE)
+summary(topo_pca_1) # explains 67% variance in PC1+2
+
+# except terrain ruggedness/texture 
+topo_pca_2 <-prcomp(plots_topo_2, scale=TRUE)
+summary(topo_pca_2) # explains 73% variance in PC1+2
+
+# elev, aspect, slope, 3 seasons radiation 
+topo_pca_3 <-prcomp(plots_topo_3, scale=TRUE)
+summary(topo_pca_3) # 82%
+
+# elev, aspect, slope
+topo_pca_4 <-prcomp(plots_topo_4, scale=TRUE)
+summary(topo_pca_4) # 86%
+
+# aspect, 3 seasons solar radiation
+topo_pca_5 <-prcomp(plots_topo_5, scale=TRUE)
+summary(topo_pca_5) # 96%
+
+# bar chart of variance explained by each PC in PCR5
+topo_pca5_var <- topo_pca_5$sdev^2/sum(topo_pca_5$sdev^2)
+barplot(topo_pca_var, main="Variance Explained", names.arg=c("PC1","PC2","PC3","PC4"))
+
+# adding species to PCA
+plot_species_num <- na.omit(planting[,1:2]) %>% mutate(Plant = case_when(Plant == "ENCA (Pink)" ~ "ENCA",
+                           Plant == "CEOL (Orange)" ~ "CEOL",
+                           Plant == "HEWH (White)" ~ "HEWH",
+                           Plant == "SAME (Orange + Pink)" ~ "SAME",
+                           Plant == "SANI (Orange + Yellow)" ~ "SANI",
+                           Plant == "RHOV (White + Pink)" ~ "RHOV",
+                           Plant == "SAAP (White + Green)" ~ "SAAP",
+                           Plant == "MALA (White + Yellow)" ~ "MALA",
+                           Plant == "HEAR" ~ "HEAR",
+                           Plant == "ADFA (Orange + Green)" ~ "ADFA",
+                           Plant == "RHOV SAAP (White + Pink)" ~ "SAAP",
+                           Plant == "ENCA CEOL (Pink)" ~ "CEOL", 
+                           Plant == "HEWH (White) RHOV" ~ "RHOV",
+                           Plant == "NO PLANT" ~ "No Plant"))
+
+plot_species_name <- plot_species_num %>% mutate(Plant = case_when(Plant == "ADFA" ~ "Adenostoma fasciculatum",
+                                   Plant == "CEOL" ~ "Ceanothus oliganthus",
+                                   Plant == "ENCA" ~ "Encelia californica",
+                                   Plant == "HEAR" ~ "Heteromeles arbutifolia",
+                                   Plant == "HEWH" ~ "Hesperoyucca whipplei",
+                                   Plant == "MALA" ~ "Malosma laurina",
+                                   Plant == "RHOV" ~ "Rhus ovata",
+                                   Plant == "SAAP" ~ "Salvia apiana",
+                                   Plant == "SAME" ~ "Salvia mellifera", 
+                                   Plant == "SANI" ~ "Sambucus nigra"))
+
+# matching the number of rows to pass species data
+plots_topography_noNA <- na.omit(plots_topography[,1:13])
+plots_topography_named <- merge(x=plots_topography_noNA, y=plot_species_name, by="plot_number")
+
+# plot of pca 3colored by species
+autoplot(topo_pca_3, data = plots_topography_named, colour = 'Plant',
+         loadings = TRUE, loadings.colour = 'grey',
+         loadings.label = FALSE, loadings.label.size = 3)
+
+#plot of pca 4 colored by species
+autoplot(topo_pca_4, data = plots_topography_named, colour = 'Plant',
+         loadings = TRUE, loadings.colour = 'grey',
+         loadings.label = TRUE, loadings.label.size = 3)
+
+# pca 5 colored by species. similar to pca 3
+autoplot(topo_pca_5, data = plots_topography_named, colour = 'Plant',
+         loadings = TRUE, loadings.colour = 'grey',
+         loadings.label = FALSE, loadings.label.size = 3)
+
 
 ```
 
