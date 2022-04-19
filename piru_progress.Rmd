@@ -522,6 +522,43 @@ ggplot(survival_total, aes(date, alive)) +
   theme_classic()
 ```
 
+```{r}
+ceanothus <- survival %>% 
+  filter(Plant == "Ceanothus oliganthus")
+
+rhus <- survival %>% 
+  filter(Plant == "Rhus ovata")
+
+toyon <- survival %>% 
+  filter(Plant == "Heteromeles arbutifolia")
+
+ggplot(ceanothus, aes(date, alive_percent, label = date)) +
+  geom_point()+
+  geom_line() + 
+  geom_label(nudge_x = 8, size = 4)+
+  labs(x = "date",
+       y = "alive percent (%)",
+       title = "Ceanothus oliganthus survival") +
+  theme_classic()
+
+ggplot(rhus, aes(date, alive_percent, label = date)) +
+  geom_point()+
+  geom_line() + 
+  geom_label(nudge_x = 8, size = 4)+
+  labs(x = "date",
+       y = "alive percent (%)",
+       title = "Rhus ovata survival") +
+  theme_classic()
+
+ggplot(toyon, aes(date, alive_percent, label = date)) +
+  geom_point()+
+  geom_line() + 
+  geom_label(nudge_x = 8, size = 4)+
+  labs(x = "date",
+       y = "alive percent (%)",
+       title = "Heteromeles arbutifolia survival") +
+  theme_classic()
+```
 
 
 ## Reading in gps points and topgraphy data
@@ -592,11 +629,14 @@ plots_topo_5 <-plots_topo_1[,c(2,4:6)]
 # PCA for all continuous variables
 topo_pca_1 <-prcomp(plots_topo_1, scale=TRUE)
 summary(topo_pca_1) # explains 67% variance in PC1+2
+topo_pca1_var <- topo_pca_1$sdev^2/sum(topo_pca_1$sdev^2)
+barplot(topo_pca1_var, main="Variance Explained", names.arg=c("PC1","PC2","PC3","PC4", "PC5", "PC6", "PC7", "PC8", "PC9", "PC10", "PC11"))
 
 # except terrain ruggedness/texture 
 topo_pca_2 <-prcomp(plots_topo_2, scale=TRUE)
 summary(topo_pca_2) # explains 73% variance in PC1+2
-
+topo_pca2_var <- topo_pca_2$sdev^2/sum(topo_pca_2$sdev^2)
+barplot(topo_pca2_var, main="Variance Explained", names.arg=c("PC1","PC2","PC3","PC4", "PC5", "PC6", "PC7", "PC8", "PC9"))
 # elev, aspect, slope, 3 seasons radiation 
 topo_pca_3 <-prcomp(plots_topo_3, scale=TRUE)
 summary(topo_pca_3) # 82%
@@ -611,7 +651,21 @@ summary(topo_pca_5) # 96%
 
 # bar chart of variance explained by each PC in PCR5
 topo_pca5_var <- topo_pca_5$sdev^2/sum(topo_pca_5$sdev^2)
-barplot(topo_pca_var, main="Variance Explained", names.arg=c("PC1","PC2","PC3","PC4"))
+barplot(topo_pca5_var, main="Variance Explained", names.arg=c("PC1","PC2","PC3","PC4"))
+
+#adding end survival to PCA
+july_alive <- measuring_survival %>% 
+  filter(alive == 1)
+november_alive <- measuring_survival_2 %>% 
+  filter(alive == 1)
+december_alive <- measuring_survival_3 %>% 
+  filter(alive == 1)
+plot_survival <- watering_survival %>% 
+  mutate(date_dead = case_when(alive == 0 ~ "may 2020",
+                               !plot_number %in% july_alive$plot_number ~ "july 2020",
+                               !plot_number %in% november_alive$plot_number ~ "november 2020",
+                               !plot_number %in% december_alive$plot_number ~ "december 2021",
+                               TRUE ~ "alive")) 
 
 # adding species to PCA
 plot_species_num <- na.omit(planting[,1:2]) %>% mutate(Plant = case_when(Plant == "ENCA (Pink)" ~ "ENCA",
@@ -642,25 +696,50 @@ plot_species_name <- plot_species_num %>% mutate(Plant = case_when(Plant == "ADF
 
 # matching the number of rows to pass species data
 plots_topography_noNA <- na.omit(plots_topography[,1:13])
-plots_topography_named <- merge(x=plots_topography_noNA, y=plot_species_name, by="plot_number")
+plots_topography_named <- merge(x=plots_topography_noNA, y=plot_species_name, by="plot_number") %>% 
+  merge(plot_survival, by = "plot_number")
+
+#plot of pca1 colored by survival
+may_dead <- plots_topography_named %>% 
+  filter(date_dead == "may 2020")
+autoplot(topo_pca_2, data = plots_topography_named, colour = "date_dead",
+         loadings = TRUE, loadings.colour = 'grey', 
+         loadings.label = FALSE, loadings.label.size = 3)
 
 # plot of pca 3colored by species
-autoplot(topo_pca_3, data = plots_topography_named, colour = 'Plant',
-         loadings = TRUE, loadings.colour = 'grey',
+autoplot(topo_pca_3, data = plots_topography_named, colour = "date_dead",
+         loadings = TRUE, loadings.colour = 'grey', 
          loadings.label = FALSE, loadings.label.size = 3)
 
 #plot of pca 4 colored by species
-autoplot(topo_pca_4, data = plots_topography_named, colour = 'Plant',
-         loadings = TRUE, loadings.colour = 'grey',
-         loadings.label = TRUE, loadings.label.size = 3)
+autoplot(topo_pca_4, data = plots_topography_named, colour = "date_dead",
+         loadings = TRUE, loadings.colour = 'grey', 
+         loadings.label = FALSE, loadings.label.size = 3)
 
 # pca 5 colored by species. similar to pca 3
-autoplot(topo_pca_5, data = plots_topography_named, colour = 'Plant',
-         loadings = TRUE, loadings.colour = 'grey',
+autoplot(topo_pca_5, data = plots_topography_named, colour = "date_dead",
+         loadings = TRUE, loadings.colour = 'grey', 
          loadings.label = FALSE, loadings.label.size = 3)
 
 
 ```
+
+```{r}
+pca_data <- as.data.frame(topo_pca_2[["x"]])
+
+pca_data_all <- plots_topography_named %>% 
+  mutate(pc1 = pca_data$PC1,
+         pc2 = pca_data$PC2)
+
+pca_data_no_gopher <- pca_data_all %>% 
+  filter(plot_number %in% survival_gopher$plot_number)
+
+ggplot(pca_data_no_gopher, aes(x = pc1, y = pc2, colour = Plant.x))+
+  geom_point()+
+  theme_classic() + 
+  facet_wrap(~date_dead)
+```
+
 
 ## Getting environmental data loaded in
 
@@ -687,7 +766,8 @@ soil_moisture_3 <- read.csv(here("data", "soil_moisture_data", "piru landscape T
   select(plot, soil_moisture, date)
 
 soil_moisture <- rbind(soil_moisture_1, soil_moisture_2) %>% 
-  rbind(soil_moisture_3)
+  rbind(soil_moisture_3) %>% 
+  rename(plot_number = plot)
 
 moisture_logger_1 <- read.csv(here("data", "soil_moisture_data", "Data_loggers", "EM12384 22Oct20-1548.csv")) %>% 
   rename(date_time = Measurement.Time) %>% 
@@ -735,6 +815,76 @@ moisture_logger_3 <- read.csv(here("data", "soil_moisture_data", "Data_loggers",
   summarise(soil_moisture = mean(soil_moisture))
 
 moisture_loggers <- rbind(moisture_logger_1, moisture_logger_2) %>% 
-  rbind(moisture_logger_3)
+  rbind(moisture_logger_3) %>% 
+  na.omit() %>% 
+  filter(soil_moisture >= 0) %>% 
+  mutate(soil_moisture = soil_moisture*100)
+
+ggplot(moisture_loggers, aes(x = date, y = soil_moisture, color = as.factor(plot)))+
+  geom_point()
+
+pca_soil_moisture <- pca_data_all %>% 
+  filter(plot_number %in% soil_moisture$plot_number) %>% 
+  right_join(soil_moisture, by = "plot_number")
+
+pca_soil_moisture_jan <- pca_soil_moisture %>% 
+  filter(date.y == "2020-01-07")
+  
+ggplot(pca_soil_moisture_jan, aes(x = pc1, y = soil_moisture)) +
+  geom_point()
+
+ggplot(pca_soil_moisture, aes(x = pc2, y = soil_moisture)) +
+  geom_point() +
+  facet_wrap(~date.y)
+
+summary(lm(soil_moisture~pc1, data = pca_soil_moisture_jan))
+
+pca_soil_moisture_april <- pca_soil_moisture %>% 
+  filter(date.y == "2020-04-23")
+  
+ggplot(pca_soil_moisture_april, aes(x = pc1, y = soil_moisture)) +
+  geom_point()
+
+ggplot(pca_soil_moisture, aes(x = pc2, y = soil_moisture)) +
+  geom_point() +
+  facet_wrap(~date.y)
+
+summary(lm(soil_moisture~pc1, data = pca_soil_moisture_april))
+
+pca_soil_moisture_may <- pca_soil_moisture %>% 
+  filter(date.y == "2020-05-21")
+  
+ggplot(pca_soil_moisture_may, aes(x = pc1, y = soil_moisture)) +
+  geom_point()
+
+ggplot(pca_soil_moisture, aes(x = pc2, y = soil_moisture)) +
+  geom_point() +
+  facet_wrap(~date.y)
+
+summary(lm(soil_moisture~pc1, data = pca_soil_moisture_may))
 ```
 
+```{r}
+library(MASS)
+pca_manova <- manova(cbind(pc1,pc2)~date_dead, data = pca_data_all)
+dep <- cbind(pca_data_all$pc1, pca_data_all$pc2)
+ind <- as.data.frame((pca_data_all$date_dead)) %>% 
+  mutate(date_dead = as.factor(pca_data_all$date_dead)) %>% 
+  dplyr::select(date_dead)
+pca_lda <- lda(date_dead~pc1+pc2, data = pca_data_all, CV = F)
+pca_lda
+
+lda_df <- data.frame(
+  date_dead = pca_data_all[,"date_dead"],
+  lda = predict(pca_lda)$x
+)
+lda_df
+
+ggplot(lda_df) +
+  geom_point(aes(x = lda.LD1, y = lda.LD2, color = date_dead.date_dead))
+```
+
+## Next steps: 
+ - See if PC1 and/or PC2 are correlated with soil moisture
+ - read in temperature and do the same ^
+ 
