@@ -17,6 +17,7 @@ library(jtools)
 library(ggparty)
 library(partykit)
 library(ggfortify)
+library(vroom)
 ```
 
 ```{r}
@@ -894,9 +895,7 @@ ggplot(lda_df) +
 ```
 
 ## Next steps: 
- # See if PC1 and/or PC2 are correlated with soil moisture
- # read in temperature and do the same ^
- # average by month
+ # read in new soil moisture data and re-run regressions. 
  
 ```{r}
 
@@ -937,19 +936,48 @@ pca_moistlog_all <-pca_data_all %>%
   left_join(moisture_loggers_October2020, by = c("plot_number"="plot"))
 
 ggplot(pca_moistlog_all, aes(x = pc1, y = avg_sm_May)) +
-  geom_point()
+  geom_point()+
+  geom_smooth(method = lm)
 
 ggplot(pca_moistlog_all, aes(x = pc2, y = avg_sm_May)) +
-  geom_point()
+  geom_point() + 
+  geom_smooth(method = lm)
 
 ggplot(pca_moistlog_all, aes(x = pc1, y = avg_sm_July)) +
-  geom_point()
+  geom_point() +
+  geom_smooth(method = lm)
 
 summary(lm(avg_sm_May~pc1+pc2, data = pca_moistlog_all)) #R2=0.55
 
 summary(lm(avg_sm_July~pc1, data = pca_moistlog_all)) #R2=0.38
 
+```
+
+## Make three lms per month (PC1, PC2, PC1 + PC2)
+## Use AIC to pick best model per month. 
+```{r}
+
+```
 
 
+## Get max daily temperature and then average monthly temperature
+## Analyse average monthly temperature similar to soil moisture
+
+```{r}
+my_files <- list.files(here("data", "Ibutton_Data", "test"), pattern = ".csv$", recursive = TRUE, full.names = TRUE)
+test <- read_csv(my_files, id = "plot") %>%  
+  mutate(plot = str_sub(plot, start = -8),
+         plot = str_remove(plot, ".csv"),
+         plot = str_remove(plot, "t"),
+         plot = str_remove(plot, "s"),
+         plot = str_remove(plot, "/"),
+         plot = as.numeric(plot),
+         date_time = mdy_hm(`Date/Time`),
+         temperature = as.numeric(Value)) %>% 
+  dplyr::select(plot, date_time, temperature)
+
+ggplot(test, aes(x = date_time, y = temperature, col = as.factor(plot))) +
+  geom_point()
+  
 ```
 
