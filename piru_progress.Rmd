@@ -617,7 +617,7 @@ december_survival_spatial <- right_join(measuring_survival_3, plots_topography, 
 ```
 
 ## Make PCA for topographic data. 
-  - use plots_topography data frame
+  # use plots_topography data frame
   
 ```{r}
 plots_topo_1 <-na.omit(st_set_geometry(plots_topography[,2:13],NULL))
@@ -725,6 +725,7 @@ autoplot(topo_pca_5, data = plots_topography_named, colour = "date_dead",
 ```
 
 ```{r}
+# Connecting PCA to plotted topo data, excl. gophers
 pca_data <- as.data.frame(topo_pca_2[["x"]])
 
 pca_data_all <- plots_topography_named %>% 
@@ -744,27 +745,29 @@ ggplot(pca_data_no_gopher, aes(x = pc1, y = pc2, colour = Plant.x))+
 ## Getting environmental data loaded in
 
 ```{r}
-soil_moisture_1 <- read.csv(here("data", "soil_moisture_data", "piru landscape TDR data - 1_7.csv")) %>% select(plot, m1, m2, m3, m4, date) %>% 
+soil_moisture_1 <- read.csv(here("data", "soil_moisture_data", "piru landscape TDR data - 1_7.csv")) %>% dplyr::select(plot, m1, m2, m3, m4, date) %>% 
   group_by(plot) %>% 
   mutate(date = mdy("01-07-2020"),
          soil_moisture = mean(c(m1, m2, m3, m4), na.rm = TRUE)) %>% 
   ungroup() %>% 
-  select(plot, soil_moisture, date)
+  dplyr::select(plot, soil_moisture, date)
 
-soil_moisture_2 <- read.csv(here("data", "soil_moisture_data", "piru landscape TDR data - 4_23.csv"))%>% select(plot, m1, m2, m3, m4, date) %>% 
+soil_moisture_2 <- read.csv(here("data", "soil_moisture_data", "piru landscape TDR data - 4_23.csv"))%>% dplyr::select(plot, m1, m2, m3, m4, date) %>% 
   group_by(plot) %>% 
   mutate(date = mdy("04-23-2020"),
-         soil_moisture = mean(c(m1, m2, m3, m4), na.rm = TRUE)) %>% 
+         soil_moisture = mean(c(m1, m2, m3, m4), na.rm = TRUE)) %>%
   ungroup() %>% 
-  select(plot, soil_moisture, date)
+  
+  dplyr::select(plot, soil_moisture, date)
 
-soil_moisture_3 <- read.csv(here("data", "soil_moisture_data", "piru landscape TDR data - 5_21.csv"))%>% select(plot, m1, m2, m3, m4, date) %>% 
+soil_moisture_3 <- read.csv(here("data", "soil_moisture_data", "piru landscape TDR data - 5_21.csv"))%>% dplyr::select(plot, m1, m2, m3, m4, date) %>% 
   group_by(plot) %>% 
   mutate(date = mdy("05-21-2020"),
          soil_moisture = mean(c(m1, m2, m3, m4), na.rm = TRUE)) %>% 
   ungroup() %>% 
-  select(plot, soil_moisture, date)
+  dplyr::select(plot, soil_moisture, date)
 
+# Moisture of 3 discreet timepoints
 soil_moisture <- rbind(soil_moisture_1, soil_moisture_2) %>% 
   rbind(soil_moisture_3) %>% 
   rename(plot_number = plot)
@@ -814,6 +817,7 @@ moisture_logger_3 <- read.csv(here("data", "soil_moisture_data", "Data_loggers",
   group_by(date, plot) %>% 
   summarise(soil_moisture = mean(soil_moisture))
 
+# Continuous moisture over time of 15 plots
 moisture_loggers <- rbind(moisture_logger_1, moisture_logger_2) %>% 
   rbind(moisture_logger_3) %>% 
   na.omit() %>% 
@@ -827,6 +831,7 @@ pca_soil_moisture <- pca_data_all %>%
   filter(plot_number %in% soil_moisture$plot_number) %>% 
   right_join(soil_moisture, by = "plot_number")
 
+# January soil moisture vs PC1 & PC2
 pca_soil_moisture_jan <- pca_soil_moisture %>% 
   filter(date.y == "2020-01-07")
   
@@ -839,6 +844,7 @@ ggplot(pca_soil_moisture, aes(x = pc2, y = soil_moisture)) +
 
 summary(lm(soil_moisture~pc1, data = pca_soil_moisture_jan))
 
+# April soil moisture vs PC1 & PC2
 pca_soil_moisture_april <- pca_soil_moisture %>% 
   filter(date.y == "2020-04-23")
   
@@ -849,8 +855,9 @@ ggplot(pca_soil_moisture, aes(x = pc2, y = soil_moisture)) +
   geom_point() +
   facet_wrap(~date.y)
 
-summary(lm(soil_moisture~pc1, data = pca_soil_moisture_april))
+summary(lm(soil_moisture~pc1, data = pca_soil_moisture_april)) # R2=0.27
 
+# May soil moisture vs PC1 & PC2
 pca_soil_moisture_may <- pca_soil_moisture %>% 
   filter(date.y == "2020-05-21")
   
@@ -861,7 +868,7 @@ ggplot(pca_soil_moisture, aes(x = pc2, y = soil_moisture)) +
   geom_point() +
   facet_wrap(~date.y)
 
-summary(lm(soil_moisture~pc1, data = pca_soil_moisture_may))
+summary(lm(soil_moisture~pc1, data = pca_soil_moisture_may)) # R2=0.24
 ```
 
 ```{r}
@@ -885,6 +892,62 @@ ggplot(lda_df) +
 ```
 
 ## Next steps: 
- - See if PC1 and/or PC2 are correlated with soil moisture
- - read in temperature and do the same ^
+ # See if PC1 and/or PC2 are correlated with soil moisture
+ # read in temperature and do the same ^
+ # average by month
  
+```{r}
+
+# Averages of soil moisture by month, grouped by plot no
+moisture_loggers_May2020  <- moisture_loggers %>%
+  filter(date>"2020/05/01", date<"2020/05/31") %>%
+  group_by(plot) %>%
+  summarise(avg_sm_May=mean(soil_moisture))
+moisture_loggers_June2020 <- moisture_loggers %>%
+  filter(date>"2020/06/01", date<"2020/06/30") %>%
+  group_by(plot) %>%
+  summarise(avg_sm_June=mean(soil_moisture))
+moisture_loggers_July2020 <- moisture_loggers %>%
+  filter(date>"2020/07/01", date<"2020/07/31") %>%
+  group_by(plot) %>%
+  summarise(avg_sm_July=mean(soil_moisture))
+moisture_loggers_August2020 <- moisture_loggers %>%
+  filter(date>"2020/08/01", date<"2020/08/31") %>%
+  group_by(plot) %>%
+  summarise(avg_sm_August=mean(soil_moisture))
+moisture_loggers_September2020 <- moisture_loggers %>%
+  filter(date>"2020/09/01", date<"2020/09/30") %>%
+  group_by(plot) %>%
+  summarise(avg_sm_September=mean(soil_moisture))
+moisture_loggers_October2020 <- moisture_loggers %>%
+  filter(date>"2020/10/01", date<"2020/10/31") %>%
+  group_by(plot) %>%
+  summarise(avg_sm_October=mean(soil_moisture))
+
+# Moisture averages for each month added as columns to pca data
+pca_moistlog_all <-pca_data_all %>% 
+  filter(plot_number %in% moisture_loggers$plot) %>% 
+  left_join(moisture_loggers_May2020, by = c("plot_number"="plot")) %>% 
+  left_join(moisture_loggers_June2020, by = c("plot_number"="plot")) %>% 
+  left_join(moisture_loggers_July2020, by = c("plot_number"="plot")) %>% 
+  left_join(moisture_loggers_August2020, by = c("plot_number"="plot"))%>% 
+  left_join(moisture_loggers_September2020, by = c("plot_number"="plot")) %>%
+  left_join(moisture_loggers_October2020, by = c("plot_number"="plot"))
+
+ggplot(pca_moistlog_all, aes(x = pc1, y = avg_sm_May)) +
+  geom_point()
+
+ggplot(pca_moistlog_all, aes(x = pc2, y = avg_sm_May)) +
+  geom_point()
+
+ggplot(pca_moistlog_all, aes(x = pc1, y = avg_sm_July)) +
+  geom_point()
+
+summary(lm(avg_sm_May~pc1+pc2, data = pca_moistlog_all)) #R2=0.55
+
+summary(lm(avg_sm_July~pc1, data = pca_moistlog_all)) #R2=0.38
+
+
+
+```
+
