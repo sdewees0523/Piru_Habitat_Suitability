@@ -530,7 +530,9 @@ rhus <- survival %>%
   filter(Plant == "Rhus ovata")
 
 toyon <- survival %>% 
-  filter(Plant == "Heteromeles arbutifolia")
+  ungroup() %>% 
+  filter(Plant == "Heteromeles arbutifolia") %>% 
+  add_row(Plant = "Heteromeles arbutifolia", date = ymd("2021-12-01"), alive = 0, alive_percent = 0)
 
 ggplot(ceanothus, aes(date, alive_percent, label = date)) +
   geom_point()+
