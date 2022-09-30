@@ -1,0 +1,560 @@
+---
+title: "Untitled"
+author: "Shane Dewees"
+date: "2022-09-28"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(here)
+library(sf)
+library(raster)
+library(broom)
+library(lubridate)
+library(rela)
+library(psych)
+library(ggfortify)
+library(DHARMa)
+```
+
+```{r}
+elevation <- raster(here("data", "elevation.tif"))
+aspect <- raster(here("data", "aspect.tif"))
+aspect <- cos((aspect * pi/180) - (225 * pi/180))
+slope <- raster(here("data", "slope.tif"))
+solar_radiation <- brick(here("data", "sol_rad.tif"))
+diurnal_heat <- raster(here("data", "diurnal_heat.tif"))
+heat_load <- raster(here("data", "heat_load_index.tif"))
+sol_rad_aspect <- raster(here("data", "sol_rad_aspect.tif"))
+terrain_ruggedness <- raster(here("data", "terrain_ruggedness.tif"))
+plots_topography <- st_read(here("data", "plot_gps_points.shp")) %>% 
+  rename("plot_number" = "plt_nmb")
+plots_topography <- plots_topography %>% 
+  mutate(slope = raster::extract(slope, plots_topography),
+         spring_solar_radiation = raster::extract(solar_radiation[[2]], plots_topography),
+         winter_solar_radiation = raster::extract(solar_radiation[[1]], plots_topography),
+         diurnal_heat = raster::extract(diurnal_heat, plots_topography),
+         heat_load = raster::extract(heat_load, plots_topography),
+         sol_rad_aspect = raster::extract(sol_rad_aspect, plots_topography),
+         terrain_ruggedness = raster::extract(terrain_ruggedness, plots_topography)) %>% 
+  drop_na()
+growth_topography_raw <- read.csv(here("data", 
+                                       "growth_topography_raw.csv")) %>% 
+  mutate(Plant = as.factor(Plant)) %>% 
+  filter(Plant != "No Plant")
+growth_topography_raw$date_dead <- factor(growth_topography_raw$date_dead, 
+                                          levels = c("alive", 
+                                                     "december2021", 
+                                                     "november2020", 
+                                                     "july2020", 
+                                                     "may2020"))
+growth_topography_species_november <- growth_topography_raw %>% 
+  filter(date == "2020-03-01") %>% 
+  dplyr::select(!date & !X & !alive & !stem & !growth) %>% 
+  distinct() %>% 
+  mutate(alive = case_when(date_dead %in% c("november2020", "july2020") ~ 0,
+                           date_dead %in% c("december2021", "alive") ~ 1)) %>%
+  dplyr::select(plot_number,
+                alive, 
+                Plant, 
+                slope, 
+                spring_solar_radiation, 
+                winter_solar_radiation,
+                height, 
+                diurnal_heat, 
+                heat_load, 
+                sol_rad_aspect, 
+                terrain_ruggedness, 
+                sol_rad_aspect) %>% 
+  drop_na() %>% 
+  column_to_rownames(var = "plot_number")
+```
+
+```{r}
+topography_pca_input <- plots_topography %>% 
+  st_drop_geometry() %>%
+  column_to_rownames(var = "plot_number")
+
+top_cor <- cor(topography_pca_input)
+top_cov <- cov(topography_pca_input)
+top_assumptions <- paf(as.matrix(topography_pca_input), eigcrit = 1, convcrit = .001)
+bartlett_top <- cortest.bartlett(top_cor, n = 14969)
+bartlett_top
+print(top_assumptions$KMO)
+det(top_cor)
+fa.parallel(topography_pca_input, n.obs = 1496, fm = "pa", fa = "pc")
+
+topography_pca <- topography_pca_input %>% 
+  prcomp(center = TRUE, scale. = TRUE)
+
+summary(topography_pca)
+
+pca <- as.data.frame(topography_pca[["x"]]) %>% 
+  rownames_to_column(var = "plot_number") %>% 
+  mutate(plot_number = as.numeric(plot_number))
+
+survival_topography_pca_data <- growth_topography_species_november %>%
+  rownames_to_column(var = "plot_number") %>% 
+  mutate(plot_number = as.numeric(plot_number)) %>% 
+  left_join(pca, by = "plot_number") %>% 
+  dplyr::select(alive, Plant, PC1, PC2, PC3, PC4, PC5, PC6)
+
+planting_topography_pca_data_all <- survival_topography_pca_data %>% 
+  group_by(Plant) %>% 
+  summarise(pc1_mean = mean(PC1, na.rm = TRUE),
+            pc2_mean = mean(PC2, na.rm = TRUE),
+            pc3_mean = mean(PC3, na.rm = TRUE),
+            pc4_mean = mean(PC4, na.rm = TRUE),
+            pc5_mean = mean(PC5, na.rm = TRUE),
+            pc6_mean = mean(PC6, na.rm = TRUE))
+
+planting_topography_pca_data <- survival_topography_pca_data %>% 
+  group_by(Plant, alive) %>% 
+  summarise(pc1_mean = mean(PC1, na.rm = TRUE),
+            pc2_mean = mean(PC2, na.rm = TRUE),
+            pc3_mean = mean(PC3, na.rm = TRUE),
+            pc4_mean = mean(PC4, na.rm = TRUE),
+            pc5_mean = mean(PC5, na.rm = TRUE),
+            pc6_mean = mean(PC6, na.rm = TRUE)) %>% 
+  rbind(planting_topography_pca_data_all) %>% 
+  mutate(alive = case_when(is.na(alive) == TRUE~ "planted",
+                           alive == 1 ~ "alive",
+                           alive == 0 ~ "dead"))
+
+survival_topography_pca <- survival_topography_pca_data %>% 
+  nest(data = c(alive, PC1, PC2, PC3, PC4, PC5, PC6)) %>% 
+  mutate(pc1_ttest = map(data, ~tidy(t.test(PC1~alive, .x))),
+         pc2_ttest = map(data, ~tidy(t.test(PC2~alive, .x))),
+         pc3_ttest = map(data, ~tidy(t.test(PC3~alive, .x))),
+         pc4_ttest = map(data, ~tidy(t.test(PC4~alive, .x))),
+         pc5_ttest = map(data, ~tidy(t.test(PC5~alive, .x))),
+         pc6_ttest = map(data, ~tidy(t.test(PC6~alive, .x)))) %>% 
+  unnest(pc1_ttest) %>% 
+  rename(pc1_difference = estimate) %>% 
+  unnest(pc2_ttest, names_repair = "unique") %>% 
+  rename(pc2_difference = estimate) %>% 
+  unnest(pc3_ttest, names_repair = "unique") %>% 
+  rename(pc3_difference = estimate) %>% 
+  unnest(pc4_ttest, names_repair = "unique") %>% 
+  rename(pc4_difference = estimate) %>% 
+  unnest(pc5_ttest, names_repair = "unique") %>% 
+  rename(pc5_difference = estimate) %>% 
+  unnest(pc6_ttest, names_repair = "unique") %>% 
+  rename(pc6_difference = estimate) %>% 
+  dplyr::select(Plant, 
+                pc1_difference,
+                pc2_difference,
+                pc3_difference,
+                pc4_difference,
+                pc5_difference,
+                pc6_difference) %>% 
+  mutate(pc1_difference = pc1_difference * -1,
+         pc2_difference = pc2_difference * -1,
+         pc3_difference = pc3_difference * -1,
+         pc4_difference = pc4_difference * -1,
+         pc5_difference = pc5_difference * -1,
+         pc6_difference = pc6_difference * -1)
+```
+
+```{r}
+soil_moisture <- read.csv(here("data", "soil_moisture.csv")) %>% 
+  mutate(date = ymd(date)) %>% 
+  filter(date <= "2020-11-01")
+soil_moisture_pca <- soil_moisture%>% 
+  left_join(pca, by = c("plot" = "plot_number")) %>% 
+  dplyr::select(date, soil_moisture,PC1, PC2, PC3, PC4, PC5, PC6) %>% 
+  nest(data = c(soil_moisture,
+                PC1,
+                PC2,
+                PC3,
+                PC4,
+                PC5,
+                PC6)) %>% 
+  mutate(pc1_lm = map(data, ~tidy(lm(soil_moisture~PC1, .x))),
+         pc2_lm = map(data, ~tidy(lm(soil_moisture~PC2, .x))),
+         pc3_lm = map(data, ~tidy(lm(soil_moisture~PC3, .x))),
+         pc4_lm = map(data, ~tidy(lm(soil_moisture~PC4, .x))),
+         pc5_lm = map(data, ~tidy(lm(soil_moisture~PC5, .x))),
+         pc6_lm = map(data, ~tidy(lm(soil_moisture~PC6, .x))),
+         date = ymd(date)) %>%
+  unnest(pc1_lm) %>% 
+  unnest(pc2_lm, names_repair = "unique") %>%
+  unnest(pc3_lm, names_repair = "unique") %>%
+  unnest(pc4_lm, names_repair = "unique") %>%
+  unnest(pc5_lm, names_repair = "unique") %>%
+  unnest(pc6_lm, names_repair = "unique") %>% 
+  filter(term...3 == "PC1" &
+           term...8 == "PC2" &
+           term...13 == "PC3" &
+           term...18 == "PC4" &
+           term...23 == "PC5" &
+           term...28 == "PC6") %>% 
+  rename(pc1_estimate = estimate...4,
+         pc1_p = p.value...7,
+         pc2_estimate = estimate...9,
+         pc2_p = p.value...12,
+         pc3_estimate = estimate...14,
+         pc3_p = p.value...17,
+         pc4_estimate = estimate...19,
+         pc4_p = p.value...22,
+         pc5_estimate = estimate...24,
+         pc5_p = p.value...27,
+         pc6_estimate = estimate...29,
+         pc6_p = p.value...32) %>% 
+  dplyr::select(date, 
+                pc1_estimate,
+                pc1_p,
+                pc2_estimate,
+                pc2_p,
+                pc3_estimate,
+                pc3_p,
+                pc4_estimate,
+                pc4_p,
+                pc5_estimate,
+                pc5_p, 
+                pc6_estimate, 
+                pc6_p) 
+
+ggplot(soil_moisture_pca, aes(x = date, y = pc1_p))+
+  geom_point()+
+  geom_hline(yintercept = 0.05, linetype = "dashed")
+
+ggplot(soil_moisture_pca, aes(x=date, y = pc1_estimate))+
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = "dashed")
+
+ggplot(soil_moisture_pca, aes(x = date, y = pc2_p))+
+  geom_point()+
+  geom_hline(yintercept = 0.05, linetype = "dashed")
+
+ggplot(soil_moisture_pca, aes(x=date, y = pc2_estimate))+
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = "dashed")
+
+ggplot(soil_moisture_pca, aes(x = date, y = pc3_p))+
+  geom_point()+
+  geom_hline(yintercept = 0.05, linetype = "dashed")
+
+ggplot(soil_moisture_pca, aes(x=date, y = pc3_estimate))+
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = "dashed")
+
+ggplot(soil_moisture_pca, aes(x = date, y = pc4_p))+
+  geom_point()+
+  geom_hline(yintercept = 0.05, linetype = "dashed")
+
+ggplot(soil_moisture_pca, aes(x=date, y = pc4_estimate))+
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = "dashed")
+
+ggplot(soil_moisture_pca, aes(x = date, y = pc5_p))+
+  geom_point()+
+  geom_hline(yintercept = 0.05, linetype = "dashed")
+
+ggplot(soil_moisture_pca, aes(x=date, y = pc5_estimate))+
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = "dashed")
+
+ggplot(soil_moisture_pca, aes(x = date, y = pc6_p))+
+  geom_point()+
+  geom_hline(yintercept = 0.05, linetype = "dashed")
+
+ggplot(soil_moisture_pca, aes(x=date, y = pc6_estimate))+
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = "dashed")
+
+barplot(topography_pca$rotation[,6], las = 2)
+```
+
+```{r}
+temperature <- read.csv(here("data", "ibutton_data.csv"))%>% 
+  mutate(time = hms(time)) %>% 
+  filter(time >= "18H 0M 0S"| time <= "8H 0M 0S") %>% 
+  dplyr::select(!X & !time)%>% 
+  filter(date <= "2020-11-01")  
+temperature_pca <- temperature %>% 
+  group_by(plot, date) %>% 
+  summarize(temperature = max(temperature)) %>%
+  ungroup() %>% 
+  left_join(pca, by = c("plot" = "plot_number")) %>% 
+  dplyr::select(date, temperature, PC1, PC2, PC3, PC4, PC5, PC6) %>% 
+  nest(data = c(temperature,
+                PC1,
+                PC2,
+                PC3, 
+                PC4,
+                PC5,
+                PC6)) %>% 
+  mutate(pc1_lm = map(data, ~tidy(lm(temperature~PC1, .x))),
+         pc2_lm = map(data, ~tidy(lm(temperature~PC2, .x))),
+         pc3_lm = map(data, ~tidy(lm(temperature~PC3, .x))),
+         pc4_lm = map(data, ~tidy(lm(temperature~PC4, .x))),
+         pc5_lm = map(data, ~tidy(lm(temperature~PC5, .x))),
+         pc6_lm = map(data, ~tidy(lm(temperature~PC6, .x))),
+         date = ymd(date)) %>% 
+  unnest(pc1_lm) %>%
+  unnest(pc2_lm, names_repair = "unique") %>% 
+  unnest(pc3_lm, names_repair = "unique") %>% 
+  unnest(pc4_lm, names_repair = "unique") %>% 
+  unnest(pc5_lm, names_repair = "unique") %>% 
+  unnest(pc6_lm, names_repair = "unique") %>% 
+  filter(term...3 == "PC1" & 
+           term...8 == "PC2" &
+           term...13 == "PC3" &
+           term...18 == "PC4" &
+           term...23 == "PC5" &
+           term...28 == "PC6") %>% 
+  rename(pc1_estimate = estimate...4,
+         pc1_p = p.value...7,
+         pc2_estimate = estimate...9,
+         pc2_p = p.value...12,
+         pc3_estimate = estimate...14,
+         pc3_p = p.value...17,
+         pc4_estimate = estimate...19,
+         pc4_p = p.value...22,
+         pc5_estimate = estimate...24,
+         pc5_p = p.value...27,
+         pc6_estimate = estimate...29,
+         pc6_p = p.value...32) %>% 
+  dplyr::select(date, 
+                pc1_estimate, 
+                pc1_p, 
+                pc2_estimate, 
+                pc2_p,
+                pc3_estimate, 
+                pc3_p, 
+                pc4_estimate, 
+                pc4_p,
+                pc5_estimate, 
+                pc5_p, 
+                pc6_estimate, 
+                pc6_p) 
+
+ggplot(temperature_pca, aes(x = date, y = pc1_p))+
+  geom_point()+
+  geom_hline(yintercept = 0.05, linetype = "dashed")
+
+ggplot(temperature_pca, aes(x = date, y = pc1_estimate)) +
+  geom_point()+
+  geom_hline(yintercept = 0, linetype = "dashed")
+
+ggplot(temperature_pca, aes(x = date, y = pc2_p))+
+  geom_point()+
+  geom_hline(yintercept = 0.05, linetype = "dashed")
+
+ggplot(temperature_pca, aes(x = date, y = pc2_estimate)) +
+  geom_point()+
+  geom_hline(yintercept = 0, linetype = "dashed")
+
+ggplot(temperature_pca, aes(x = date, y = pc3_p))+
+  geom_point()+
+  geom_hline(yintercept = 0.05, linetype = "dashed")
+
+ggplot(temperature_pca, aes(x = date, y = pc3_estimate)) +
+  geom_point()+
+  geom_hline(yintercept = 0, linetype = "dashed")
+
+ggplot(temperature_pca, aes(x = date, y = pc4_p))+
+  geom_point()+
+  geom_hline(yintercept = 0.05, linetype = "dashed")
+
+ggplot(temperature_pca, aes(x = date, y = pc4_estimate)) +
+  geom_point()+
+  geom_hline(yintercept = 0, linetype = "dashed")
+
+ggplot(temperature_pca, aes(x = date, y = pc5_p))+
+  geom_point()+
+  geom_hline(yintercept = 0.05, linetype = "dashed")
+
+ggplot(temperature_pca, aes(x = date, y = pc5_estimate)) +
+  geom_point()+
+  geom_hline(yintercept = 0, linetype = "dashed")
+
+ggplot(temperature_pca, aes(x = date, y = pc6_p))+
+  geom_point()+
+  geom_hline(yintercept = 0.05, linetype = "dashed")
+
+ggplot(temperature_pca, aes(x = date, y = pc6_estimate)) +
+  geom_point()+
+  geom_hline(yintercept = 0, linetype = "dashed")
+
+barplot(topography_pca$rotation[,1], las = 2)
+```
+
+
+```{r}
+mean_soil_moisture <- soil_moisture %>% 
+  mutate(month = month(date, label = TRUE)) %>% 
+  group_by(plot) %>% 
+  summarize(soil_moisture = max(soil_moisture)-min(soil_moisture)) %>%
+  ungroup() %>% 
+  left_join(pca, by = c("plot" = "plot_number")) %>% 
+  drop_na()
+
+
+summary(lm(soil_moisture~PC1, data = mean_soil_moisture))
+summary(lm(soil_moisture~PC2, data = mean_soil_moisture))
+summary(lm(soil_moisture~PC3, data = mean_soil_moisture))
+summary(lm(soil_moisture~PC4, data = mean_soil_moisture))
+summary(lm(soil_moisture~PC5, data = mean_soil_moisture))
+summary(lm(soil_moisture~PC6, data = mean_soil_moisture))
+soil_moisture_model <- lm(soil_moisture~PC6, data = mean_soil_moisture)
+autoplot(soil_moisture_model)
+soil_moisture_model_2 <- lm(log(soil_moisture)~PC4, data = mean_soil_moisture)
+autoplot(soil_moisture_model_2)
+
+ggplot(mean_soil_moisture, aes(x = PC6, y = soil_moisture))+
+  geom_point()+
+  geom_smooth(method = "lm")+
+  theme_classic()
+
+mean_max_temp <- temperature %>%
+  group_by(plot, date) %>% 
+  summarize(temperature = max(temperature, na.rm = TRUE)) %>% 
+  ungroup() %>%
+  group_by(plot) %>% 
+  summarise(temperature = mean(temperature, na.rm = TRUE)) %>% 
+  ungroup() %>% 
+  left_join(pca, by = c("plot" = "plot_number")) %>% 
+  drop_na() %>% 
+  filter(temperature >60)
+
+summary(lm(temperature~PC1, data = mean_max_temp))
+summary(lm(temperature~PC2, data = mean_max_temp))
+summary(lm(temperature~PC3, data = mean_max_temp))
+summary(lm(temperature~PC4, data = mean_max_temp))
+summary(lm(temperature~PC5, data = mean_max_temp))
+summary(lm(temperature~PC6, data = mean_max_temp))
+
+temp_model <- lm(temperature~PC1, data = mean_max_temp)
+autoplot(temp_model)
+  
+ggplot(mean_max_temp, aes(x = PC1, y = temperature))+
+  geom_point(alpha = 0.5)+
+  geom_smooth(method = "lm")
+
+mean_min_temp <- temperature %>%
+  group_by(plot, date) %>% 
+  summarize(temperature = min(temperature, na.rm = TRUE)) %>%
+  ungroup() %>% 
+  group_by(plot) %>% 
+  summarise(temperature = mean(temperature, na.rm = TRUE)) %>% 
+  left_join(pca, by = c("plot" = "plot_number")) %>% 
+  drop_na()
+
+summary(lm(temperature~PC1, data = mean_min_temp))
+summary(lm(temperature~PC2, data = mean_min_temp))
+summary(lm(temperature~PC3, data = mean_min_temp))
+summary(lm(temperature~PC4, data = mean_min_temp))
+summary(lm(temperature~PC5, data = mean_min_temp))
+summary(lm(temperature~PC6, data = mean_min_temp))
+  
+ggplot(mean_min_temp, aes(x = PC2, y = temperature))+
+  geom_point(alpha = 0.5)+
+  geom_smooth(method = "lm")
+```
+```{r}
+ggplot(planting_topography_pca_data, aes(x = pc6_mean, y = pc1_mean, col = as.factor(alive))) +
+  geom_text(aes(label = Plant)) +
+  geom_line(aes(col = Plant))+
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  theme_classic()
+
+ggplot(survival_topography_pca, aes(x = pc6_difference, y = pc1_difference)) +
+  geom_text(aes(label = Plant))+
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  theme_classic()
+```
+
+
+```{r}
+survival <- read.csv(here("data", "survival.csv")) %>% 
+  dplyr::select(!X & !alive) %>% 
+  filter(date == "2020-11-01") %>% 
+  mutate(Plant = case_when(Plant == "Adenostoma fasciculatum" ~ "ADFA",
+                           Plant == "Ceanothus oliganthus" ~ "CEOL",
+                           Plant == "Encelia californica" ~ "ENCA",
+                           Plant == "Heteromeles arbutifolia" ~ "HEAR",
+                           Plant == "Hesperoyucca whipplei" ~ "HEWH",
+                           Plant == "Malosma laurina" ~ "MALA",
+                           Plant == "Rhus ovata" ~ "RHOV",
+                           Plant == "Salvia apiana" ~ "SAAP",
+                           Plant == "Salvia mellifera" ~ "SAME",
+                           Plant == "Sambucus nigra"~ "SANI")) %>% 
+  full_join(planting_topography_pca_data, by = "Plant") %>% 
+  filter(alive == "alive")
+
+summary(lm(alive_percent~pc1_mean, data = survival))
+summary(lm(alive_percent~pc6_mean, data = survival))
+summary(lm(alive_percent~pc1_mean*pc6_mean, data = survival))
+survival_model <- lm(alive_percent~pc1_mean*pc6_mean, data = survival)
+autoplot(survival_model)
+
+ggplot(survival, aes(x = pc1_mean, y = alive_percent)) +
+  geom_text(aes(label = Plant))+
+  geom_smooth(method = "lm")+
+  theme_classic()
+
+ggplot(survival, aes(x = pc4_mean, y = alive_percent)) +
+  geom_text(aes(label = Plant))+
+  geom_smooth(method = "lm")+
+  theme_classic()
+
+ggplot(survival, aes(x = pc6_mean, y = alive_percent)) +
+  geom_text(aes(label = Plant))+
+  geom_smooth(method = "lm")+
+  theme_classic()
+```
+
+```{r}
+summary(glm(alive~PC1*Plant, family = "binomial", data = survival_topography_pca_data))
+pc1_model <- glm(alive~PC1*Plant, family = "binomial", data = survival_topography_pca_data)
+summary(glm(alive~PC2+Plant, family = "binomial", data = survival_topography_pca_data))
+summary(glm(alive~PC3+Plant, family = "binomial", data = survival_topography_pca_data))
+summary(glm(alive~PC4+Plant, family = "binomial", data = survival_topography_pca_data))
+summary(glm(alive~PC5*Plant, family = "binomial", data = survival_topography_pca_data))
+summary(glm(alive~PC6+Plant, family = "binomial", data = survival_topography_pca_data))
+pc6_model <- glm(alive~PC6+Plant, family = "binomial", data = survival_topography_pca_data)
+sum(residuals(pc1_model, "pearson")^2)/with(pc1_model, sum(weights*residuals^2))
+sum(residuals(pc6_model, "pearson")^2)/with(pc6_model, sum(weights*residuals^2))
+
+predict_survival_pc1 <- survival_topography_pca_data %>% 
+  dplyr::select(Plant, PC1) %>% 
+  mutate(alive_prob = round(fitted(pc1_model), 2))
+
+ggplot(predict_survival_pc1, aes(x = PC1, y = alive_prob))+
+  geom_point()+
+  facet_wrap(~Plant)+
+  theme_classic()+
+  ylim(0,1)
+
+predict_survival_pc6 <- survival_topography_pca_data %>% 
+  dplyr::select(Plant, PC6) %>% 
+  mutate(alive_prob = round(fitted(pc6_model), 2))
+
+ggplot(predict_survival_pc6, aes(x = PC6, y = alive_prob))+
+  geom_point()+
+  facet_wrap(~Plant)+
+  theme_classic()+
+  ylim(0,1)
+
+predict_survival_pc1_pc6 <- survival_topography_pca_data %>% 
+  dplyr::select(Plant, PC1, PC6) %>% 
+  mutate(alive_prob = round(fitted(pc1_pc6_model), 2))
+
+ggplot(predict_survival_pc1_pc6, aes(x = PC1, y = alive_prob))+
+  geom_point()+
+  facet_wrap(~Plant)+
+  theme_classic()+
+  ylim(0,1)
+
+ggplot(predict_survival_pc1_pc6, aes(x = PC6, y = alive_prob))+
+  geom_point()+
+  facet_wrap(~Plant)+
+  theme_classic()+
+  ylim(0,1)
+```

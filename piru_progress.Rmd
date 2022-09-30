@@ -18,6 +18,7 @@ library(ggparty)
 library(partykit)
 library(ggfortify)
 library(vroom)
+library(gmodels)
 ```
 
 ```{r}
@@ -53,7 +54,8 @@ planting_survival <- planting %>%
   filter(Plant != "No Plant", Height != "") %>% 
   mutate(date = my(0320),
          alive = 1) %>% 
-  dplyr::select(plot_number,Plant, alive, date)
+  dplyr::select(plot_number,Plant, alive) %>% 
+  rename(alive_march2020 = alive)
 
 # Table of plant survival as of May 2020
 watering_survival <- watering %>% 
@@ -84,7 +86,8 @@ watering_survival <- watering %>%
                            Alive.1 == "N" ~ 0,
                            Alive.1 == "NP" ~ 0),
          date = my(0520)) %>% 
-  dplyr::select(plot_number,Plant, alive, date)
+  dplyr::select(plot_number,Plant, alive) %>% 
+  rename(alive_may2020 = alive)
 
 # Table of plant survival as of July 2020
 measuring_survival <- measuring %>% 
@@ -105,7 +108,8 @@ measuring_survival <- measuring %>%
          alive = case_when(Height > 0 ~ 1),
          date = my(0720)) %>% 
   filter(Plant != "No Plant") %>% 
-  dplyr::select(plot_number,Plant, alive, date)
+  dplyr::select(plot_number,Plant, alive) %>% 
+  rename(alive_july2020 = alive)
 
 # Table of plant survival as of November 2020
 measuring_survival_2 <- measuring_2 %>% 
@@ -114,19 +118,38 @@ measuring_survival_2 <- measuring_2 %>%
                            TRUE ~ 0),
          date = my(1120)) %>% 
   filter(Plant != "") %>% 
-  dplyr::select(plot_number,Plant, alive, date)
+  dplyr::select(plot_number,Plant, alive) %>%
+  rename(alive_november2020 = alive)
 
 # Table of plant survival as of December 2021
 measuring_survival_3 <- measuring_3 %>% 
   mutate(alive = case_when(Height > 0 ~ 1),
         date = my(1221)) %>% 
   filter(Plant != "") %>% 
-  dplyr::select(plot_number,Plant, alive, date)
+  dplyr::select(plot_number,Plant, alive) %>% 
+  rename(alive_december2021 = alive)
 
 # Table of percent each species alive at all dates
-survival <- rbind(planting_survival,watering_survival,measuring_survival, measuring_survival_2, measuring_survival_3) %>% 
+survival_raw <- planting_survival %>% 
+  left_join(watering_survival, by = "plot_number") %>% 
+  left_join(measuring_survival, by = "plot_number") %>% 
+  left_join(measuring_survival_2, by = "plot_number") %>% 
+  left_join(measuring_survival_3, by = "plot_number") %>% 
+  dplyr::select(plot_number, Plant.x, alive_march2020, alive_may2020, alive_july2020, alive_november2020, alive_december2021) %>% 
+  pivot_longer(cols = 3:7, names_to = "date", values_to = "alive") %>% 
+  mutate(date = case_when(date == "alive_march2020" ~ ym("2020/03"),
+                          date == "alive_may2020" ~ ym("2020/05"),
+                          date == "alive_july2020" ~ ym("2020/07"),
+                          date == "alive_november2020" ~ ym("2020/11"),
+                          date == "alive_december2021" ~ ym("2021/12")),
+         alive = case_when(is.na(alive) == TRUE ~ 0, 
+                           TRUE ~ alive)) %>% 
+  rename(Plant = Plant.x)
+  
+survival <- survival_raw %>% 
   group_by(Plant, date) %>% 
-  summarise(alive = sum(alive, na.rm = TRUE)) %>% 
+  summarise(alive = sum(alive)) %>% 
+  ungroup() %>% 
   mutate(alive_percent = case_when(Plant == "ADFA" ~ alive/148 * 100,
                                    Plant == "CEOL" ~ alive/250 * 100,
                                    Plant == "ENCA" ~ alive/204 * 100,
@@ -156,6 +179,7 @@ survival_total <- survival %>%
 ggplot(survival, aes(date, alive_percent)) +
   geom_point() +
   geom_line () +
+  geom_hline(yintercept = 0,linetype = "dashed")+
   facet_wrap(~Plant, nrow = 5, ncol = 2) +
   labs(y = "Percent Alive") +
   theme_classic()
@@ -163,16 +187,59 @@ ggplot(survival, aes(date, alive_percent)) +
 ggplot(survival, aes(date, alive)) +
   geom_point() +
   geom_line () +
+   geom_hline(yintercept = 0,linetype = "dashed")+
   facet_wrap(~Plant, nrow = 5, ncol = 2) +
   theme_classic()
 
 ggplot(survival_total, aes(date, alive)) +
   geom_point() +
   geom_line() +
+  geom_hline(yintercept = 0,linetype = "dashed")+
   labs(y = "Number plants alive") +
   theme_classic()
   
 ```
+
+## Percent Alive by group
+
+```{r}
+survival_groups <- survival %>% 
+  mutate(community = case_when(Plant %in% c("Encelia californica",
+                                              "Hesperoyucca whipplei",
+                                              "Salvia apiana",
+                                              "Salvia mellifera") ~ "sage scrub",
+                               Plant %in% c("Adenostoma fasciculatum",
+                                              "Ceanothus oliganthus",
+                                              "Heteromeles arbutifolia",
+                                              "Malosma laurina",
+                                              "Rhus ovata",
+                                              "Sambucus nigra") ~ "chaparral")) %>% 
+  ungroup()
+survival_groups_mean <- survival_groups %>% 
+  group_by(date, community) %>% 
+  summarise(mean = mean(alive_percent),
+            sd = sd(alive_percent)) %>% 
+  ungroup()
+
+ggplot(survival_groups_mean, aes(x = date, y = mean, col = community))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - sd, ymax = mean + sd))+
+  theme_classic()
+
+survival_groups_stats <- survival_groups %>% 
+  dplyr::select(!alive & !Plant) %>% 
+  nest(data = c(alive_percent, community)) %>%
+  filter(date != "2020-03-01") %>% 
+  mutate(t_test = map(data, ~tidy(t.test(alive_percent~community, .x)))) %>% 
+  unnest(cols = c(data, t_test)) %>% 
+  rename(chaparral_mean = estimate1,
+         sage_scrub_mean = estimate2) %>% 
+  dplyr::select(date, chaparral_mean, sage_scrub_mean, p.value) %>% 
+  distinct() 
+```
+
+
 
 ## Cleaning and initial visualization of growth data
 
@@ -195,8 +262,14 @@ planting_growth <- planting %>%
                            Plant == "HEWH (White) RHOV" ~ "RHOV",
                            Plant == "NO PLANT" ~ "No Plant")) %>% 
   filter(Plant != "No Plant", Height != "") %>% 
-  mutate(date = my(0320)) %>% 
-  dplyr::select(plot_number,Plant, Height, Width.1, Width.2, Stem.Diameter, date)
+  mutate(date = my(0320),
+         Width.1 = as.numeric(Width.1),
+         Width.2 = as.numeric(Width.2)) %>% 
+  dplyr::select(plot_number,Plant, Height, Stem.Diameter, Width.1, Width.2) %>%
+  mutate(width_march2020 = (Width.1+Width.2)/2) %>% 
+  rename(height_march2020 = Height,
+         stem_march2020 = Stem.Diameter) %>% 
+  dplyr::select(!Width.1 & !Width.2)
 
 # Growth data as of July 2020
 measuring_growth <- measuring %>% 
@@ -214,63 +287,212 @@ measuring_growth <- measuring %>%
                            Plant == "NO PLANT" ~ "No Plant",
                            Plant == "HEWH (White) RHOV" ~ "RHOV",
                            Plant == "HEWH" ~ "HEWH"),
-         date = my(0720)) %>% 
+         date = my(0720),
+         Width.1 = as.numeric(Width.1),
+         Width.2 = as.numeric(Width.2)) %>% 
   filter(Plant != "No Plant") %>% 
-  dplyr::select(plot_number,Plant, Height, Width.1, Width.2, Stem.Diameter, date)
+  mutate(width_july2020 = (Width.1+Width.2)/2) %>% 
+  dplyr::select(plot_number,Plant, Height, Stem.Diameter, width_july2020) %>%
+  rename(height_july2020 = Height,
+         stem_july2020 = Stem.Diameter)
 
 # Growth data as of November 2020
 measuring_growth_2 <- measuring_2 %>% 
   mutate(Plant = str_replace(Plant, " ", ""),
-         date = my(1120)) %>% 
+         date = my(1120),
+         Width.1 = as.numeric(Width.1),
+         Width.2 = as.numeric(Width.2)) %>% 
   filter(Plant != "") %>% 
-  dplyr::select(plot_number,Plant, Height, Width.1, Width.2, Stem.Diameter, date)
+  mutate(width_november2020 = (Width.1+Width.2)/2) %>% 
+  dplyr::select(plot_number,Plant, Height, Stem.Diameter, width_november2020) %>% 
+  rename(height_november2020 = Height,
+         stem_november2020 = Stem.Diameter)
 
 # Growth data as of December 2021
 measuring_growth_3 <- measuring_3 %>% 
-  mutate(date = my(1221)) %>% 
-  filter(Plant != "") %>% 
-  dplyr::select(plot_number,Plant, Height, Width.1, Width.2, Stem.Diameter, date)
-
-# Growth data grouped by species for all dates
-growth <- rbind(planting_growth, measuring_growth, measuring_growth_2, measuring_growth_3) %>% 
-  mutate(Height = as.numeric(Height),
+  mutate(date = my(1221),
          Width.1 = as.numeric(Width.1),
          Width.2 = as.numeric(Width.2),
-         Stem.Diameter = as.numeric(Stem.Diameter)) %>% 
-  group_by(Plant, date) %>% 
-  summarise(mean_height = mean(Height, na.rm = TRUE),
-            sd_height = sd(Height, na.rm = TRUE),
-            mean_width_1 = mean(Width.1, na.rm = TRUE),
-            sd_width_1 = sd(Width.1, na.rm = TRUE),
-            mean_width_2 = mean(Width.2, na.rm = TRUE),
-            sd_width_2 = sd(Width.2, na.rm = TRUE),
-            mean_stem = mean(Stem.Diameter, na.rm = TRUE),
-            sd_stem = sd(Stem.Diameter, na.rm = TRUE))
+         width_december2021 = (Width.1 + Width.2)/2) %>% 
+  filter(Plant != "") %>% 
+  dplyr::select(plot_number,Plant, Height, Stem.Diameter, width_december2021) %>% 
+  rename(height_december2021 = Height,
+         stem_december2021 = Stem.Diameter)
 
-ggplot(growth, aes(date, mean_height)) + 
-  geom_point()+
-  geom_errorbar(aes(ymin = mean_height - sd_height, ymax = mean_height + sd_height), width = 0.2) +
-  geom_line()+
-  labs(y = "Stem Height (cm)") +
-  facet_wrap(~Plant, nrow = 5, ncol = 2) +
-  theme_classic()
+# Growth data grouped by species for all dates
+growth_raw <- planting_growth %>% 
+  left_join(measuring_growth, by = "plot_number") %>% 
+  left_join(measuring_growth_2, by = "plot_number") %>% 
+  left_join(measuring_growth_3, by = "plot_number") %>% 
+  dplyr::select(plot_number, Plant.x, height_march2020, height_july2020, height_november2020, height_december2021,
+         stem_march2020, stem_july2020, stem_november2020, stem_december2021) %>% 
+  mutate(height_march2020 = as.numeric(height_march2020),
+         stem_march2020 = as.numeric(stem_march2020),
+         stem_july2020 = as.numeric(stem_july2020),
+         stem_november2020 = as.numeric(stem_november2020),
+         stem_december2021 = as.numeric(stem_december2021),
+         growth_july2020 = height_july2020 - height_march2020,
+         growth_november2020 = height_november2020 - height_july2020,
+         growth_december2021 = height_december2021 - height_november2020) %>% 
+  pivot_longer(3:13, names_to = "names", values_to = "values") %>% 
+  separate(names, into = c("variables", "date")) %>% 
+  pivot_wider(names_from = "variables", values_from = "values") %>% 
+  mutate(date = case_when(date == "march2020" ~ ym("2020/03"),
+                          date == "july2020" ~ ym("2020/07"),
+                          date == "november2020" ~ ym("2020/11"),
+                          date == "december2021" ~ ym("2021/12"))) %>% 
+  rename(Plant = Plant.x) %>% 
+  left_join(survival_raw, by = c("plot_number", "Plant", "date"))
 
-ggplot(growth, aes(date, mean_width_1)) + 
-  geom_point()+
-  geom_errorbar(aes(ymin = mean_width_1 - sd_width_1, ymax = mean_width_1 + sd_width_1), width = 0.2) +
-  geom_line()+
-  labs(y = "Plant Width (cm)") +
-  facet_wrap(~Plant, nrow = 5, ncol = 2) +
-  theme_classic()
+growth <- growth_raw %>%
+  group_by(plot_number) %>% 
+  mutate(alive_sum = sum(alive),
+         date_dead = case_when(alive_sum == 1 ~ "july2020",
+                               alive_sum == 2 ~ "november2020", 
+                               alive_sum == 3 ~ "december2021",
+                               alive_sum == 4 ~ "alive")) %>% 
+  ungroup()
 
-ggplot(growth, aes(date, mean_stem)) + 
-  geom_point()+
-  geom_errorbar(aes(ymin = mean_stem - sd_stem, ymax = mean_stem + sd_stem), width = 0.2) +
-  geom_line()+
-  labs(y = "Stem Diameter (cm)") +
-  facet_wrap(~Plant, nrow = 5, ncol = 2) +
-  theme_classic()
+july_dead_stats <- growth %>% 
+  filter(date == "2020/03/01") %>% 
+  mutate(alive = case_when(date_dead == "july2020" ~ 0,
+                           TRUE ~ alive)) %>% 
+  dplyr::select(Plant, height, alive, stem) %>% 
+  nest(data = c(height, alive, stem)) %>% 
+  mutate(t_test_height = map(data, ~tidy(t.test(height~alive, .x))),
+         t_test_stem = map(data, ~tidy(t.test(stem~alive, .x)))) %>% 
+  unnest(cols = t_test_height) %>% 
+  dplyr::select(Plant, estimate1, estimate2, p.value, t_test_stem) %>% 
+  distinct() %>% 
+  rename(dead_height = estimate1,
+         alive_height = estimate2,
+         pvalue_height = p.value) %>% 
+  unnest(cols = t_test_stem) %>% 
+  dplyr::select(Plant, dead_height, alive_height, pvalue_height, estimate1, estimate2, p.value) %>% 
+  rename(dead_stem = estimate1,
+         alive_stem = estimate2,
+         pvalue_stem = p.value) %>% 
+  distinct()
+
+november_dead_stats <- growth %>% 
+  filter(date == "2020/07/01" & date_dead != "july2020") %>% 
+  mutate(alive = case_when(date_dead == "november2020" ~ 0,
+                           TRUE ~ alive)) %>%
+  dplyr::select(Plant, height, alive, growth) %>% 
+  drop_na() %>%
+  nest(data = c(height, alive, growth)) %>% 
+  mutate(t_test_height = map(data, ~tidy(t.test(height~alive, .x))),
+         t_test_growth = map(data, ~tidy(t.test(growth~alive, .x)))) %>% 
+  unnest(cols = t_test_height) %>% 
+  dplyr::select(Plant, estimate1, estimate2, p.value, t_test_growth) %>% 
+  distinct() %>% 
+  rename(dead_height = estimate1,
+         alive_height = estimate2,
+         pvalue_height = p.value) %>% 
+  unnest(cols = t_test_growth) %>% 
+  dplyr::select(Plant, dead_height, alive_height, pvalue_height, estimate1, estimate2, p.value) %>% 
+  distinct() %>% 
+  rename(dead_growth = estimate1,
+         alive_growth = estimate2,
+         pvalue_growth = p.value)
+
+november_stem_stats <- growth %>% 
+  filter(date == "2020/07/01" & date_dead != "july2020") %>% 
+  filter(Plant != "HEWH") %>% 
+  mutate(alive = case_when(date_dead == "november2020" ~ 0,
+                           TRUE ~ alive)) %>%
+  dplyr::select(Plant, stem, alive) %>% 
+  drop_na() %>%
+  nest(data = c(stem, alive)) %>% 
+  mutate(t_test_stem = map(data, ~tidy(t.test(stem~alive, .x)))) %>% 
+  unnest(cols = t_test_stem) %>% 
+  dplyr::select(Plant, estimate1, estimate2, p.value) %>% 
+  distinct() %>% 
+  rename(dead_stem = estimate1,
+         alive_stem = estimate2,
+         pvalue_stem = p.value)
+
+december_dead_stats <- growth %>% 
+  filter(date == "2020/11/01" & date_dead %in% c("december2021", "alive")) %>% 
+  mutate(alive = case_when(date_dead == "december2021" ~ 0,
+                           TRUE ~ alive)) %>% 
+  filter(Plant %in% c("ENCA", "SAME","RHOV","HEWH", "SAAP", "ADFA", "MALA", "SANI")) %>% 
+  dplyr::select(Plant, height, alive, growth) %>% 
+  drop_na() %>%
+  nest(data = c(height, alive, growth)) %>% 
+  mutate(t_test_height = map(data, ~tidy(t.test(height~alive, .x))),
+         t_test_growth = map(data, ~tidy(t.test(growth~alive, .x)))) %>% 
+  unnest(cols = t_test_height) %>% 
+  dplyr::select(Plant, estimate1, estimate2, p.value, t_test_growth) %>% 
+  distinct() %>% 
+  rename(dead_height = estimate1,
+         alive_height = estimate2,
+         pvalue_height = p.value) %>% 
+  unnest(cols = t_test_growth) %>% 
+  dplyr::select(Plant, dead_height, alive_height, pvalue_height, estimate1, estimate2, p.value) %>% 
+  distinct() %>% 
+  rename(dead_growth = estimate1,
+         alive_growth = estimate2,
+         pvalue_growth = p.value)
+
+december_stem_stats <- growth %>% 
+  filter(date == "2020/11/01" & date_dead %in% c("december2021", "alive")) %>% 
+  filter(Plant != "HEWH") %>% 
+  mutate(alive = case_when(date_dead == "december2021" ~ 0,
+                           TRUE ~ alive)) %>% 
+  dplyr::select(Plant, stem, alive) %>% 
+  drop_na() %>%
+  filter(Plant %in% c("ENCA", "SAME","RHOV", "SAAP", "ADFA", "MALA", "SANI")) %>% 
+  nest(data = c(stem, alive)) %>% 
+  mutate(t_test_stem = map(data, ~tidy(t.test(stem~alive, .x)))) %>% 
+  unnest(cols = t_test_stem) %>% 
+  dplyr::select(Plant, estimate1, estimate2, p.value) %>% 
+  distinct() %>% 
+  rename(dead_stem = estimate1,
+         alive_stem = estimate2,
+         pvalue_stem = p.value)
 ```
+
+## Making growth_spatial
+
+```{r}
+plots <- st_read(here("data", "plot_gps_points.shp")) %>% 
+  rename("plot_number" = "plt_nmb")
+
+growth_spatial <- planting_growth %>% 
+  left_join(measuring_growth,
+            by = "plot_number") %>% 
+  left_join(measuring_growth_2, 
+            by = "plot_number") %>% 
+  left_join(measuring_growth_3, 
+            by = "plot_number") %>% 
+  dplyr::select(plot_number, 
+         Plant.x, 
+         height_march2020, 
+         height_november2020,
+         stem_march2020, 
+         stem_november2020,
+         width_march2020,
+         width_november2020) %>% 
+  drop_na() %>% 
+  mutate(height_march2020 = as.numeric(height_march2020),
+         height_november2020 = as.numeric(height_november2020),
+         stem_march2020 = as.numeric(stem_march2020),
+         stem_november2020 = as.numeric(stem_november2020),
+         growth_height = height_november2020 - height_march2020,
+         growth_stem = stem_november2020 - stem_march2020,
+         growth_width = width_november2020 - width_march2020,
+         height_zscore = (growth_height - mean(growth_height))/sd(growth_height),
+         stem_zscore = (growth_stem - mean(growth_stem, na.rm = TRUE))/sd(growth_stem, na.rm = TRUE),
+         stem_zscore = replace_na(stem_zscore, 0),
+         width_zscore = (growth_width - mean(growth_width))/sd(growth_width),
+         growth_zscore = height_zscore + stem_zscore + width_zscore) %>% 
+  dplyr::select(plot_number, growth_zscore) %>% 
+  full_join(plots, by = "plot_number") %>% 
+  drop_na()
+
+```
+
 
 ## Looking at survival without gopher kill 
   - unintuitably labelled gopher
@@ -314,10 +536,10 @@ measuring_gopher_3 <- measuring_3 %>%
          "measuring_3_notes" = "Notes")
 
 # Joined table of growth/survival with all dates, gophers excluded
-survival_gopher <- right_join(planting, watering_gopher, by = "plot_number") %>% 
-  right_join(measuring_gopher, by = "plot_number") %>% 
-  right_join(measuring_gopher_2, by = "plot_number") %>% 
-  right_join(measuring_gopher_3, by = "plot_number") %>%  
+survival_gopher <- left_join(planting, watering_gopher, by = "plot_number") %>% 
+  left_join(measuring_gopher, by = "plot_number") %>% 
+  left_join(measuring_gopher_2, by = "plot_number") %>% 
+  left_join(measuring_gopher_3, by = "plot_number") %>%  
   filter(watering_notes != "gopher", 
          watering_notes != "gopher activity", 
          watering_notes != "GOPHER", 
@@ -339,11 +561,7 @@ survival_gopher <- right_join(planting, watering_gopher, by = "plot_number") %>%
          measuring_2_notes != "GOPHER", 
          measuring_2_notes != "NP? NO TAG", 
          measuring_2_notes != "MISSNG") %>%
-  filter(measuring_3_notes != "NP")
-
-# Survival data as of March 2020, excl. gopher
-planting_survival_gopher <- survival_gopher %>% 
-  dplyr::select(plot_number,Plant, Height, Date.Planted) %>% 
+  filter(measuring_3_notes != "NP")%>% 
   mutate(Plant = str_replace_all(string = Plant, pattern = "(White + Pink)", replacement = "")) %>% 
   mutate(Plant = case_when(Plant == "ENCA (Pink)" ~ "ENCA",
                            Plant == "CEOL (Orange)" ~ "CEOL",
@@ -358,123 +576,72 @@ planting_survival_gopher <- survival_gopher %>%
                            Plant == "RHOV SAAP (White + Pink)" ~ "SAAP",
                            Plant == "ENCA CEOL (Pink)" ~ "CEOL", 
                            Plant == "HEWH (White) RHOV" ~ "RHOV",
-                           Plant == "NO PLANT" ~ "No Plant")) %>% 
+                           Plant == "NO PLANT" ~ "No Plant"))
+
+# Survival data as of March 2020, excl. gopher
+planting_survival_gopher <- survival_gopher %>% 
+  dplyr::select(plot_number,Plant, Height, Date.Planted) %>% 
   filter(Plant != "No Plant", Height != "") %>% 
-  mutate(date = my(0320),
-         alive = 1) %>% 
-  dplyr::select(plot_number,Plant, alive, date)
+  mutate(alive_march2020 = 1) %>% 
+  dplyr::select(plot_number,Plant, alive_march2020)
 
 # Surival as of May 2020, excl. gopher
 watering_survival_gopher <- survival_gopher %>%
-  dplyr::select(plot_number,Plant, watering_alive, watering_date) %>% 
-  mutate(Plant = case_when(Plant == "ENCA (Pink)" ~ "ENCA",
-                           Plant == "CEOL (Orange)" ~ "CEOL",
-                           Plant == "HEWH (White)" ~ "HEWH",
-                           Plant == "SAME (Orange + Pink)" ~ "SAME",
-                           Plant == "SANI (Orange + Yellow)" ~ "SANI",
-                           Plant == "RHOV (White + Pink)" ~ "RHOV",
-                           Plant == "SANI (Orange + Yellow) CEOL" ~ "CEOL",
-                           Plant == "SAAP (White + Green)" ~ "SAAP",
-                           Plant == "MALA (White + Yellow)" ~ "MALA",
-                           Plant == "SANI  MALA" ~ "MALA",
-                           Plant == "HEAR" ~ "HEAR",
-                           Plant == "ADFA (Orange + Green)" ~ "ADFA",
-                           Plant == "HEWH (White) ENCA" ~ "ENCA",
-                           Plant == "ADFA" ~ "ADFA",
-                           Plant == "SANI" ~ "SANI",
-                           Plant == "SAME" ~ "SAME",
-                           Plant == "SANI " ~ "SANI",
-                           Plant == "" ~"No plant")) %>% 
+  dplyr::select(plot_number,Plant, watering_alive, watering_date) %>%
   filter(Plant != "No plant") %>% 
-  mutate(alive = case_when(watering_alive == "y" ~ 1,
+  mutate(alive_may2020 = case_when(watering_alive == "y" ~ 1,
                            watering_alive == "Y" ~ 1,
                            watering_alive == "n" ~ 0,
                            watering_alive == "np" ~ 0,
                            watering_alive == "" ~ 0,
                            watering_alive == "N" ~ 0,
-                           watering_alive == "NP" ~ 0),
-         date = my(0520)) %>% 
-  dplyr::select(plot_number,Plant, alive, date)
+                           watering_alive == "NP" ~ 0)) %>% 
+  dplyr::select(plot_number,Plant, alive_may2020)
 
 # Survival as of July 2020, excl. gopher
 measuring_survival_gopher <- survival_gopher %>% 
   dplyr::select(plot_number,Plant, measuring_height, measuring_date) %>% 
-  mutate(Plant = case_when(Plant == "ENCA (Pink)" ~ "ENCA",
-                           Plant == "CEOL (Orange)" ~ "CEOL",
-                           Plant == "HEWH (White)" ~ "HEWH",
-                           Plant == "SAME (Orange + Pink)" ~ "SAME",
-                           Plant == "SANI (Orange + Yellow)" ~ "SANI", 
-                           Plant == "RHOV (White + Pink)" ~ "RHOV",
-                           Plant == "SAAP (White + Green)" ~ "SAAP",
-                           Plant == "MALA (White + Yellow)" ~ "MALA",
-                           Plant == "ADFA (Orange + Green)" ~ "ADFA",
-                           Plant == "HEAR" ~ "HEAR",
-                           Plant == "ENCA CEOL (Pink)" ~ "CEOL",
-                           Plant == "NO PLANT" ~ "No Plant",
-                           Plant == "HEWH (White) RHOV" ~ "RHOV",
-                           Plant == "HEWH" ~ "HEWH"),
-         alive = case_when(measuring_height > 0 ~ 1, 
-                           TRUE ~0),
-         date = my(0720)) %>% 
+  mutate(alive_july2020 = case_when(measuring_height > 0 ~ 1, 
+                           TRUE ~0)) %>% 
   filter(Plant != "No Plant") %>% 
-  dplyr::select(plot_number,Plant, alive, date)
+  dplyr::select(plot_number,Plant, alive_july2020)
 
 # Survival as of November 2020
 measuring_survival_gopher_2 <- survival_gopher %>% 
   dplyr::select(plot_number,Plant, measuring_2_height, measuring_2_date) %>% 
-  mutate(Plant = str_replace(Plant, " ", ""),
-         Plant = case_when(Plant == "ENCA(Pink)" ~ "ENCA",
-                           Plant == "CEOL(Orange)" ~ "CEOL",
-                           Plant == "HEWH(White)" ~ "HEWH",
-                           Plant == "SAME(Orange + Pink)" ~ "SAME",
-                           Plant == "SANI(Orange + Yellow)" ~ "SANI", 
-                           Plant == "RHOV(White + Pink)" ~ "RHOV",
-                           Plant == "SAAP(White + Green)" ~ "SAAP",
-                           Plant == "MALA(White + Yellow)" ~ "MALA",
-                           Plant == "ADFA(Orange + Green)" ~ "ADFA",
-                           Plant == "HEAR" ~ "HEAR",
-                           Plant == "ENCACEOL (Pink)" ~ "CEOL",
-                           Plant == "NOPLANT" ~ "No Plant",
-                           Plant == "HEWH(White) RHOV" ~ "RHOV",
-                           Plant == "HEWH" ~ "HEWH",
-                           TRUE ~ Plant),
-         alive = case_when(measuring_2_height > 0 ~ 1,
-                           TRUE ~ 0),
-         date = my(1120)) %>% 
+  mutate(alive_november2020 = case_when(measuring_2_height > 0 ~ 1,
+                           TRUE ~ 0)) %>% 
   filter(Plant != "") %>% 
-  dplyr::select(plot_number,Plant, alive, date)
+  dplyr::select(plot_number,Plant, alive_november2020)
 
 # Survival as of December 2021, excl. gopher
 measuring_survival_gopher_3 <- survival_gopher %>% 
   dplyr::select(plot_number,Plant, measuring_3_height, measuring_3_date) %>% 
-  mutate(Plant = case_when(Plant == "ENCA (Pink)" ~ "ENCA",
-                           Plant == "CEOL (Orange)" ~ "CEOL",
-                           Plant == "HEWH (White)" ~ "HEWH",
-                           Plant == "SAME (Orange + Pink)" ~ "SAME",
-                           Plant == "SANI (Orange + Yellow)" ~ "SANI", 
-                           Plant == "RHOV (White + Pink)" ~ "RHOV",
-                           Plant == "SAAP (White + Green)" ~ "SAAP",
-                           Plant == "MALA (White + Yellow)" ~ "MALA",
-                           Plant == "ADFA (Orange + Green)" ~ "ADFA",
-                           Plant == "HEAR" ~ "HEAR",
-                           Plant == "ENCA CEOL (Pink)" ~ "CEOL",
-                           Plant == "NO PLANT" ~ "No Plant",
-                           Plant == "HEWH (White) RHOV" ~ "RHOV",
-                           Plant == "HEWH" ~ "HEWH"),
-         alive = case_when(measuring_3_height > 0 ~ 1, 
-                           TRUE ~ 0),
-        date = my(1221)) %>% 
+  mutate(alive_december2021 = case_when(measuring_3_height > 0 ~ 1, 
+                           TRUE ~ 0)) %>% 
   filter(Plant != "") %>% 
-  dplyr::select(plot_number,Plant, alive, date)
+  dplyr::select(plot_number,Plant, alive_december2021)
 
 # Survival grouped by species with all dates, excl. gopher, with pretty field names
-survival_gopher_clean <- rbind(planting_survival_gopher,
-                  watering_survival_gopher,
-                  measuring_survival_gopher, 
-                  measuring_survival_gopher_2, 
-                  measuring_survival_gopher_3) %>% 
+gopher_raw <- planting_survival_gopher %>% 
+  left_join(watering_survival_gopher, by = "plot_number") %>% 
+  left_join(measuring_survival_gopher, by = "plot_number") %>% 
+  left_join(measuring_survival_gopher_2, by = "plot_number") %>% 
+  left_join(measuring_survival_gopher_3, by = "plot_number")
+
+survival_gopher_raw <- gopher_raw %>% 
+  dplyr::select(plot_number, Plant.x, alive_march2020, alive_may2020, alive_july2020, alive_november2020, alive_december2021) %>% 
+  rename(Plant = Plant.x) %>% 
+  pivot_longer(cols = 3:7, names_to = "date", values_to = "alive") %>% 
+  mutate(date = case_when(date == "alive_march2020" ~ ym(2003),
+                          date == "alive_may2020" ~ ym(2005),
+                          date == "alive_july2020" ~ ym(2007),
+                          date == "alive_november2020" ~ ym(2011),
+                          date == "alive_december2021" ~ ym(2112))) 
+survival_gopher_clean <- survival_gopher_raw %>% 
+  dplyr::select(!plot_number) %>% 
   group_by(Plant, date) %>% 
-  summarise(alive = sum(alive, na.rm = TRUE)) %>% 
+  mutate(alive = sum(alive, na.rm = TRUE)) %>% 
   ungroup() %>% 
   filter(Plant != "No Plant") %>% 
   mutate(alive_percent = case_when(Plant == "ADFA" ~ alive/118 * 100,
@@ -487,6 +654,8 @@ survival_gopher_clean <- rbind(planting_survival_gopher,
                                    Plant == "SAAP" ~ alive/45 * 100,
                                    Plant == "SAME" ~ alive/48 * 100, 
                                    Plant == "SANI" ~ alive/62 * 100),
+         community = case_when(Plant %in% c("ADFA", "CEOL", "HEAR", "MALA", "RHOV", "SANI")~ "chaparral",
+                               Plant %in% c("ENCA", "HEWH", "SAAP", "SAME") ~ "sage scrub"),
          Plant = case_when(Plant == "ADFA" ~ "Adenostoma fasciculatum",
                                    Plant == "CEOL" ~ "Ceanothus oliganthus",
                                    Plant == "ENCA" ~ "Encelia californica",
@@ -496,17 +665,28 @@ survival_gopher_clean <- rbind(planting_survival_gopher,
                                    Plant == "RHOV" ~ "Rhus ovata",
                                    Plant == "SAAP" ~ "Salvia apiana",
                                    Plant == "SAME" ~ "Salvia mellifera", 
-                                   Plant == "SANI" ~ "Sambucus nigra"))
-
+                                   Plant == "SANI" ~ "Sambucus nigra")) %>% 
+  distinct()
+survival_gopher_clean$Plant <- factor(survival_gopher_clean$Plant, 
+                                      levels = c("Adenostoma fasciculatum", 
+                                                 "Ceanothus oliganthus",
+                                                 "Heteromeles arbutifolia",
+                                                 "Malosma laurina",
+                                                 "Rhus ovata",
+                                                 "Sambucus nigra",
+                                                 "Encelia californica",
+                                                 "Hesperoyucca whipplei",
+                                                 "Salvia apiana",
+                                                 "Salvia mellifera"))
 # Survival of all species combined with all dates, excl. gopher, with pretty field names
 survival_gopher_total <- survival_gopher_clean %>% 
   group_by(date) %>% 
   summarise(alive = sum(alive))
 
-ggplot(survival_gopher_clean, aes(date, alive_percent)) +
+ggplot(survival_gopher_clean, aes(date, alive_percent, col = community)) +
   geom_point() +
   geom_line () +
-  facet_wrap(~Plant, nrow = 5, ncol = 2) +
+  facet_wrap(vars(Plant), nrow = 5, ncol = 2) +
   labs(y = "Percent Alive") +
   theme_classic()
 
@@ -523,44 +703,307 @@ ggplot(survival_total, aes(date, alive)) +
   theme_classic()
 ```
 
+## Gopher survival by community 
+
 ```{r}
-ceanothus <- survival %>% 
-  filter(Plant == "Ceanothus oliganthus")
+gopher_survival_groups <- survival_gopher_clean %>% 
+  mutate(community = case_when(Plant %in% c("Encelia californica",
+                                            "Hesperoyucca whipplei",
+                                            "Salvia apiana",
+                                            "Salvia mellifera",
+                                            "Sambucus nigra") ~ "sage scrub",
+                               Plant %in% c("Adenostoma fasciculatum",
+                                              "Ceanothus oliganthus",
+                                              "Heteromeles arbutifolia",
+                                              "Malosma laurina",
+                                              "Rhus ovata") ~ "chaparral")) %>% 
+  ungroup()
+gopher_survival_groups_mean <- gopher_survival_groups %>% 
+  group_by(date, community) %>% 
+  summarise(mean = mean(alive_percent),
+            upper = ci(alive_percent, na.rm = TRUE)[3],
+            lower = ci(alive_percent, na.rm = TRUE)[2]) %>% 
+  ungroup()
 
-rhus <- survival %>% 
-  filter(Plant == "Rhus ovata")
+gopher_survival_groups_stats <- gopher_survival_groups %>% 
+  dplyr::select(!alive & !Plant) %>% 
+  nest(data = c(alive_percent, community)) %>%
+  filter(date != "2020-03-01") %>% 
+  mutate(t_test = map(data, ~tidy(t.test(alive_percent~community, .x)))) %>% 
+  unnest(cols = c(data, t_test)) %>% 
+  rename(chaparral_mean = estimate1,
+         sage_scrub_mean = estimate2) %>% 
+  dplyr::select(date, chaparral_mean, sage_scrub_mean, p.value) %>% 
+  distinct() %>% 
+  mutate(p.value = round(p.value, digits = 3))
 
-toyon <- survival %>% 
+gopher_survival_groups_mean <- gopher_survival_groups_mean %>% 
+  left_join(gopher_survival_groups_stats, by = "date")
+  
+
+ggplot()+
+  geom_point(data = gopher_survival_groups_mean, 
+             aes(x = date, y = mean, col = community))+
+  geom_line(data = gopher_survival_groups_mean,
+            aes(x = date, y = mean, col = community))+
+  geom_text(data = gopher_survival_groups_mean %>% filter(date != "2020-03-01" & community == "chaparral"),
+            aes(x = date, y = 105, label = paste("p =", p.value)),
+            size = 2.5)+
+  geom_errorbar(data = gopher_survival_groups_mean, 
+                aes(x = date, ymin = lower, ymax = upper, col = community))+
+  theme_classic()+
+  labs(y = "percent survival")
+```
+
+## Gopher growth
+
+```{r}
+gopher_growth <- survival_gopher %>% 
+  dplyr::select(plot_number, 
+         Plant, 
+         Height, 
+         Stem.Diameter, 
+         measuring_height, 
+         measuring_stem_diameter, 
+         measuring_2_height, 
+         measuring_2_stem_diameter, 
+         measuring_3_height, 
+         measuring_3_stem_diameter) %>% 
+  rename(march_height = Height, 
+         march_stem = Stem.Diameter,
+         july_height = measuring_height,
+         july_stem = measuring_stem_diameter,
+         november_height = measuring_2_height, 
+         november_stem = measuring_2_stem_diameter,
+         december_height = measuring_3_height,
+         december_stem = measuring_3_stem_diameter) %>% 
+  mutate(march_height = as.numeric(march_height),
+         march_stem = as.numeric(march_stem),
+         july_stem = as.numeric(july_stem),
+         november_stem = as.numeric(november_stem),
+         july_growth = july_height - march_height,
+         november_growth = november_height - july_height,
+         december_growth = december_height - november_height) %>% 
+  pivot_longer(cols = 3:13, names_to = "names", values_to = "values") %>% 
+  separate(names, into = c("date", "measurement")) %>% 
+  pivot_wider(names_from = "measurement", values_from = "values") %>% 
+  mutate(date = case_when(date == "march" ~ ym(2003),
+                          date == "july" ~ ym(2007),
+                          date == "november" ~ ym(2011),
+                          date == "december" ~ ym(2112)),
+         alive = case_when(is.na(height) == FALSE ~ 1,
+                           is.na(height) == TRUE ~ 0)) %>%
+  group_by(plot_number) %>% 
+  mutate(date_dead = sum(alive)) %>% 
   ungroup() %>% 
-  filter(Plant == "Heteromeles arbutifolia") %>% 
-  add_row(Plant = "Heteromeles arbutifolia", date = ymd("2021-12-01"), alive = 0, alive_percent = 0)
+  filter(date_dead != 0) %>% 
+  mutate(date_dead = case_when(date_dead == 1 ~ "july2020",
+                               date_dead == 2 ~ "november2020",
+                               date_dead == 3 ~ "december2021",
+                               date_dead == 4 ~ "alive"))
 
-ggplot(ceanothus, aes(date, alive_percent, label = date)) +
-  geom_point()+
-  geom_line() + 
-  geom_label(nudge_x = 8, size = 4)+
-  labs(x = "date",
-       y = "alive percent (%)",
-       title = "Ceanothus oliganthus survival") +
-  theme_classic()
+gopher_height_july_mean <- gopher_growth %>% 
+  filter(date == "2020-03-01") %>% 
+  filter(Plant != "No Plant") %>% 
+  mutate(alive = case_when(date_dead == "july2020" ~ 0,
+                           TRUE ~ alive)) %>% 
+  dplyr::select(Plant, height, alive) %>% 
+  group_by(Plant, alive) %>% 
+  summarise(mean = ci(height, na.rm = TRUE)[1],
+            lower = ci(height, na.rm = TRUE)[2],
+            upper = ci(height, na.rm = TRUE)[3])
 
-ggplot(rhus, aes(date, alive_percent, label = date)) +
-  geom_point()+
-  geom_line() + 
-  geom_label(nudge_x = 8, size = 4)+
-  labs(x = "date",
-       y = "alive percent (%)",
-       title = "Rhus ovata survival") +
-  theme_classic()
+gopher_height_july_stats <- gopher_growth %>%
+  filter(date == "2020-03-01") %>% 
+  filter(Plant != "No Plant") %>% 
+  mutate(alive = case_when(date_dead == "july2020" ~ 0,
+                           TRUE ~ alive)) %>% 
+  dplyr::select(Plant, height, alive) %>% 
+  nest(data = c(height, alive)) %>% 
+  mutate(height_ttest = map(data, ~tidy(t.test(height~alive, .x)))) %>% 
+  unnest(height_ttest) %>% 
+  dplyr::select(Plant, p.value) %>% 
+  mutate(p.value = round(p.value, digits = 3)) %>% 
+  full_join(gopher_height_july_mean, by = "Plant") %>% 
+  mutate(community = case_when(Plant %in% c("ADFA", "CEOL", "HEAR", "MALA", "RHOV","SANI") ~ "chaparral",
+                               Plant %in% c("ENCA", "HEWH", "SAAP", "SAME") ~ "sage scrub"),
+         alive = case_when(alive == 0 ~ "dead",
+                           alive == 1 ~ "alive"))
+gopher_height_july_stats$Plant <- factor(gopher_height_july_stats$Plant, 
+                                         levels = c("ADFA", "CEOL", "HEAR", "MALA", "RHOV", "SANI",
+                                                    "ENCA", "HEWH", "SAAP","SAME"))
 
-ggplot(toyon, aes(date, alive_percent, label = date)) +
-  geom_point()+
-  geom_line() + 
-  geom_label(nudge_x = 8, size = 4)+
-  labs(x = "date",
-       y = "alive percent (%)",
-       title = "Heteromeles arbutifolia survival") +
-  theme_classic()
+gopher_height_november_mean <- gopher_growth %>% 
+  filter(date == "2020-07-01" & date_dead != "july2020") %>% 
+  filter(Plant != "No Plant") %>% 
+  mutate(alive = case_when(date_dead == "november2020" ~ 0,
+                           TRUE ~ alive)) %>% 
+  dplyr::select(Plant, height, alive) %>% 
+  group_by(Plant, alive) %>% 
+  summarise(mean = ci(height, na.rm = TRUE)[1],
+            lower = ci(height, na.rm = TRUE)[2],
+            upper = ci(height, na.rm = TRUE)[3])
+
+gopher_height_november_stats <- gopher_growth %>% 
+  filter(date == "2020-07-01" & date_dead != "july2020") %>% 
+  filter(Plant != "No Plant") %>% 
+  mutate(alive = case_when(date_dead == "november2020" ~ 0,
+                           TRUE ~ alive)) %>% 
+  dplyr::select(Plant, height, alive) %>% 
+  nest(data = c(height, alive)) %>% 
+  mutate(height_ttest = map(data, ~tidy(t.test(height~alive, .x)))) %>% 
+  unnest(height_ttest) %>% 
+  dplyr::select(Plant, p.value) %>%
+  mutate(p.value = round(p.value, digits = 3))%>% 
+  full_join(gopher_height_november_mean, by = "Plant") %>% 
+  mutate(community = case_when(Plant %in% c("ADFA", "CEOL", "HEAR", "MALA", "RHOV","SANI") ~ "chaparral",
+                               Plant %in% c("ENCA", "HEWH", "SAAP", "SAME") ~ "sage scrub"),
+         alive = case_when(alive == 0 ~ "dead",
+                           alive == 1 ~ "alive"))
+gopher_height_november_stats$Plant <- factor(gopher_height_november_stats$Plant, 
+                                         levels = c("ADFA", "CEOL", "HEAR", "MALA", "RHOV", "SANI",
+                                                    "ENCA", "HEWH", "SAAP","SAME"))
+
+gopher_height_december_mean <- gopher_growth %>% 
+  filter(date == "2020-11-01" & date_dead %in% c("december2021", "alive")) %>% 
+  filter(Plant != "No Plant") %>% 
+  filter(Plant != "HEAR") %>% 
+  filter(Plant != "CEOL") %>% 
+  mutate(alive = case_when(date_dead == "december2021" ~ 0,
+                           TRUE ~ alive)) %>% 
+  dplyr::select(Plant, height, alive) %>% 
+  group_by(Plant, alive) %>% 
+  summarise(mean = ci(height, na.rm = TRUE)[1],
+            lower = ci(height, na.rm = TRUE)[2],
+            upper = ci(height, na.rm = TRUE)[3])
+
+gopher_height_december_stats <- gopher_growth %>% 
+  filter(date == "2020-11-01" & date_dead %in% c("december2021", "alive")) %>% 
+  filter(Plant != "No Plant") %>% 
+  filter(Plant != "HEAR") %>% 
+  filter(Plant != "CEOL") %>% 
+  mutate(alive = case_when(date_dead == "december2021" ~ 0,
+                           TRUE ~ alive)) %>% 
+  dplyr::select(Plant, height, alive) %>% 
+  nest(data = c(height, alive)) %>% 
+  mutate(height_ttest = map(data, ~tidy(t.test(height~alive, .x)))) %>% 
+  unnest(height_ttest) %>% 
+  dplyr::select(Plant,p.value) %>% 
+  mutate(p.value = round(p.value, digits = 3)) %>% 
+  full_join(gopher_height_december_mean, by = "Plant") %>% 
+  mutate(community = case_when(Plant %in% c("ADFA", "MALA", "RHOV","SANI") ~ "chaparral",
+                               Plant %in% c("ENCA", "HEWH", "SAAP", "SAME") ~ "sage scrub"),
+         alive = case_when(alive == 0 ~ "dead",
+                           alive == 1 ~ "alive"))
+gopher_height_december_stats$Plant <- factor(gopher_height_december_stats$Plant, 
+                                         levels = c("ADFA", "MALA", "RHOV", "SANI",
+                                                    "ENCA", "HEWH", "SAAP","SAME"))
+
+ggplot(gopher_height_july_stats)+
+  geom_point(aes(x = Plant, y = mean, shape = alive, col = community))+
+  geom_errorbar(aes(x = Plant, ymin = lower, ymax = upper, col = community)) +
+  geom_text(aes(x = Plant, y = 60, label = paste("p =", p.value)), size = 3)+
+  theme_classic()+
+  labs (x = "Species",
+        y = "Height (cm)")
+ggplot(gopher_height_november_stats)+
+  geom_point(aes(x = Plant, y = mean, shape = alive, col = community))+
+  geom_errorbar(aes(x = Plant, ymin = lower, ymax = upper, col = community)) +
+  geom_text(aes(x = Plant, y = 55, label = paste("p =", p.value)), size = 3) +
+  theme_classic() +
+  labs(x = "Species",
+       y = "Height (cm)")
+ggplot(gopher_height_december_stats)+
+  geom_point(aes(x = Plant, y = mean, shape = alive, col = community))+
+  geom_errorbar(aes(x = Plant, ymin = lower, ymax = upper, col = community)) +
+  geom_text(aes(x = Plant, y = 130, label = paste("p =", p.value)), size = 3)+
+  theme_classic() +
+  labs(x = "Species",
+       y = "Height (cm)")
+
+```
+
+```{r}
+gopher_growth_november_mean <- gopher_growth %>% 
+  filter(date == "2020-03-01") %>% 
+  filter(Plant != "No Plant") %>% 
+  mutate(alive = case_when(date_dead %in% c("december2021", "alive") ~ 1,
+                           date_dead %in% c("july2020", "november2020") ~ 0)) %>%
+  dplyr::select(Plant, height, alive) %>%  
+  group_by(Plant, alive) %>% 
+  summarise(mean = ci(height, na.rm = TRUE)[1],
+            lower = ci(height, na.rm = TRUE)[2],
+            upper = ci(height, na.rm = TRUE)[3])
+
+gopher_growth_november_stats <- gopher_growth %>% 
+  filter(date == "2020-03-01") %>% 
+  filter(Plant != "No Plant") %>% 
+  mutate(alive = case_when(date_dead %in% c("december2021", "alive") ~ 1,
+                           date_dead %in% c("july2020", "november2020") ~ 0)) %>%
+  dplyr::select(Plant, height, alive) %>% 
+  nest(data = c(height, alive)) %>% 
+  mutate(growth_ttest = map(data, ~tidy(t.test(height~alive, .x)))) %>% 
+  unnest(growth_ttest) %>% 
+  dplyr::select(Plant, p.value) %>%
+  mutate(p.value = round(p.value, digits = 3))%>% 
+  full_join(gopher_growth_november_mean, by = "Plant") %>% 
+  mutate(community = case_when(Plant %in% c("ADFA", "CEOL", "HEAR", "MALA", "RHOV","SANI") ~ "chaparral",
+                               Plant %in% c("ENCA", "HEWH", "SAAP", "SAME") ~ "sage scrub"),
+         alive = case_when(alive == 0 ~ "dead",
+                           alive == 1 ~ "alive"))
+gopher_growth_november_stats$Plant <- factor(gopher_growth_november_stats$Plant, 
+                                         levels = c("ADFA", "CEOL", "HEAR", "MALA", "RHOV", "SANI",
+                                                    "ENCA", "HEWH", "SAAP","SAME"))
+
+gopher_growth_december_mean <- gopher_growth %>% 
+  filter(date == "2020-11-01" & date_dead %in% c("december2021", "alive")) %>% 
+  filter(Plant != "No Plant") %>% 
+  filter(Plant != "HEAR") %>% 
+  filter(Plant != "CEOL") %>% 
+  mutate(alive = case_when(date_dead == "december2021" ~ 0,
+                           TRUE ~ alive)) %>% 
+  dplyr::select(Plant, growth, alive) %>% 
+  group_by(Plant, alive) %>% 
+  summarise(mean = ci(growth, na.rm = TRUE)[1],
+            lower = ci(growth, na.rm = TRUE)[2],
+            upper = ci(growth, na.rm = TRUE)[3])
+
+gopher_growth_december_stats <- gopher_growth %>% 
+  filter(date == "2020-11-01" & date_dead %in% c("december2021", "alive")) %>% 
+  filter(Plant != "No Plant") %>% 
+  filter(Plant != "HEAR") %>% 
+  filter(Plant != "CEOL") %>% 
+  mutate(alive = case_when(date_dead == "december2021" ~ 0,
+                           TRUE ~ alive)) %>% 
+  dplyr::select(Plant, growth, alive) %>% 
+  nest(data = c(growth, alive)) %>% 
+  mutate(growth_ttest = map(data, ~tidy(t.test(growth~alive, .x)))) %>% 
+  unnest(growth_ttest) %>% 
+  dplyr::select(Plant,p.value) %>% 
+  mutate(p.value = round(p.value, digits = 3)) %>% 
+  full_join(gopher_growth_december_mean, by = "Plant") %>% 
+  mutate(community = case_when(Plant %in% c("ADFA", "MALA", "RHOV","SANI") ~ "chaparral",
+                               Plant %in% c("ENCA", "HEWH", "SAAP", "SAME") ~ "sage scrub"),
+         alive = case_when(alive == 0 ~ "dead",
+                           alive == 1 ~ "alive"))
+gopher_growth_december_stats$Plant <- factor(gopher_growth_december_stats$Plant, 
+                                         levels = c("ADFA", "MALA", "RHOV", "SANI",
+                                                    "ENCA", "HEWH", "SAAP","SAME"))
+
+ggplot(gopher_growth_november_stats)+
+  geom_point(aes(x = Plant, y = mean, shape = alive, col = community))+
+  geom_errorbar(aes(x = Plant, ymin = lower, ymax = upper, col = community)) +
+  geom_text(aes(x = Plant, y = 60, label = paste("p =", p.value)), size = 3) +
+  theme_classic() +
+  labs(x = "Species",
+       y = "Growth (cm)")
+ggplot(gopher_growth_december_stats)+
+  geom_point(aes(x = Plant, y = mean, shape = alive, col = community))+
+  geom_errorbar(aes(x = Plant, ymin = lower, ymax = upper, col = community)) +
+  geom_text(aes(x = Plant, y = 140, label = paste("p =", p.value)), size = 3)+
+  theme_classic() +
+  labs(x = "Species",
+       y = "Growth (cm)")
 ```
 
 
@@ -601,383 +1044,33 @@ plots_topography <- plots %>%
          sol_rad_aspect = raster::extract(sol_rad_aspect, plots),
          terrain_ruggedness = raster::extract(terrain_ruggedness, plots),
          terrain_texture = raster::extract(terrain_texture, plots),
-         topographic_position = raster::extract(topographic_position, plots)) 
+         topographic_position = raster::extract(topographic_position, plots)) %>% 
+  st_as_sf()
 ```
 
 ## Making shapefiles of survival data for mapping
 
 ```{r}
-planting_survival_spatial <- right_join(planting_survival, plots_topography, by = "plot_number") %>% 
-  drop_na(Plant)
-may_survival_spatial <- right_join(watering_survival, plots_topography, by = "plot_number") %>% 
-  drop_na(Plant)
-july_survival_spatial <- right_join(measuring_survival, plots_topography, by = "plot_number") %>% 
-  drop_na(Plant)
-november_survival_spatial <- right_join(measuring_survival_2, plots_topography, by = "plot_number") %>% 
-  drop_na(Plant)
-december_survival_spatial <- right_join(measuring_survival_3, plots_topography, by = "plot_number") %>% 
-  drop_na(Plant)
-```
-
-## Make PCA for topographic data. 
-  # use plots_topography data frame
-  
-```{r}
-plots_topo_1 <-na.omit(st_set_geometry(plots_topography[,2:13],NULL))
-plots_topo_2 <-plots_topo_1[,1:9]
-plots_topo_3 <-plots_topo_1[,1:6]
-plots_topo_4 <-plots_topo_1[,1:3]
-plots_topo_5 <-plots_topo_1[,c(2,4:6)]
-
-# PCA for all continuous variables
-topo_pca_1 <-prcomp(plots_topo_1, scale=TRUE)
-summary(topo_pca_1) # explains 67% variance in PC1+2
-topo_pca1_var <- topo_pca_1$sdev^2/sum(topo_pca_1$sdev^2)
-barplot(topo_pca1_var, main="Variance Explained", names.arg=c("PC1","PC2","PC3","PC4", "PC5", "PC6", "PC7", "PC8", "PC9", "PC10", "PC11"))
-
-# except terrain ruggedness/texture 
-topo_pca_2 <-prcomp(plots_topo_2, scale=TRUE)
-summary(topo_pca_2) # explains 73% variance in PC1+2
-topo_pca2_var <- topo_pca_2$sdev^2/sum(topo_pca_2$sdev^2)
-barplot(topo_pca2_var, main="Variance Explained", names.arg=c("PC1","PC2","PC3","PC4", "PC5", "PC6", "PC7", "PC8", "PC9"))
-# elev, aspect, slope, 3 seasons radiation 
-topo_pca_3 <-prcomp(plots_topo_3, scale=TRUE)
-summary(topo_pca_3) # 82%
-
-# elev, aspect, slope
-topo_pca_4 <-prcomp(plots_topo_4, scale=TRUE)
-summary(topo_pca_4) # 86%
-
-# aspect, 3 seasons solar radiation
-topo_pca_5 <-prcomp(plots_topo_5, scale=TRUE)
-summary(topo_pca_5) # 96%
-
-# bar chart of variance explained by each PC in PCR5
-topo_pca5_var <- topo_pca_5$sdev^2/sum(topo_pca_5$sdev^2)
-barplot(topo_pca5_var, main="Variance Explained", names.arg=c("PC1","PC2","PC3","PC4"))
-
-#adding end survival to PCA
-july_alive <- measuring_survival %>% 
-  filter(alive == 1)
-november_alive <- measuring_survival_2 %>% 
-  filter(alive == 1)
-december_alive <- measuring_survival_3 %>% 
-  filter(alive == 1)
-plot_survival <- watering_survival %>% 
-  mutate(date_dead = case_when(alive == 0 ~ "may 2020",
-                               !plot_number %in% july_alive$plot_number ~ "july 2020",
-                               !plot_number %in% november_alive$plot_number ~ "november 2020",
-                               !plot_number %in% december_alive$plot_number ~ "december 2021",
-                               TRUE ~ "alive")) 
-
-# adding species to PCA
-plot_species_num <- na.omit(planting[,1:2]) %>% mutate(Plant = case_when(Plant == "ENCA (Pink)" ~ "ENCA",
-                           Plant == "CEOL (Orange)" ~ "CEOL",
-                           Plant == "HEWH (White)" ~ "HEWH",
-                           Plant == "SAME (Orange + Pink)" ~ "SAME",
-                           Plant == "SANI (Orange + Yellow)" ~ "SANI",
-                           Plant == "RHOV (White + Pink)" ~ "RHOV",
-                           Plant == "SAAP (White + Green)" ~ "SAAP",
-                           Plant == "MALA (White + Yellow)" ~ "MALA",
-                           Plant == "HEAR" ~ "HEAR",
-                           Plant == "ADFA (Orange + Green)" ~ "ADFA",
-                           Plant == "RHOV SAAP (White + Pink)" ~ "SAAP",
-                           Plant == "ENCA CEOL (Pink)" ~ "CEOL", 
-                           Plant == "HEWH (White) RHOV" ~ "RHOV",
-                           Plant == "NO PLANT" ~ "No Plant"))
-
-plot_species_name <- plot_species_num %>% mutate(Plant = case_when(Plant == "ADFA" ~ "Adenostoma fasciculatum",
-                                   Plant == "CEOL" ~ "Ceanothus oliganthus",
-                                   Plant == "ENCA" ~ "Encelia californica",
-                                   Plant == "HEAR" ~ "Heteromeles arbutifolia",
-                                   Plant == "HEWH" ~ "Hesperoyucca whipplei",
-                                   Plant == "MALA" ~ "Malosma laurina",
-                                   Plant == "RHOV" ~ "Rhus ovata",
-                                   Plant == "SAAP" ~ "Salvia apiana",
-                                   Plant == "SAME" ~ "Salvia mellifera", 
-                                   Plant == "SANI" ~ "Sambucus nigra"))
-
-# matching the number of rows to pass species data
-plots_topography_noNA <- na.omit(plots_topography[,1:13])
-plots_topography_named <- merge(x=plots_topography_noNA, y=plot_species_name, by="plot_number") %>% 
-  merge(plot_survival, by = "plot_number")
-
-#plot of pca1 colored by survival
-may_dead <- plots_topography_named %>% 
-  filter(date_dead == "may 2020")
-autoplot(topo_pca_2, data = plots_topography_named, colour = "date_dead",
-         loadings = TRUE, loadings.colour = 'grey', 
-         loadings.label = FALSE, loadings.label.size = 3)
-
-# plot of pca 3colored by species
-autoplot(topo_pca_3, data = plots_topography_named, colour = "date_dead",
-         loadings = TRUE, loadings.colour = 'grey', 
-         loadings.label = FALSE, loadings.label.size = 3)
-
-#plot of pca 4 colored by species
-autoplot(topo_pca_4, data = plots_topography_named, colour = "date_dead",
-         loadings = TRUE, loadings.colour = 'grey', 
-         loadings.label = FALSE, loadings.label.size = 3)
-
-# pca 5 colored by species. similar to pca 3
-autoplot(topo_pca_5, data = plots_topography_named, colour = "date_dead",
-         loadings = TRUE, loadings.colour = 'grey', 
-         loadings.label = FALSE, loadings.label.size = 3)
-
-
-```
-
-```{r}
-# Connecting PCA to plotted topo data, excl. gophers
-pca_data <- as.data.frame(topo_pca_2[["x"]])
-
-pca_data_all <- plots_topography_named %>% 
-  mutate(pc1 = pca_data$PC1,
-         pc2 = pca_data$PC2)
-
-pca_data_no_gopher <- pca_data_all %>% 
-  filter(plot_number %in% survival_gopher$plot_number)
-
-ggplot(pca_data_no_gopher, aes(x = pc1, y = pc2, colour = Plant.x))+
-  geom_point()+
-  theme_classic() + 
-  facet_wrap(~date_dead)
-```
-
-
-## Getting environmental data loaded in
-
-```{r}
-soil_moisture_1 <- read.csv(here("data", "soil_moisture_data", "piru landscape TDR data - 1_7.csv")) %>% dplyr::select(plot, m1, m2, m3, m4, date) %>% 
-  group_by(plot) %>% 
-  mutate(date = mdy("01-07-2020"),
-         soil_moisture = mean(c(m1, m2, m3, m4), na.rm = TRUE)) %>% 
+survival_topography_raw <- survival_gopher_raw %>% 
+  left_join(plots_topography, by = "plot_number") %>% 
+  select(!geometry) %>%
+  drop_na() %>%  
+  group_by(plot_number) %>% 
+  mutate(date_dead = sum(alive)) %>% 
   ungroup() %>% 
-  dplyr::select(plot, soil_moisture, date)
+  select(!plot_number) %>% 
+  mutate(date_dead = case_when(date_dead == 1 ~ "may2020",
+                               date_dead == 2 ~ "july2020",
+                               date_dead == 3 ~ "november2020",
+                               date_dead == 4 ~ "december2021",
+                               date_dead == 5 ~ "alive"))
 
-soil_moisture_2 <- read.csv(here("data", "soil_moisture_data", "piru landscape TDR data - 4_23.csv"))%>% dplyr::select(plot, m1, m2, m3, m4, date) %>% 
-  group_by(plot) %>% 
-  mutate(date = mdy("04-23-2020"),
-         soil_moisture = mean(c(m1, m2, m3, m4), na.rm = TRUE)) %>%
-  ungroup() %>% 
-  
-  dplyr::select(plot, soil_moisture, date)
-
-soil_moisture_3 <- read.csv(here("data", "soil_moisture_data", "piru landscape TDR data - 5_21.csv"))%>% dplyr::select(plot, m1, m2, m3, m4, date) %>% 
-  group_by(plot) %>% 
-  mutate(date = mdy("05-21-2020"),
-         soil_moisture = mean(c(m1, m2, m3, m4), na.rm = TRUE)) %>% 
-  ungroup() %>% 
-  dplyr::select(plot, soil_moisture, date)
-
-# Moisture of 3 discreet timepoints
-soil_moisture <- rbind(soil_moisture_1, soil_moisture_2) %>% 
-  rbind(soil_moisture_3) %>% 
-  rename(plot_number = plot)
-
-moisture_logger_1 <- read.csv(here("data", "soil_moisture_data", "Data_loggers", "EM12384 22Oct20-1548.csv")) %>% 
-  rename(date_time = Measurement.Time) %>% 
-  rename("1132" = X1132) %>% 
-  rename("1130" = X1130) %>% 
-  rename("1124" = X1124) %>% 
-  rename("1131" = X1131) %>% 
-  rename("1647" = X1647) %>% 
-  mutate(date_time = mdy_hm(date_time)) %>% 
-  separate(date_time, into = c("date", "time"), sep = " ") %>% 
-  pivot_longer(cols = c("1132", "1130", "1124", "1131", "1647"), names_to = "plot", values_to = "soil_moisture") %>% 
-  mutate(date = ymd(date), 
-         plot = as.numeric(plot), 
-         soil_moisture = as.numeric(soil_moisture)) %>% 
-  group_by(date, plot) %>% 
-  summarise(soil_moisture = mean(soil_moisture)) %>% 
-  na.omit()
-
-moisture_logger_2 <- read.csv(here("data", "soil_moisture_data", "Data_loggers", "Hobo_Station_1_(1,2,3,14,15).csv")) %>% 
-  rename("434" = "X434") %>% 
-  rename("1546" = "X1546") %>% 
-  rename("425" = "X425") %>% 
-  rename("417" = "X417") %>% 
-  rename("423" = "X423") %>% 
-  pivot_longer(cols = c("434", "1546", "425", "417", "423"), names_to = "plot", values_to = "soil_moisture") %>% 
-  mutate(date_time = mdy_hm(Date.Time..GMT.07.00)) %>% 
-  separate(date_time, into = c("date", "time"), sep = " ") %>% 
-  mutate(date = ymd(date),
-         plot = as.numeric(plot)) %>% 
-  group_by(date, plot) %>% 
-  summarise(soil_moisture = mean(soil_moisture))
-
-moisture_logger_3 <- read.csv(here("data", "soil_moisture_data", "Data_loggers", "Hobo_Station_2_(12,13,4,5)_0.csv")) %>% 
-  rename("155" = "X155") %>% 
-  rename("166" = "X166") %>% 
-  rename("190" = "X190") %>% 
-  rename("92" = "X92") %>% 
-  rename("203" = "X203") %>% 
-  pivot_longer(cols = c("155", "166", "190", "92", "203"), names_to = "plot", values_to = "soil_moisture") %>% 
-  mutate(date_time = mdy_hm(Date.Time..GMT.07.00)) %>% 
-  separate(date_time, into = c("date", "time"), sep = " ") %>% 
-  mutate(date = ymd(date),
-         plot = as.numeric(plot)) %>% 
-  group_by(date, plot) %>% 
-  summarise(soil_moisture = mean(soil_moisture))
-
-# Continuous moisture over time of 15 plots
-moisture_loggers <- rbind(moisture_logger_1, moisture_logger_2) %>% 
-  rbind(moisture_logger_3) %>% 
-  na.omit() %>% 
-  filter(soil_moisture >= 0) %>% 
-  mutate(soil_moisture = soil_moisture*100)
-
-ggplot(moisture_loggers, aes(x = date, y = soil_moisture, color = as.factor(plot)))+
-  geom_point()
-
-pca_soil_moisture <- pca_data_all %>% 
-  filter(plot_number %in% soil_moisture$plot_number) %>% 
-  right_join(soil_moisture, by = "plot_number")
-
-# January soil moisture vs PC1 & PC2
-pca_soil_moisture_jan <- pca_soil_moisture %>% 
-  filter(date.y == "2020-01-07")
-  
-ggplot(pca_soil_moisture_jan, aes(x = pc1, y = soil_moisture)) +
-  geom_point()
-
-ggplot(pca_soil_moisture, aes(x = pc2, y = soil_moisture)) +
-  geom_point() +
-  facet_wrap(~date.y)
-
-summary(lm(soil_moisture~pc1, data = pca_soil_moisture_jan))
-
-# April soil moisture vs PC1 & PC2
-pca_soil_moisture_april <- pca_soil_moisture %>% 
-  filter(date.y == "2020-04-23")
-  
-ggplot(pca_soil_moisture_april, aes(x = pc1, y = soil_moisture)) +
-  geom_point()
-
-ggplot(pca_soil_moisture, aes(x = pc2, y = soil_moisture)) +
-  geom_point() +
-  facet_wrap(~date.y)
-
-summary(lm(soil_moisture~pc1, data = pca_soil_moisture_april)) # R2=0.27
-
-# May soil moisture vs PC1 & PC2
-pca_soil_moisture_may <- pca_soil_moisture %>% 
-  filter(date.y == "2020-05-21")
-  
-ggplot(pca_soil_moisture_may, aes(x = pc1, y = soil_moisture)) +
-  geom_point()
-
-ggplot(pca_soil_moisture, aes(x = pc2, y = soil_moisture)) +
-  geom_point() +
-  facet_wrap(~date.y)
-
-summary(lm(soil_moisture~pc1, data = pca_soil_moisture_may)) # R2=0.24
-```
-
-```{r}
-library(MASS)
-pca_manova <- manova(cbind(pc1,pc2)~date_dead, data = pca_data_all)
-dep <- cbind(pca_data_all$pc1, pca_data_all$pc2)
-ind <- as.data.frame((pca_data_all$date_dead)) %>% 
-  mutate(date_dead = as.factor(pca_data_all$date_dead)) %>% 
-  dplyr::select(date_dead)
-pca_lda <- lda(date_dead~pc1+pc2, data = pca_data_all, CV = F)
-pca_lda
-
-lda_df <- data.frame(
-  date_dead = pca_data_all[,"date_dead"],
-  lda = predict(pca_lda)$x
-)
-lda_df
-
-ggplot(lda_df) +
-  geom_point(aes(x = lda.LD1, y = lda.LD2, color = date_dead.date_dead))
-```
-
-## Next steps: 
- # read in new soil moisture data and re-run regressions. 
- 
-```{r}
-
-# Averages of soil moisture by month, grouped by plot no
-moisture_loggers_May2020  <- moisture_loggers %>%
-  filter(date>"2020/05/01", date<"2020/05/31") %>%
-  group_by(plot) %>%
-  summarise(avg_sm_May=mean(soil_moisture))
-moisture_loggers_June2020 <- moisture_loggers %>%
-  filter(date>"2020/06/01", date<"2020/06/30") %>%
-  group_by(plot) %>%
-  summarise(avg_sm_June=mean(soil_moisture))
-moisture_loggers_July2020 <- moisture_loggers %>%
-  filter(date>"2020/07/01", date<"2020/07/31") %>%
-  group_by(plot) %>%
-  summarise(avg_sm_July=mean(soil_moisture))
-moisture_loggers_August2020 <- moisture_loggers %>%
-  filter(date>"2020/08/01", date<"2020/08/31") %>%
-  group_by(plot) %>%
-  summarise(avg_sm_August=mean(soil_moisture))
-moisture_loggers_September2020 <- moisture_loggers %>%
-  filter(date>"2020/09/01", date<"2020/09/30") %>%
-  group_by(plot) %>%
-  summarise(avg_sm_September=mean(soil_moisture))
-moisture_loggers_October2020 <- moisture_loggers %>%
-  filter(date>"2020/10/01", date<"2020/10/31") %>%
-  group_by(plot) %>%
-  summarise(avg_sm_October=mean(soil_moisture))
-
-# Moisture averages for each month added as columns to pca data
-pca_moistlog_all <-pca_data_all %>% 
-  filter(plot_number %in% moisture_loggers$plot) %>% 
-  left_join(moisture_loggers_May2020, by = c("plot_number"="plot")) %>% 
-  left_join(moisture_loggers_June2020, by = c("plot_number"="plot")) %>% 
-  left_join(moisture_loggers_July2020, by = c("plot_number"="plot")) %>% 
-  left_join(moisture_loggers_August2020, by = c("plot_number"="plot"))%>% 
-  left_join(moisture_loggers_September2020, by = c("plot_number"="plot")) %>%
-  left_join(moisture_loggers_October2020, by = c("plot_number"="plot"))
-
-ggplot(pca_moistlog_all, aes(x = pc1, y = avg_sm_May)) +
-  geom_point()+
-  geom_smooth(method = lm)
-
-ggplot(pca_moistlog_all, aes(x = pc2, y = avg_sm_May)) +
-  geom_point() + 
-  geom_smooth(method = lm)
-
-ggplot(pca_moistlog_all, aes(x = pc1, y = avg_sm_July)) +
-  geom_point() +
-  geom_smooth(method = lm)
-
-summary(lm(avg_sm_May~pc1+pc2, data = pca_moistlog_all)) #R2=0.55
-
-summary(lm(avg_sm_July~pc1, data = pca_moistlog_all)) #R2=0.38
-
-```
-
-## Make three lms per month (PC1, PC2, PC1 + PC2)
-## Use AIC to pick best model per month. 
-```{r}
-
+growth_topography_raw <- gopher_growth %>% 
+  left_join(plots_topography, by = "plot_number") %>% 
+  st_as_sf()
 ```
 
 
-## Get max daily temperature and then average monthly temperature
-## Analyse average monthly temperature similar to soil moisture
 
-```{r}
-my_files <- list.files(here("data", "Ibutton_Data", "test"), pattern = ".csv$", recursive = TRUE, full.names = TRUE)
-test <- read_csv(my_files, id = "plot") %>%  
-  mutate(plot = str_sub(plot, start = -8),
-         plot = str_remove(plot, ".csv"),
-         plot = str_remove(plot, "t"),
-         plot = str_remove(plot, "s"),
-         plot = str_remove(plot, "/"),
-         plot = as.numeric(plot),
-         date_time = mdy_hm(`Date/Time`),
-         temperature = as.numeric(Value)) %>% 
-  dplyr::select(plot, date_time, temperature)
 
-ggplot(test, aes(x = date_time, y = temperature, col = as.factor(plot))) +
-  geom_point()
-  
-```
 

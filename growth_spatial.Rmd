@@ -1,0 +1,107 @@
+---
+title: "Untitled"
+author: "Shane Dewees"
+date: "2022-09-07"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse) 
+library(here)
+library(sf)
+library(raster)
+library(lubridate)
+```
+
+```{r}
+planting <- read.csv(here("data", "planting.csv")) %>% 
+  rename("plot_number" = "ID")
+watering <- read.csv(here("data","watering.csv"))%>% 
+  rename("plot_number" = "ID")
+measuring <- read.csv(here("data", "measuring.csv"))%>% 
+  rename("plot_number" = "ID")
+measuring_2 <- read.csv(here("data", "measuring_2.csv"))%>% 
+  rename("plot_number" = "ID")
+measuring_3 <- read.csv(here("data", "measuring_3.csv"))%>% 
+  rename("plot_number" = "ID")
+```
+
+```{r}
+plots <- st_read(here("data", "plot_gps_points.shp")) %>% 
+  rename("plot_number" = "plt_nmb")
+planting_growth <- planting %>% 
+  mutate(Plant = str_replace_all(string = Plant, pattern = "(White + Pink)", replacement = "")) %>% 
+  mutate(Plant = case_when(Plant == "ENCA (Pink)" ~ "ENCA",
+                           Plant == "CEOL (Orange)" ~ "CEOL",
+                           Plant == "HEWH (White)" ~ "HEWH",
+                           Plant == "SAME (Orange + Pink)" ~ "SAME",
+                           Plant == "SANI (Orange + Yellow)" ~ "SANI",
+                           Plant == "RHOV (White + Pink)" ~ "RHOV",
+                           Plant == "SAAP (White + Green)" ~ "SAAP",
+                           Plant == "MALA (White + Yellow)" ~ "MALA",
+                           Plant == "HEAR" ~ "HEAR",
+                           Plant == "ADFA (Orange + Green)" ~ "ADFA",
+                           Plant == "RHOV SAAP (White + Pink)" ~ "SAAP",
+                           Plant == "ENCA CEOL (Pink)" ~ "CEOL", 
+                           Plant == "HEWH (White) RHOV" ~ "RHOV",
+                           Plant == "NO PLANT" ~ "No Plant")) %>% 
+  filter(Plant != "No Plant", Height != "") %>% 
+  mutate(date = my(0320)) %>% 
+  dplyr::select(plot_number,Plant, Height, Width.1, Width.2, Stem.Diameter) %>% 
+  rename(height_march2020 = Height,
+         stem_march2020 = Stem.Diameter,
+         width1_march2020 = Width.1,
+         width2_march2020 = Width.2)
+
+# Growth data as of November 2020
+measuring_growth_2 <- measuring_2 %>% 
+  mutate(Plant = str_replace(Plant, " ", ""),
+         date = my(1120)) %>% 
+  filter(Plant != "") %>% 
+  dplyr::select(plot_number,Plant, Height, Stem.Diameter, Width.1, Width.2) %>% 
+  rename(height_november2020 = Height,
+         stem_november2020 = Stem.Diameter,
+         width1_november2020 = Width.1,
+         width2_november2020 = Width.2)
+
+# Growth data grouped by species for all dates
+growth_raw <- planting_growth %>% 
+  left_join(measuring_growth_2, by = "plot_number") %>%
+  dplyr::select(plot_number, 
+         Plant.x, 
+         height_march2020,
+         height_november2020,
+         stem_march2020,
+         stem_november2020,
+         width1_march2020,
+         width1_november2020,
+         width2_march2020,
+         width2_november2020) %>% 
+  mutate(height_march2020 = as.numeric(height_march2020),
+         stem_march2020 = as.numeric(stem_march2020),
+         stem_november2020 = as.numeric(stem_november2020),
+         width1_march2020 = as.numeric(width1_march2020),
+         width2_march2020 = as.numeric(width2_march2020),
+         width1_november2020 = as.numeric(width1_november2020),
+         width2_november2020 = as.numeric(width2_november2020),
+         height_growth = height_november2020 - height_march2020,
+         stem_growth = stem_november2020 - stem_march2020,
+         width_growth = ((width1_november2020 + width2_november2020)/2) - ((width1_march2020 + width2_march2020)/2)) %>% 
+  dplyr::select(plot_number, 
+         Plant.x, 
+         height_growth,
+         stem_growth,
+         width_growth) %>% 
+  rename(species = Plant.x) %>% 
+  filter(plot_number %in% plots$plot_number) %>% 
+  full_join(plots, by = "plot_number") %>% 
+  drop_na(height_growth) %>% 
+  st_as_sf()
+ 
+growth_extent <- floor(extent(growth_raw))
+growth_raster <- raster(growth_extent, res = 0.05) 
+growth_raster <- rasterize(growth_raw, growth_raster, fun = 'sum', field = "height_growth")
+
+```
+
