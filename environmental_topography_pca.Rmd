@@ -17,6 +17,7 @@ library(rela)
 library(psych)
 library(ggfortify)
 library(DHARMa)
+library(MASS)
 ```
 
 ```{r}
@@ -29,16 +30,23 @@ diurnal_heat <- raster(here("data", "diurnal_heat.tif"))
 heat_load <- raster(here("data", "heat_load_index.tif"))
 sol_rad_aspect <- raster(here("data", "sol_rad_aspect.tif"))
 terrain_ruggedness <- raster(here("data", "terrain_ruggedness.tif"))
+terrain_texture <- raster(here("data", "terrain_texture.tif"))
+topographic_position <- raster(here("data", "topographic_position.tif"))
 plots_topography <- st_read(here("data", "plot_gps_points.shp")) %>% 
   rename("plot_number" = "plt_nmb")
 plots_topography <- plots_topography %>% 
-  mutate(slope = raster::extract(slope, plots_topography),
+  mutate(elevation = raster::extract(elevation, plots_topography),
+         aspect = raster::extract(aspect, plots_topography),
+         slope = raster::extract(slope, plots_topography),
+         summer_solar_radiation = raster::extract(solar_radiation[[3]], plots_topography),
          spring_solar_radiation = raster::extract(solar_radiation[[2]], plots_topography),
          winter_solar_radiation = raster::extract(solar_radiation[[1]], plots_topography),
          diurnal_heat = raster::extract(diurnal_heat, plots_topography),
          heat_load = raster::extract(heat_load, plots_topography),
          sol_rad_aspect = raster::extract(sol_rad_aspect, plots_topography),
          terrain_ruggedness = raster::extract(terrain_ruggedness, plots_topography)) %>% 
+         #terrain_texture = raster::extract(terrain_texture, plots_topography),
+         #topographic_position = raster::extract(topographic_position, plots_topography),) %>% 
   drop_na()
 growth_topography_raw <- read.csv(here("data", 
                                        "growth_topography_raw.csv")) %>% 
@@ -55,19 +63,23 @@ growth_topography_species_november <- growth_topography_raw %>%
   dplyr::select(!date & !X & !alive & !stem & !growth) %>% 
   distinct() %>% 
   mutate(alive = case_when(date_dead %in% c("november2020", "july2020") ~ 0,
-                           date_dead %in% c("december2021", "alive") ~ 1)) %>%
+                           date_dead %in% c("december2021", "alive") ~ 1)) %>% 
   dplyr::select(plot_number,
                 alive, 
-                Plant, 
+                Plant,
+                elevation,
+                aspect,
                 slope, 
+                summer_solar_radiation,
                 spring_solar_radiation, 
                 winter_solar_radiation,
                 height, 
                 diurnal_heat, 
-                heat_load, 
+                heat_load,
                 sol_rad_aspect, 
                 terrain_ruggedness, 
-                sol_rad_aspect) %>% 
+                terrain_texture,
+                topographic_position) %>% 
   drop_na() %>% 
   column_to_rownames(var = "plot_number")
 ```
@@ -265,8 +277,9 @@ ggplot(soil_moisture_pca, aes(x=date, y = pc6_estimate))+
   geom_point() +
   geom_hline(yintercept = 0, linetype = "dashed")
 
-barplot(topography_pca$rotation[,6], las = 2)
+barplot(topography_pca$rotation[,4], las = 2)
 ```
+
 
 ```{r}
 temperature <- read.csv(here("data", "ibutton_data.csv"))%>% 
@@ -400,12 +413,11 @@ summary(lm(soil_moisture~PC3, data = mean_soil_moisture))
 summary(lm(soil_moisture~PC4, data = mean_soil_moisture))
 summary(lm(soil_moisture~PC5, data = mean_soil_moisture))
 summary(lm(soil_moisture~PC6, data = mean_soil_moisture))
-soil_moisture_model <- lm(soil_moisture~PC6, data = mean_soil_moisture)
+soil_moisture_model <- lm(soil_moisture~PC4, data = mean_soil_moisture)
 autoplot(soil_moisture_model)
-soil_moisture_model_2 <- lm(log(soil_moisture)~PC4, data = mean_soil_moisture)
-autoplot(soil_moisture_model_2)
 
-ggplot(mean_soil_moisture, aes(x = PC6, y = soil_moisture))+
+
+ggplot(mean_soil_moisture, aes(x = PC4, y = soil_moisture))+
   geom_point()+
   geom_smooth(method = "lm")+
   theme_classic()
@@ -433,7 +445,8 @@ autoplot(temp_model)
   
 ggplot(mean_max_temp, aes(x = PC1, y = temperature))+
   geom_point(alpha = 0.5)+
-  geom_smooth(method = "lm")
+  geom_smooth(method = "lm")+
+  theme_classic()
 
 mean_min_temp <- temperature %>%
   group_by(plot, date) %>% 
@@ -456,17 +469,48 @@ ggplot(mean_min_temp, aes(x = PC2, y = temperature))+
   geom_smooth(method = "lm")
 ```
 ```{r}
-ggplot(planting_topography_pca_data, aes(x = pc6_mean, y = pc1_mean, col = as.factor(alive))) +
-  geom_text(aes(label = Plant)) +
-  geom_line(aes(col = Plant))+
+ggplot(data = planting_topography_pca_data) +
+  geom_text(aes(x = pc4_mean, y = pc1_mean, col = factor(alive, levels = c("dead", "alive", "planted")), label = Plant)) +
+  geom_line(aes(x = pc4_mean, y = pc1_mean, group = Plant))+
   geom_hline(yintercept = 0, linetype = "dashed") +
   geom_vline(xintercept = 0, linetype = "dashed") +
-  theme_classic()
+  theme_classic()+
+  labs(col = "legend")+
+  #theme(legend.title = "none")+
+  xlim(-0.8, 0.2)+
+  ylim(-1.5,0.5)
 
-ggplot(survival_topography_pca, aes(x = pc6_difference, y = pc1_difference)) +
-  geom_text(aes(label = Plant))+
+ggplot(data = planting_topography_pca_data %>% filter(alive == "planted")) +
+  geom_text(aes(x = pc4_mean, y = pc1_mean, label = Plant), col = "#619CFF") +
   geom_hline(yintercept = 0, linetype = "dashed") +
   geom_vline(xintercept = 0, linetype = "dashed") +
+  theme_classic()+
+  xlim(-0.8, 0.2)+
+  ylim(-1.5,0.5)
+
+ggplot(data = planting_topography_pca_data %>% filter(alive %in% c("planted", "dead"))) +
+  geom_text(aes(x = pc4_mean, y = pc1_mean, label = Plant, col = as.factor(alive))) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  theme_classic()+
+  xlim(-0.8, 0.2)+
+  ylim(-1.5,0.5)+
+  theme(legend.position = "none")
+
+ggplot(data = planting_topography_pca_data) +
+  geom_text(aes(x = pc4_mean, y = pc1_mean, label = Plant,  col = factor(alive, levels = c("dead", "alive", "planted")))) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  theme_classic()+
+  xlim(-0.8, 0.2)+
+  ylim(-1.5,0.5)+
+  theme(legend.position = "none")
+
+ggplot(data = survival_topography_pca, aes(x = pc4_difference, y = pc1_difference)) +
+  geom_text(aes(label = Plant), col = "#4699dd")+
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  xlim(-0.6,0.)
   theme_classic()
 ```
 
@@ -517,10 +561,11 @@ summary(glm(alive~PC2+Plant, family = "binomial", data = survival_topography_pca
 summary(glm(alive~PC3+Plant, family = "binomial", data = survival_topography_pca_data))
 summary(glm(alive~PC4+Plant, family = "binomial", data = survival_topography_pca_data))
 summary(glm(alive~PC5*Plant, family = "binomial", data = survival_topography_pca_data))
-summary(glm(alive~PC6+Plant, family = "binomial", data = survival_topography_pca_data))
-pc6_model <- glm(alive~PC6+Plant, family = "binomial", data = survival_topography_pca_data)
+summary(glm(alive~PC1*PC4+Plant, family = "binomial", data = survival_topography_pca_data))
+pc4_model <- glm(alive~PC4+Plant, family = "binomial", data = survival_topography_pca_data)
+pc1_pc4_model <- glm(alive~PC1*PC4+Plant, family = "binomial", data = survival_topography_pca_data)
 sum(residuals(pc1_model, "pearson")^2)/with(pc1_model, sum(weights*residuals^2))
-sum(residuals(pc6_model, "pearson")^2)/with(pc6_model, sum(weights*residuals^2))
+sum(residuals(pc4_model, "pearson")^2)/with(pc4_model, sum(weights*residuals^2))
 
 predict_survival_pc1 <- survival_topography_pca_data %>% 
   dplyr::select(Plant, PC1) %>% 
@@ -532,29 +577,24 @@ ggplot(predict_survival_pc1, aes(x = PC1, y = alive_prob))+
   theme_classic()+
   ylim(0,1)
 
-predict_survival_pc6 <- survival_topography_pca_data %>% 
-  dplyr::select(Plant, PC6) %>% 
-  mutate(alive_prob = round(fitted(pc6_model), 2))
+predict_survival_pc4 <- survival_topography_pca_data %>% 
+  dplyr::select(Plant, PC4) %>% 
+  mutate(alive_prob = round(fitted(pc4_model), 2))
 
-ggplot(predict_survival_pc6, aes(x = PC6, y = alive_prob))+
+ggplot(predict_survival_pc4, aes(x = PC4, y = alive_prob))+
   geom_point()+
   facet_wrap(~Plant)+
   theme_classic()+
   ylim(0,1)
 
-predict_survival_pc1_pc6 <- survival_topography_pca_data %>% 
-  dplyr::select(Plant, PC1, PC6) %>% 
-  mutate(alive_prob = round(fitted(pc1_pc6_model), 2))
+predict_survival_pc1_pc4 <- survival_topography_pca_data %>% 
+  dplyr::select(Plant,PC1, PC4) %>% 
+  mutate(alive_prob = round(fitted(pc1_pc4_model), 2))
 
-ggplot(predict_survival_pc1_pc6, aes(x = PC1, y = alive_prob))+
-  geom_point()+
-  facet_wrap(~Plant)+
-  theme_classic()+
-  ylim(0,1)
-
-ggplot(predict_survival_pc1_pc6, aes(x = PC6, y = alive_prob))+
+ggplot(predict_survival_pc1_pc4, aes(x = PC4, y = alive_prob, col = PC1))+
   geom_point()+
   facet_wrap(~Plant)+
   theme_classic()+
   ylim(0,1)
 ```
+
