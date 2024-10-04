@@ -1,0 +1,137 @@
+---
+title: "Untitled"
+output: html_document
+date: "2023-02-11"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(here)
+library(lubridate)
+library(patchwork)
+```
+
+```{r}
+temp <- read.csv(here("data", "weather_station_temp.csv")) %>% 
+  mutate(Month = case_when(Month == "January" ~ 1,
+                           Month == "Febuary" ~ 2,
+                           Month == "March" ~ 3,
+                           Month == "April" ~ 4,
+                           Month == "May" ~ 5,
+                           Month == "June" ~ 6,
+                           Month == "July" ~ 7,
+                           Month == "August" ~ 8,
+                           Month == "September" ~ 9,
+                           Month == "October" ~ 10,
+                           Month == "November" ~ 11,
+                           Month == "December" ~ 12), 
+         date = paste(Year, Month, Date, sep = "-"),
+         date = ymd(date))
+precip <- read.csv(here("data", "weather_station_precip.csv")) %>% 
+  mutate(Month = case_when(Month == "January" ~ 1,
+                           Month == "February" ~ 2,
+                           Month == "March" ~ 3,
+                           Month == "April" ~ 4,
+                           Month == "May" ~ 5,
+                           Month == "June" ~ 6,
+                           Month == "July" ~ 7,
+                           Month == "August" ~ 8,
+                           Month == "September" ~ 9,
+                           Month == "October" ~ 10,
+                           Month == "November" ~ 11,
+                           Month == "December" ~ 12), 
+         date = paste(Year, Month, sep = "-"),
+         date = ym(date))
+
+temp_2020 <- temp %>% 
+  filter(Year == 2020)
+
+temp_2022 <- temp %>% 
+  filter(Year == 2022)
+
+precip_2020 <- precip %>% 
+  filter(Year == 2020)
+
+precip_2022 <- precip %>% 
+  filter(Year == 2022)
+normals_2020 <- read.csv(here("data", "weather_norms.csv")) %>% 
+  mutate(temperature = (temperature * (9/5)) + 32,
+         precipitation = precipitation/25.4,
+         date = case_when(month == 1 ~ mdy("01/15/2020"),
+                          month == 2 ~ mdy("02/15/2020"),
+                          month == 3 ~ mdy("03/15/2020"),
+                          month == 4 ~ mdy("04/15/2020"),
+                          month == 5 ~ mdy("05/15/2020"),
+                          month == 6 ~ mdy("06/15/2020"),
+                          month == 7 ~ mdy("07/15/2020"),
+                          month == 8 ~ mdy("08/15/2020"),
+                          month == 9 ~ mdy("09/15/2020"),
+                          month == 10 ~ mdy("10/15/2020"),
+                          month == 11 ~ mdy("11/15/2020"),
+                          month == 12 ~ mdy("12/15/2020")))
+
+normals_2021 <- read.csv(here("data", "weather_norms.csv")) %>% 
+  mutate(temperature = (temperature * (9/5)) + 32,
+         precipitation = precipitation/25.4,
+         date = case_when(month == 1 ~ mdy("01/15/2021"),
+                          month == 2 ~ mdy("02/15/2021"),
+                          month == 3 ~ mdy("03/15/2021"),
+                          month == 4 ~ mdy("04/15/2021"),
+                          month == 5 ~ mdy("05/15/2021"),
+                          month == 6 ~ mdy("06/15/2021"),
+                          month == 7 ~ mdy("07/15/2021"),
+                          month == 8 ~ mdy("08/15/2021"),
+                          month == 9 ~ mdy("09/15/2021"),
+                          month == 10 ~ mdy("10/15/2021"),
+                          month == 11 ~ mdy("11/15/2021"),
+                          month == 12 ~ mdy("12/15/2021")))
+
+normals <- rbind(normals_2020, normals_2021)
+```
+
+```{r}
+temp1 <- ggplot()+
+  geom_line(data = temp %>% filter(date < "2022-01-01"), aes(x = date, y = Temp))+
+  geom_line(data = normals, aes(x = date, y = temperature), col = "blue")+
+  theme_classic()+
+  ylim(40, 120)+
+  geom_point(aes(x = ymd("2020-05-01"), y = 76.5), shape = 8, size = 3, col = "blue")+
+  geom_point(aes(x = ymd("2020-07-01"), y = 89), shape = 8, size = 3, col = "blue")+
+  geom_point(aes(x = ymd("2020-12-01"), y = 67), shape = 8, size = 3, col = "blue")+
+  geom_point(aes(x = ymd("2021-12-01"), y = 67), shape = 8, size = 3, col = "blue")+
+  labs(x = "Date", 
+       y = "Maximum daily \n temperature (Farenheit)")
+temp1
+precip1 <- ggplot(precip %>% filter(date < "2022-01-01"), aes(x= date, y = precip))+
+  geom_col(fill = "lightblue")+
+  geom_line(data = normals, aes(x = date, y = precipitation), col = "blue")+
+  theme_classic()+
+  geom_point(aes(x = ymd("2020-05-01"), y = 0.7), shape = 8, size = 3, col = "blue")+
+  geom_point(aes(x = ymd("2020-07-01"), y = 0.1), shape = 8, size = 3, col = "blue")+
+  geom_point(aes(x = ymd("2020-12-01"), y = 2), shape = 8, size = 3, col = "blue")+
+  geom_point(aes(x = ymd("2021-12-01"), y = 2), shape = 8, size = 3, col = "blue")+
+  ylim(0,6)+
+  labs(x = "Date",
+       y = "Monthly precipitation \n accumulation (inches)")
+precip1
+temp2 <- ggplot(temp_2022, aes(x = date, y = Temp))+
+  geom_line(data = normals, aes(x = date, y = temperature), col = "blue")+
+  theme_classic()+
+   ylim(40, 120)+
+  labs(x = "Date", 
+       y = "Maximum daily \n temperature (Farenheit)",
+       title = "2022")
+precip2 <- ggplot(precip_2022, aes(x= date, y = precip))+
+  geom_col(fill = "lightblue")+
+  theme_classic()+
+  ylim(0,6)+
+  labs(x = "Date",
+       y = "Monthly precipitation \n accumulation (inches)",
+       title = "2022")
+
+figure2 <- (temp1 / precip1)+ plot_annotation(tag_levels = "A")
+
+ggsave("figure2.png", plot = figure2, path = here("figures"), width = 8, height = 5, units = "in", dpi = 325)
+```
+

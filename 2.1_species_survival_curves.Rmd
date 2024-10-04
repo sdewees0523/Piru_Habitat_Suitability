@@ -1,0 +1,151 @@
+---
+title: "Untitled"
+output: html_document
+date: "2024-02-22"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(here)
+library(tidyverse)
+library(survival)
+library(ggfortify)
+library(patchwork)
+```
+
+```{r}
+survival_gopher_raw <- read.csv(here("data", "clean_data", "survival_gopher_raw.csv"))%>% 
+  dplyr::select(!X) %>% 
+  group_by(plot_number) %>% 
+  filter(!lag(gopher) == 1 | is.na(lag(gopher) == T)) %>%
+  ungroup()
+
+survival_gopher_clean <- survival_gopher_raw %>% 
+  mutate(community = case_when(Plant %in% c("MALA", "RHOV", "ADFA", "HEAR", "CEOL") ~ "Chaparral",
+                               Plant %in% c("HEWH", "SAAP", "SAME", "ENCA", "SANI") ~ "CSS"))
+```
+
+```{r}
+ceol_survival <- autoplot(survfit(Surv(start_time, end_time, event = dead) ~ 1, data = survival_gopher_clean %>% filter(Plant == "CEOL"), id = plot_number), surv.colour = "#00BFC4", censor.colour = "black") +
+  theme_classic() +
+  labs(x = "",
+       y = "Probability of Survival",
+       title = "Ceanothus oliganthus")+ 
+  geom_vline(xintercept = 84, linetype = "dashed")+
+  geom_text(aes(x = 65, y = 0, label = "May"))+
+  geom_vline(xintercept = 129, linetype = "dashed")+
+  geom_text(aes(x = 150, y = 0, label = "July"))+
+  geom_vline(xintercept = 331, linetype = "dashed")+
+  geom_text(aes(x = 380, y = 0, label = "November"))
+hear_survival <- autoplot(survfit(Surv(start_time,end_time, event = dead) ~ 1, data = survival_gopher_clean %>% filter(Plant == "HEAR"), id = plot_number), surv.colour = "#00BFC4", censor.colour = "black") +
+  theme_classic()+
+  labs(x = "",
+       y = "",
+       title = "Heteromeles arbutifolia")+
+  xlim(0, 669)+ 
+  geom_vline(xintercept = 84, linetype = "dashed")+
+  geom_text(aes(x = 65, y = 0, label = "May"))+
+  geom_vline(xintercept = 129, linetype = "dashed")+
+  geom_text(aes(x = 150, y = 0, label = "July"))+
+  geom_vline(xintercept = 331, linetype = "dashed")+
+  geom_text(aes(x = 380, y = 0, label = "November"))
+mala_survival <- autoplot(survfit(Surv(start_time,end_time, event = dead) ~ 1, data = survival_gopher_clean %>% filter(Plant == "MALA"), id = plot_number), surv.colour = "#00BFC4", censor.colour = "black") +
+  theme_classic()+
+  labs(x = "",
+       y = "",
+       title = "Malosma laurina")+ 
+  geom_vline(xintercept = 84, linetype = "dashed")+
+  geom_text(aes(x = 65, y = 0, label = "May"))+
+  geom_vline(xintercept = 129, linetype = "dashed")+
+  geom_text(aes(x = 150, y = 0, label = "July"))+
+  geom_vline(xintercept = 331, linetype = "dashed")+
+  geom_text(aes(x = 380, y = 0, label = "November"))
+rhov_survival <- autoplot(survfit(Surv(start_time,end_time, event = dead) ~ 1, data = survival_gopher_clean %>% filter(Plant == "RHOV"), id = plot_number), surv.colour = "#00BFC4", censor.colour = "black") +
+  theme_classic()+
+  labs(x = "",
+       y = "",
+       title = "Rhus ovata")+ 
+  geom_vline(xintercept = 84, linetype = "dashed")+
+  geom_text(aes(x = 65, y = 0, label = "May"))+
+  geom_vline(xintercept = 129, linetype = "dashed")+
+  geom_text(aes(x = 150, y = 0, label = "July"))+
+  geom_vline(xintercept = 331, linetype = "dashed")+
+  geom_text(aes(x = 380, y = 0, label = "November"))
+adfa_survival <- autoplot(survfit(Surv(start_time,end_time, event = dead) ~ 1, data = survival_gopher_clean %>% filter(Plant == "ADFA"), id = plot_number), surv.colour = "#00BFC4", censor.colour = "black") +
+  theme_classic()+
+  labs(x = "",
+       y = "",
+       title = "Adenostoma fasciculatum")+ 
+  geom_vline(xintercept = 84, linetype = "dashed")+
+  geom_text(aes(x = 65, y = 0, label = "May"))+
+  geom_vline(xintercept = 129, linetype = "dashed")+
+  geom_text(aes(x = 150, y = 0, label = "July"))+
+  geom_vline(xintercept = 331, linetype = "dashed")+
+  geom_text(aes(x = 380, y = 0, label = "November"))
+sani_survival <- autoplot(survfit(Surv(start_time,end_time, event = dead) ~ 1, data = survival_gopher_clean %>% filter(Plant == "SANI"), id = plot_number), surv.colour = "#C77CFF", censor.colour = "black") +
+  theme_classic()+
+  labs(x = "",
+       y = "",
+       title = "Sambucus nigra")+ 
+  geom_vline(xintercept = 84, linetype = "dashed")+
+  geom_text(aes(x = 65, y = 0, label = "May"))+
+  geom_vline(xintercept = 129, linetype = "dashed")+
+  geom_text(aes(x = 150, y = 0, label = "July"))+
+  geom_vline(xintercept = 331, linetype = "dashed")+
+  geom_text(aes(x = 380, y = 0, label = "November"))
+saap_survival <- autoplot(survfit(Surv(start_time,end_time, event = dead) ~ 1, data = survival_gopher_clean %>% filter(Plant == "SAAP"), id = plot_number), surv.colour = "#C77CFF", censor.colour = "black") +
+  theme_classic()+
+  labs(x = "",
+       y = "",
+       title = "Salvia apiana")+ 
+  geom_vline(xintercept = 84, linetype = "dashed")+
+  geom_text(aes(x = 65, y = 0, label = "May"))+
+  geom_vline(xintercept = 129, linetype = "dashed")+
+  geom_text(aes(x = 150, y = 0, label = "July"))+
+  geom_vline(xintercept = 331, linetype = "dashed")+
+  geom_text(aes(x = 380, y = 0, label = "November"))
+same_survival <- autoplot(survfit(Surv(start_time,end_time, event = dead) ~ 1, data = survival_gopher_clean %>% filter(Plant == "SAME"), id = plot_number), surv.colour = "#C77CFF", censor.colour = "black") +
+  theme_classic()+
+  labs(x = "",
+       y = "",
+       title = "Salvia mellifera")+ 
+  geom_vline(xintercept = 84, linetype = "dashed")+
+  geom_text(aes(x = 65, y = 0, label = "May"))+
+  geom_vline(xintercept = 129, linetype = "dashed")+
+  geom_text(aes(x = 150, y = 0, label = "July"))+
+  geom_vline(xintercept = 331, linetype = "dashed")+
+  geom_text(aes(x = 380, y = 0, label = "November"))
+enca_survival <- autoplot(survfit(Surv(start_time,end_time, event = dead) ~ 1, data = survival_gopher_clean %>% filter(Plant == "ENCA"), id = plot_number), surv.colour = "#C77CFF", censor.colour = "black") +
+  theme_classic()+
+  labs(x = "Time Since Planting (Days)",
+       y = "",
+       title = "Encelia californica")+ 
+  geom_vline(xintercept = 84, linetype = "dashed")+
+  geom_text(aes(x = 65, y = 0, label = "May"))+
+  geom_vline(xintercept = 129, linetype = "dashed")+
+  geom_text(aes(x = 150, y = 0, label = "July"))+
+  geom_vline(xintercept = 331, linetype = "dashed")+
+  geom_text(aes(x = 380, y = 0, label = "November"))
+hewh_survival <- autoplot(survfit(Surv(start_time,end_time, event = dead) ~ 1, data = survival_gopher_clean %>% filter(Plant == "HEWH"), id = plot_number), surv.colour = "#C77CFF", censor.colour = "black") +
+  theme_classic()+
+  labs(x = "Time Since Planting (Days)",
+       y = "",
+       title = "Hesperoyucca whipplei")+ 
+  geom_vline(xintercept = 84, linetype = "dashed")+
+  geom_text(aes(x = 65, y = 0, label = "May"))+
+  geom_vline(xintercept = 129, linetype = "dashed")+
+  geom_text(aes(x = 150, y = 0, label = "July"))+
+  geom_vline(xintercept = 331, linetype = "dashed")+
+  geom_text(aes(x = 380, y = 0, label = "November"))
+
+figure3 <- (adfa_survival + rhov_survival)/(mala_survival + hear_survival)/(ceol_survival + sani_survival)/(saap_survival + same_survival)/(enca_survival + hewh_survival) + plot_annotation(tag_levels = "A")
+
+ggsave(filename = "figure3.png",
+       plot = figure3,
+       path = here("figures"),
+       width = 8.5,
+       height = 11,
+       units = "in",
+       dpi = 325)
+```
+

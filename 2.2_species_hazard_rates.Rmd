@@ -1,0 +1,141 @@
+---
+title: "Untitled"
+output: html_document
+date: "2024-02-22"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(here)
+library(tidyverse)
+library(survival)
+library(emmeans)
+library(gtsummary)
+library(patchwork)
+library(ggfortify)
+```
+
+```{r}
+survival_gopher_raw <- read.csv(here("data", "clean_data", "survival_gopher_raw.csv"))%>% 
+  dplyr::select(!X) %>%  
+  group_by(plot_number) %>% 
+  filter(!lag(gopher) == 1 | is.na(lag(gopher) == T)) %>%
+  ungroup()                   
+
+survival_gopher_clean <- survival_gopher_raw %>%
+  mutate(community = case_when(Plant %in% c("MALA", "RHOV", "ADFA", "HEAR", "CEOL") ~ "Chaparral",
+                               Plant %in% c("HEWH", "SAAP", "SAME", "ENCA", "SANI") ~ "CSS"))
+
+```
+
+```{r}
+community_survival <- autoplot(survfit(Surv(start_time, end_time, event = dead) ~ community, data = survival_gopher_clean, id = plot_number), censor.colour = "black") +
+  theme_classic() +
+  labs(x = "",
+       y = "Probability of Survival")+
+  guides(fill= "none") +
+  labs(colour = "Community")+ 
+  scale_color_manual(values = c("#648FFF", "#FFB000"),
+                     aesthetics = c("colour", "fill"))+
+  geom_vline(xintercept = 84, linetype = "dashed")+
+  geom_text(aes(x = 65, y = 0, label = "May"))+
+  geom_vline(xintercept = 129, linetype = "dashed")+
+  geom_text(aes(x = 150, y = 0, label = "July"))+
+  geom_vline(xintercept = 331, linetype = "dashed")+
+  geom_text(aes(x = 380, y = 0, label = "November"))
+```
+
+
+```{r}
+survival_gopher_clean$Plant <- factor(survival_gopher_clean$Plant, levels = c("HEWH", "RHOV", "ENCA", "ADFA", "SAME", "CEOL", "SANI", "MALA", "SAAP", "HEAR"))
+
+first_year_hazard_model <- coxph(Surv(start_time, end_time, dead) ~ Plant, data = survival_gopher_clean %>% filter(end_time < 400), id = plot_number)
+first_year_hazard_emmeans <- emmeans(first_year_hazard_model, "Plant")
+first_year_letters <- multcomp::cld(first_year_hazard_emmeans) %>% 
+  mutate(.group = str_replace(.group, "1", "a"),
+         .group = str_replace(.group, "2", "b"),
+         .group = str_replace(.group, "3", "c"),
+         .group = str_replace(.group, "4", "d")) %>% 
+  filter(Plant != "HEWH") %>% 
+  dplyr::select(Plant, .group) %>% 
+  rename(species = Plant)
+first_year_hazard <- first_year_hazard_model%>%
+  tbl_regression(exp = TRUE)
+
+whole_study_hazard_model <- coxph(Surv(start_time, end_time, dead) ~ Plant, data = survival_gopher_clean, id = plot_number)
+whole_study_hazard_emmeans <- emmeans(whole_study_hazard_model, "Plant")
+whole_study_letters <- multcomp::cld(whole_study_hazard_emmeans) %>% 
+  mutate(.group = str_replace(.group, "1", "a"),
+         .group = str_replace(.group, "2", "b"),
+         .group = str_replace(.group, "3", "c"),
+         .group = str_replace(.group, "4", "d")) %>% 
+  filter(Plant != "HEWH") %>% 
+  dplyr::select(Plant, .group) %>% 
+  rename(species = Plant)
+whole_study_hazard <- coxph(Surv(start_time, end_time, dead) ~ Plant, data = survival_gopher_clean, id = plot_number) %>%
+  tbl_regression(exp = TRUE)
+
+first_year_species_survival <- first_year_hazard[["table_body"]]$label %>% 
+  as.data.frame() %>% 
+  mutate(hazard = first_year_hazard[["table_body"]]$estimate,
+         upper = first_year_hazard[["table_body"]]$conf.high,
+         lower = first_year_hazard[["table_body"]]$conf.low) %>% 
+  rownames_to_column() %>% 
+  rename(species = ".") %>% 
+  dplyr::select(!rowname) %>% 
+  filter(species != "Plant") %>% 
+  filter(species != "HEWH") %>% 
+  left_join(first_year_letters, by = "species")%>%
+  mutate(community = case_when(species %in% c("MALA", "RHOV", "ADFA", "HEAR", "CEOL") ~ "Chaparral",
+                               species %in% c("HEWH", "SAAP", "SAME", "ENCA", "SANI") ~ "CSS"))
+
+whole_study_species_survival <- whole_study_hazard[["table_body"]]$label %>% 
+  as.data.frame() %>% 
+  mutate(hazard = whole_study_hazard[["table_body"]]$estimate,
+         upper = whole_study_hazard[["table_body"]]$conf.high,
+         lower = whole_study_hazard[["table_body"]]$conf.low) %>% 
+  rownames_to_column() %>% 
+  rename(species = ".") %>% 
+  dplyr::select(!rowname) %>% 
+  filter(species != "Plant") %>% 
+  filter(species != "HEWH") %>% 
+  left_join(whole_study_letters, by = "species")%>% 
+  mutate(community = case_when(species %in% c("MALA", "RHOV", "ADFA", "HEAR", "CEOL") ~ "Chaparral",
+                               species %in% c("HEWH", "SAAP", "SAME", "ENCA", "SANI") ~ "CSS"))
+
+first_year_hazard_graph <- ggplot(first_year_species_survival, aes(x = fct_reorder(species, hazard), y = hazard, col = community))+
+  geom_point()+
+  geom_text(aes(y = upper+0.2, label = .group)) +
+  geom_errorbar(aes(ymin = lower, ymax = upper))+
+  geom_hline(yintercept = 1, linetype = "dashed")+
+  coord_flip()+
+  theme_classic()+
+  scale_color_manual(values = c("#648FFF", "#FFB000"))+
+  theme(legend.position = "none")+
+  labs(x = "Species",
+       y = "Hazard Ratio")
+
+whole_study_hazard_graph <- ggplot(whole_study_species_survival, aes(x = fct_reorder(species, hazard), y = hazard, col = community))+
+  geom_point()+
+  geom_text(aes(y = upper +0.2, label = .group)) +
+  geom_errorbar(aes(ymin = lower, ymax = upper))+
+  geom_hline(yintercept = 1, linetype = "dashed")+
+  coord_flip()+
+  theme_classic()+
+  scale_color_manual(values = c("#648FFF", "#FFB000"))+
+  theme(legend.position = "none")+
+  labs(x = "Species",
+       y = "Hazard Ratio")
+
+figure4 <- community_survival/(first_year_hazard_graph + whole_study_hazard_graph) + plot_annotation(tag_levels = "A")
+
+ggsave(filename = "figure4.png",
+       plot = figure4,
+       path = here("figures"),
+       width = 8,
+       height = 8,
+       units = "in",
+       dpi = 325)
+```
+
+

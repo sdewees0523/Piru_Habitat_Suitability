@@ -1,0 +1,4 @@
+/data/clean_data/temperature_measured.csv filter=lfs diff=lfs merge=lfs -text
+/data/models/temp_rf.rds filter=lfs diff=lfs merge=lfs -text
+/data/clean_data/predicted_environmental.dbf filter=lfs diff=lfs merge=lfs -text
+/data/study_points_dates.csv filter=lfs diff=lfs merge=lfs -text

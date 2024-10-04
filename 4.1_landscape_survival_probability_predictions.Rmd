@@ -1,0 +1,171 @@
+---
+title: "Untitled"
+output: html_document
+date: "2024-05-02"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(here)
+library(stars)
+library(survival)
+```
+
+```{r}
+soil_spring <- read_stars(here("soil_spring.tif")) 
+soil_summer <- read_stars(here("soil_summer.tif")) 
+vpd_spring <- read_stars(here("vpd_spring.tif"))
+vpd_summer <- read_stars(here("vpd_summer.tif"))
+plant_traits <- read.csv(here("data", "clean_data", "cox_plant_traits.csv")) %>% 
+  mutate(les_1 = scale(les_1)[,1],
+         les_2 = scale(les_2)[,1],
+         wood_density = scale(wood_density)[,1],
+         wue = scale(wue)[,1])
+height <- read.csv(here("data", "clean_data", "height_gopher_kapplin.csv"))%>% 
+  dplyr::select(!X) %>% 
+  mutate(start_date = ymd(start_date),
+         end_date = ymd(end_date),
+         height = scale(height)[,1])
+mean_heights <- height %>% 
+  filter(start_time == 0) %>% 
+  group_by(Plant) %>% 
+  reframe(height = mean(height)) %>% 
+  rename(species = Plant)
+
+mean_summer_heights <- height %>% 
+  filter(start_time != 0) %>% 
+  group_by(Plant) %>% 
+  reframe(height = mean(height)) %>% 
+  rename(species = Plant)
+
+spring_environmental <- c(soil_spring, vpd_spring) %>% 
+  st_as_sf() %>% 
+  rename(soil_moisture = soil_spring.tif,
+         vpd = vpd_spring.tif) %>% 
+  mutate(vpd = scale(vpd)[,1])
+
+summer_environmental <- c(soil_summer, vpd_summer) %>% 
+  st_as_sf() %>% 
+  rename(soil_moisture = soil_summer.tif,
+         vpd = vpd_summer.tif) %>% 
+  mutate(vpd = scale(vpd)[,1])
+
+load(here("data", "models", "early_spring_model.rda"))
+load(here("data", "models", "summer_model.rda"))
+```
+
+```{r}
+enca_prediction_spring <- spring_environmental %>% 
+  mutate(species = "ENCA",
+         end_time = 128,
+         dead = 0) %>% 
+  left_join(plant_traits, by = "species") %>% 
+  left_join(mean_heights, by = "species") %>% 
+  mutate(prob_alive = predict(cox_early_spring_model, newdata = ., type = "survival")) %>% 
+  dplyr::select(prob_alive, geometry) %>% 
+  st_as_sf() %>% 
+  st_rasterize()
+
+rhov_prediction_spring <- spring_environmental %>% 
+  mutate(species = "RHOV",
+         end_time = 128,
+         dead = 0) %>% 
+  left_join(plant_traits, by = "species") %>% 
+  left_join(mean_heights, by = "species") %>% 
+  mutate(prob_alive = predict(cox_early_spring_model, newdata = ., type = "survival")) %>% 
+  dplyr::select(prob_alive, geometry) %>% 
+  st_as_sf() %>% 
+  st_rasterize()
+
+same_prediction_spring <- spring_environmental %>% 
+  mutate(species = "SAME",
+         end_time = 128,
+         dead = 0) %>% 
+  left_join(plant_traits, by = "species") %>% 
+  left_join(mean_heights, by = "species") %>% 
+  mutate(prob_alive = predict(cox_early_spring_model, newdata = ., type = "survival")) %>% 
+  dplyr::select(prob_alive, geometry) %>% 
+  st_as_sf() %>% 
+  st_rasterize()
+
+plot(enca_prediction_spring)
+plot(rhov_prediction_spring)
+plot(rhov_prediction_spring)
+
+write_stars(enca_prediction_spring, here("enca_prediction_spring.tif"))
+write_stars(rhov_prediction_spring, here("rhov_prediction_spring.tif"))
+```
+
+```{r}
+enca_prediction_summer <- summer_environmental %>% 
+  mutate(species = "ENCA",
+         start_time = 0,
+         end_time = 270,
+         dead = 0) %>% 
+  left_join(plant_traits, by = "species") %>% 
+  left_join(mean_summer_heights, by = "species") %>% 
+  mutate(prob_alive = predict(cox_summer_model, newdata = ., type = "survival")) %>% 
+  dplyr::select(prob_alive, geometry) %>% 
+  st_as_sf() %>% 
+  st_rasterize()
+
+rhov_prediction_summer <- summer_environmental %>% 
+  mutate(species = "RHOV",
+         start_time = 0,
+         end_time = 270,
+         dead = 0) %>% 
+  left_join(plant_traits, by = "species") %>% 
+  left_join(mean_summer_heights, by = "species") %>% 
+  mutate(prob_alive = predict(cox_summer_model, newdata = ., type = "survival")) %>% 
+  dplyr::select(prob_alive, geometry) %>% 
+  st_as_sf() %>% 
+  st_rasterize()
+
+sani_prediction_summer <- summer_environmental %>% 
+  mutate(species = "SANI",
+         start_time = 0,
+         end_time = 270,
+         dead = 0) %>% 
+  left_join(plant_traits, by = "species") %>% 
+  left_join(mean_summer_heights, by = "species") %>% 
+  mutate(prob_alive = predict(cox_summer_model, newdata = ., type = "survival")) %>% 
+  dplyr::select(prob_alive, geometry) %>% 
+  st_as_sf() %>% 
+  st_rasterize()
+
+mala_prediction_summer <- summer_environmental %>% 
+  mutate(species = "MALA",
+         start_time = 0,
+         end_time = 270,
+         dead = 0) %>% 
+  left_join(plant_traits, by = "species") %>% 
+  left_join(mean_summer_heights, by = "species") %>% 
+  mutate(prob_alive = predict(cox_summer_model, newdata = ., type = "survival")) %>% 
+  dplyr::select(prob_alive, geometry) %>% 
+  st_as_sf() %>% 
+  st_rasterize()
+
+hear_prediction_summer <- summer_environmental %>% 
+  mutate(species = "HEAR",
+         start_time = 0,
+         end_time = 270,
+         dead = 0) %>% 
+  left_join(plant_traits, by = "species") %>% 
+  left_join(mean_summer_heights, by = "species") %>% 
+  mutate(prob_alive = predict(cox_summer_model, newdata = ., type = "survival")) %>% 
+  dplyr::select(prob_alive, geometry) %>% 
+  st_as_sf() %>% 
+  st_rasterize()
+
+plot(enca_prediction_summer)
+plot(rhov_prediction_summer)
+
+write_stars(enca_prediction_summer, here("enca_prediction_summer.tif"))
+write_stars(rhov_prediction_summer, here("rhov_prediction_summer.tif"))
+write_stars(sani_prediction_summer, here("sani_prediction_summer.tif"))
+write_stars(mala_prediction_summer, here("mala_prediction_summer.tif"))
+write_stars(hear_prediction_summer, here("hear_prediction_summer.tif"))
+
+```
+

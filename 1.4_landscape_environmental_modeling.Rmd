@@ -1,0 +1,336 @@
+---
+title: "Untitled"
+author: "Shane Dewees"
+date: "2022-09-28"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(here)
+library(sf)
+library(raster)
+library(broom)
+library(lubridate)
+library(psych)
+library(ggfortify)
+library(DHARMa)
+library(MASS)
+library(patchwork)
+library(feasts)
+library(randomForest) ## Look at partial dependency plots and modeling over different time binning (i.e. days vs month)
+library(stars)
+```
+
+```{r}
+elevation <- read_stars(here("data", "raw_data", "elevation.tif"))
+aspect <- read_stars(here("data", "raw_data", "aspect.tif"))
+aspect <- cos((aspect * pi/180) - (225 * pi/180))
+slope <- read_stars(here("data", "raw_data", "slope.tif"))
+solar_radiation <- read_stars(here("data", "raw_data", "sol_rad.tif"))
+heat_load_index <- read_stars(here("data", "clean_data", "heat_load_index.tif"))
+diurnal_heat_index <- read_stars(here("data", "clean_data", "diurnal_heat.tif"))
+topographic_position <- read_stars(here("data", "clean_data", "topographic_position.tif"))
+sol_rad_aspect <- read_stars(here("data", "clean_data", "sol_rad_aspect.tif"))
+terrain_ruggedness <- read_stars(here("data", "clean_data", "terrain_ruggedness.tif"))
+saga_wetness <- read_stars(here("data", "raw_data", "saga_wetness.tif"))
+twi <- read_stars(here("data", "raw_data", "twi.tif"))
+
+elevation_points <- elevation %>% 
+  st_as_sf()
+aspect_points <- aspect %>% 
+  st_warp(dest = elevation) %>% 
+  st_as_sf()
+
+site_topography <- c(elevation, aspect, along = 1)
+
+plots_topography <- st_read(here("data", "raw_data", "plot_gps_points.shp")) %>% 
+  rename("plot_number" = "plt_nmb")
+plots_topography <- plots_topography %>% 
+  mutate(elevation = raster::extract(elevation, plots_topography),
+         aspect = raster::extract(aspect, plots_topography),
+         slope = raster::extract(slope, plots_topography),
+         summer_solar_radiation = raster::extract(solar_radiation[[3]], plots_topography),
+         spring_solar_radiation = raster::extract(solar_radiation[[2]], plots_topography),
+         winter_solar_radiation = raster::extract(solar_radiation[[1]], plots_topography),
+         heat_load = raster::extract(heat_load_index, plots_topography),
+         diurnal_heat = raster::extract(diurnal_heat_index, plots_topography),
+         topo_position = raster::extract(topographic_position, plots_topography),
+         sol_rad_aspect = raster::extract(sol_rad_aspect, plots_topography),
+         terrain_ruggedness = raster::extract(terrain_ruggedness, plots_topography),
+         saga_wetness = raster::extract(saga_wetness, plots_topography),
+         twi = raster::extract(twi, plots_topography)
+         ) %>% 
+  drop_na() %>% 
+  filter(duplicated(plot_number) == FALSE)
+```
+
+```{r}
+scale_this <- function(x){
+  (x - mean(x, na.rm=TRUE)) / sd(x, na.rm=TRUE)
+}
+
+soil_moisture <- read.csv(here("data", "clean_data", "soil_moisture_measured.csv")) %>% 
+  mutate(date = ymd(date),
+         plot = as.character(plot)) %>% 
+  distinct(plot, date, .keep_all = TRUE) %>%
+  dplyr::select(!X) %>% 
+  group_by(date) %>% 
+  mutate(soil_moisture = scale_this(x = soil_moisture)) %>% 
+  ungroup() %>% 
+  as.data.frame()
+  
+
+soil_moisture_top <- soil_moisture %>% 
+  left_join(plots_topography, by = c("plot" = "plot_number")) %>% 
+  st_drop_geometry() %>% 
+  dplyr::select(!plot & !geometry) %>% 
+  drop_na()
+
+set.seed(123)
+
+soil_train <- soil_moisture_top %>% 
+  sample_frac(.8) 
+  
+soil_test <- soil_moisture_top %>% 
+  anti_join(soil_train)
+#set.seed(123)
+#tuneRF(soil_train[,-2], soil_train[,2])
+set.seed(123)
+soil_rf <- randomForest(soil_moisture ~ ., data = soil_train, importance = TRUE, mtry = 14)
+soil_rf
+soil_rf[["importance"]]
+
+soil_predict <- soil_test %>% 
+  mutate(predicted = predict(soil_rf, soil_test))
+summary(lm(predicted~soil_moisture, soil_predict))
+
+Metrics::rmse(soil_predict$soil_moisture, soil_predict$predicted)
+
+ggplot(soil_predict, aes(x = soil_moisture, y = predicted))+
+  geom_point(alpha = 0.25) +
+  geom_abline(slope = 1, intercept = 0, col = "blue", linewidth = 1) +
+  theme_classic()
+
+#partialPlot(soil_rf, pred.data = soil_train, x.var = "twi")
+#partialPlot(soil_rf, pred.data = soil_train, x.var = "aspect")
+#partialPlot(soil_rf, pred.data = soil_train, x.var = "topo_position")
+
+save(soil_rf, file = here("data", "models", "soil_rf.rds"))
+```
+
+
+
+
+```{r}
+station_max <- read.csv(here("data", "raw_data", "weather_station_temp.csv")) %>% 
+  filter(Year == 2020) %>% 
+  mutate(Month = case_when(Month == "January" ~ 01, 
+                           Month == "Febuary" ~ 02,
+                           Month == "March" ~ 03,
+                           Month == "April" ~ 04,
+                           Month == "May" ~ 05,
+                           Month == "June" ~ 06,
+                           Month == "July" ~ 07,
+                           Month == "August" ~ 08,
+                           Month == "September" ~ 09,
+                           Month == "October" ~ 10,
+                           Month == "November" ~ 11,
+                           Month == "December" ~ 12),
+         date = paste(Year, Month, Date, sep = "-"),
+         date = ymd(date)) %>% 
+  dplyr::select(date, Temp) %>% 
+  rename(max_temp = Temp)
+ 
+
+temperature <- read.csv(here("data", "clean_data", "temperature_measured.csv")) %>% 
+  mutate(date = ymd(date),
+         time = hms(time),
+         plot = as.character(plot)) %>% 
+  filter(date <= "2020-12-03") %>% 
+  dplyr::select(!X) %>% 
+  left_join(station_max, by = "date") %>% 
+  filter(temperature <= max_temp+10) %>% 
+  group_by(plot, date) %>% 
+  reframe(temperature = max(temperature),
+          max_temp = mean(max_temp)) %>% 
+  as.data.frame()
+  
+
+temp_top <- temperature %>% 
+  left_join(plots_topography, by = c("plot" = "plot_number")) %>% 
+  st_drop_geometry() %>% 
+  dplyr::select(!plot & !geometry) %>% 
+  drop_na() 
+
+set.seed(123)
+
+temp_train <- temp_top %>% 
+  sample_frac(.8) 
+  
+temp_test <- temp_top %>% 
+  anti_join(temp_train)
+#set.seed(123)
+#tuneRF(temp_train[,-2], temp_train[,2])
+set.seed(123)
+temp_rf <- randomForest(temperature ~ ., data = temp_train, importance = TRUE, mrty = 5)
+temp_rf
+temp_rf[["importance"]]
+temp_predict <- temp_test %>% 
+  mutate(predicted = predict(temp_rf, temp_test))
+ggplot(temp_predict, aes(x = temperature, y = predicted))+
+  geom_point(alpha = 0.25) +
+  geom_abline(slope = 1, intercept = 0, col = "blue", linewidth = 1) +
+  theme_classic()
+
+summary(lm(predicted~temperature, temp_predict))
+
+Metrics::rmse(temp_predict$temperature, temp_predict$predicted)
+
+save(temp_rf, file = here("data", "models", "temp_rf.rds"))
+```
+
+
+
+```{r}
+temp_vpd <- read.csv(here("data", "clean_data", "temperature_measured.csv"))%>% 
+  mutate(time = str_replace(time, "1S", "0S"),
+         time = hms(time),
+         date = ymd(date)) %>% 
+  filter(date <= "2020-12-03") %>% 
+  dplyr::select(!X) %>% 
+  left_join(station_max, by = "date") %>% 
+  filter(temperature <= max_temp+10) %>% 
+  mutate(temperature = (temperature - 32)*(5/9)) 
+
+vpd <- read.csv(here("data", "clean_data", "humidity_measured.csv"))%>%
+  dplyr::select(!X)%>% 
+  mutate(time = str_replace(time, "1S", "0S"),
+         time = hms(time),
+         date = ymd(date)) %>% 
+  drop_na() %>% 
+  filter(date <= "2020-12-03") %>% 
+  left_join(temp_vpd, by = c("plot", "date", "time")) %>% 
+  drop_na() %>% 
+  mutate(humidity = case_when(humidity > 100 ~ 100,
+                              humidity < 0 ~ 0, 
+                              TRUE ~ humidity),
+         svp = 610.78*exp(temperature/(temperature + 237.3)* 17.2694),
+         vpd = (svp * (1-humidity/100))/1000) %>% 
+  dplyr::select(plot, date, vpd) %>% 
+  group_by(plot, date) %>% 
+  reframe(vpd = max(vpd)) %>% 
+  as.data.frame()
+
+vpd_top <- vpd %>% 
+  mutate(plot = as.character(plot)) %>% 
+  left_join(plots_topography, by = c("plot" = "plot_number")) %>% 
+  st_drop_geometry() %>% 
+  dplyr::select(!plot & !geometry) %>% 
+  drop_na()
+
+set.seed(123)
+
+vpd_train <- vpd_top %>% 
+  sample_frac(.8) 
+  
+vpd_test <- vpd_top %>% 
+  anti_join(vpd_train)
+#set.seed(123)
+#tuneRF(vpd_train[,-2], vpd_train[,2])
+set.seed(123)
+vpd_rf <- randomForest(vpd ~ ., data = vpd_train, importance = TRUE, mtry = 14)
+vpd_rf
+vpd_rf[["importance"]]
+vpd_predict <- vpd_test %>% 
+  mutate(predicted = predict(vpd_rf, vpd_test))
+ggplot(vpd_predict, aes(x = vpd, y = predicted))+
+  geom_point(alpha = 0.25) +
+  geom_abline(slope = 1, intercept = 0, col = "blue", linewidth = 1) +
+  theme_classic()
+
+summary(lm(predicted~vpd, vpd_predict))
+Metrics::rmse(vpd_predict$vpd, vpd_predict$predicted)
+
+save(vpd_rf, file = here("data", "models", "vpd_rf.rds"))
+```
+
+
+```{r}
+dates <- as.data.frame(seq(ymd('2020-04-03'), ymd('2020-12-03'), by = '1 day')) %>% 
+  rename(date = `seq(ymd("2020-04-03"), ymd("2020-12-03"), by = "1 day")`) 
+load(here("data", "models", "soil_rf.rds"))
+load(here("data", "models", "temp_rf.rds"))
+load(here("data", "models", "vpd_rf.rds"))
+environmental_spatial <- plots_topography %>% 
+  cross_join(dates) %>%
+  left_join(station_max, by = "date") %>% 
+  mutate(soil_moisture = predict(soil_rf, newdata = .),
+         temperature = predict(temp_rf, newdata = .),
+         vpd = predict(vpd_rf, newdata = .)) %>%
+st_as_sf()
+
+predicted_environmental <- environmental_spatial %>% 
+  st_drop_geometry() %>% 
+  dplyr::select(plot_number, date, soil_moisture, temperature, vpd)
+
+write.csv(predicted_environmental, here("data", "clean_data", "predicted_environmental.csv"))
+```
+
+```{r}
+study_points <- rasterToPoints(elevation) %>% 
+  as.data.frame() %>% 
+  st_as_sf(coords = c("x", "y"),
+           crs = crs(elevation)) %>%
+  mutate(id = seq(1, n(), by = 1)) 
+study_points <- study_points %>% 
+  mutate(aspect = raster::extract(aspect, study_points),
+         slope = raster::extract(slope, study_points),
+         summer_solar_radiation = raster::extract(solar_radiation[[3]], study_points),
+         spring_solar_radiation = raster::extract(solar_radiation[[2]], study_points),
+         winter_solar_radiation = raster::extract(solar_radiation[[1]], study_points),
+         heat_load = raster::extract(heat_load_index, study_points),
+         diurnal_heat = raster::extract(diurnal_heat_index, study_points),
+         topo_position = raster::extract(topographic_position, study_points),
+         sol_rad_aspect = raster::extract(sol_rad_aspect, study_points),
+         terrain_ruggedness = raster::extract(terrain_ruggedness, study_points),
+         saga_wetness = raster::extract(saga_wetness, study_points),
+         twi = raster::extract(twi, study_points)) %>% 
+  drop_na()
+
+study_points_dates <- expand.grid(unique(study_points$id), unique(dates$date)) %>% 
+  rename(id = Var1,
+         date = Var2) %>% 
+  full_join(study_points, by = "id") %>% 
+  left_join(station_max, by = "date") %>% 
+  mutate(soil_moisture = predict(soil_rf, newdata = .),
+         temperature = predict(temp_rf, newdata = .),
+         vpd = predict(vpd_rf, newdata = .)) %>% 
+  st_as_sf()
+```
+
+```{r}
+study_points_early_summer <- study_points_dates %>% 
+  filter(date >= "2020-06-01" & date <= "2020-07-07") %>% 
+  st_as_sf() %>% 
+  group_by(id, geometry) %>% 
+  reframe(soil_moisture = mean(soil_moisture, na.rm = T),
+          temperature = mean(temperature, na.rm = T),
+          vpd = mean(vpd, na.rm = T)) %>% 
+  st_as_sf()
+plot(study_points_early_summer)
+study_points_fall <- study_points_dates %>% 
+  filter(date >= "2020-10-01" & date <= "2020-11-15") %>% 
+  st_as_sf() %>% 
+  group_by(id, geometry) %>% 
+  reframe(soil_moisture = mean(soil_moisture, na.rm = T),
+          temperature = mean(temperature, na.rm = T),
+          vpd = mean(vpd, na.rm = T)) %>% 
+  st_as_sf()
+
+st_write(study_points_early_summer, here("data", "clean_data", "study_points_early_summer.shp"))
+st_write(study_points_fall, here("data", "clean_data", "study_points_fall.shp"))
+```
+
+

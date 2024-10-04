@@ -1,0 +1,1048 @@
+---
+title: "Untitled"
+output: html_document
+date: "2024-02-27"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(here)
+library(tidyverse)
+library(survival)
+library(gtsummary)
+library(patchwork)
+```
+
+```{r}
+load(here("data", "models", "early_spring_model.rda"))
+load(here("data", "models", "summer_model.rda"))
+cox_early_spring_model %>% tbl_regression(exp = T)
+cox_summer_model %>% tbl_regression(exp = T)
+plant_traits <- read.csv(here("data", "clean_data", "cox_plant_traits.csv")) %>% 
+  mutate(les_1 = scale(les_1),
+         les_2 = scale(les_2),
+         wood_density = scale(wood_density),
+         wue = scale(wue),
+         wue = wue * -1)
+
+environmental <- read.csv(here("data", "clean_data", "predicted_environmental.csv")) %>% 
+  select(!X) %>% 
+  mutate(date = ymd(date)) %>% 
+  group_by(date) %>% 
+  mutate(temperature = scale(temperature),
+         vpd = scale(vpd)) %>% 
+  ungroup()
+
+spring_environmental <- environmental %>% 
+  filter(date <= "2020-06-26") %>% 
+  group_by(plot_number) %>%
+  reframe(soil_moisture = mean(soil_moisture),
+          vpd = mean(vpd))
+
+summer_environmental <- environmental %>% 
+  filter(date > "2020-06-26" & date <= "2020-09-30") %>% 
+  group_by(plot_number) %>%
+  reframe(soil_moisture = mean(soil_moisture),
+          vpd = mean(vpd))
+
+height <- read.csv(here("data", "clean_data", "height_gopher_kapplin.csv"))%>% 
+  dplyr::select(!X) %>% 
+   mutate(alive = case_when(dead == 1 ~ 0,
+                           dead == 0 ~ 1)) %>% 
+  mutate(start_date = ymd(start_date),
+         end_date = ymd(end_date),
+         height = scale(height))
+
+mean_planting_heights <- height %>% 
+  filter(start_date < "2020-06-01") %>% 
+  group_by(Plant) %>% 
+  reframe(height = mean(height)) %>% 
+  rename(species = Plant)
+
+mean_july_heights <- height %>% 
+  filter(start_date > "2020-06-01") %>% 
+  group_by(Plant) %>% 
+  reframe(height = mean(height)) %>% 
+  rename(species = Plant)
+
+height_environment_trait<- height %>% 
+  left_join(environmental, by = "plot_number", multiple = "all") %>% 
+  rename(species = Plant) %>% 
+  left_join(plant_traits, by = "species")
+
+cox_early_spring <- height_environment_trait %>% 
+  filter(species != "HEWH") %>% 
+  filter(date <= "2020-05-30" & end_date <= "2020-06-26") %>% 
+  group_by(plot_number) %>%
+  reframe(start_time = mean(start_time), 
+          end_time = mean(end_time), 
+          dead = mean(dead), 
+          soil_moisture = mean(soil_moisture), 
+          temperature = mean(temperature), 
+          vpd = mean(vpd), 
+          les_1 = mean(les_1), 
+          les_2 = mean(les_2), 
+          wood_density = mean(wood_density), 
+          wue = mean(wue), 
+          height = mean(height))
+
+cox_summer <- height_environment_trait %>% 
+  filter(species != "HEWH") %>% 
+  filter(end_date > "2020-06-26") %>% 
+  filter(date >= start_date & date <= "2020-09-30") %>% 
+  group_by(plot_number) %>%
+  reframe(start_time = mean(start_time), 
+          end_time = mean(end_time), 
+          dead = mean(dead), 
+          soil_moisture = mean(soil_moisture), 
+          temperature = mean(temperature), 
+          vpd = mean(vpd), 
+          les_1 = mean(les_1), 
+          les_2 = mean(les_2), 
+          wood_density = mean(wood_density), 
+          wue = mean(wue), 
+          height = mean(height))
+```
+
+Manuscript figures:
+
+spring model
+
+```{r}
+height_les1_spring <- expand.grid(les_1 = c(min(cox_early_spring$les_1), 
+                                      median(cox_early_spring$les_1),
+                                      max(cox_early_spring$les_1)), 
+                           height = seq(from = min(cox_early_spring$height),
+                                       to = max(cox_early_spring$height),
+                                       by = 0.1))%>%
+  mutate(start_time = 0, 
+         end_time =126,
+         dead = 0,
+         soil_moisture = median(cox_early_spring$soil_moisture),
+         vpd = median(cox_early_spring$vpd),
+         wue = median(cox_early_spring$wue),
+         les_2 = median(cox_early_spring$les_2),
+         wood_density = median(cox_early_spring$wood_density)) %>% 
+  mutate(hazard = predict(cox_early_spring_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(cox_early_spring_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+         lower_int = hazard - interval,
+         upper_int = hazard + interval,
+         les_1 = case_when(les_1 < -1 ~ "acquisitive",
+                           les_1 < 0 & les_1 > -1 ~ "moderate",
+                           les_1 > 1 ~ "conservative"))
+
+height_les1_spring$les_1 <- factor(height_les1_spring$les_1, levels = c("acquisitive", "moderate", "conservative"))
+
+height_les2_spring <- expand.grid(les_2 = c(min(cox_early_spring$les_2), 
+                                      median(cox_early_spring$les_2),
+                                      max(cox_early_spring$les_2)), 
+                           height = seq(from = min(cox_early_spring$height),
+                                       to = max(cox_early_spring$height),
+                                       by = 0.1))%>%
+  mutate(start_time = 0, 
+         end_time =126,
+         dead = 0,
+         soil_moisture = median(cox_early_spring$soil_moisture),
+         vpd = median(cox_early_spring$vpd),
+         wue = median(cox_early_spring$wue),
+         les_1 = median(cox_early_spring$les_1),
+         wood_density = median(cox_early_spring$wood_density)) %>% 
+  mutate(hazard = predict(cox_early_spring_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(cox_early_spring_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+         lower_int = hazard - interval,
+         upper_int = hazard + interval) %>% 
+  mutate(les_2 = round(les_2, digits = 2))
+
+height_wue_spring <- expand.grid(wue = c(min(cox_early_spring$wue), 
+                                      median(cox_early_spring$wue),
+                                      max(cox_early_spring$wue)), 
+                           height = seq(from = min(cox_early_spring$height),
+                                       to = max(cox_early_spring$height),
+                                       by = 0.1))%>%
+  mutate(start_time = 0, 
+         end_time =126,
+         dead = 0,
+         soil_moisture = median(cox_early_spring$soil_moisture),
+         vpd = median(cox_early_spring$vpd),
+         les_1 = median(cox_early_spring$les_1),
+         les_2 = median(cox_early_spring$les_2),
+         wood_density = median(cox_early_spring$wood_density)) %>% 
+  mutate(hazard = predict(cox_early_spring_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(cox_early_spring_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+         lower_int = hazard - interval,
+         upper_int = hazard + interval,
+         wue = round(wue, digits = 2))
+
+wood_density_spring <- plant_traits %>% 
+  select(wood_density)%>%
+  mutate(start_time = 0, 
+         end_time =126,
+         dead = 0,
+         les_1 = median(cox_early_spring$les_1),
+         height = median(cox_early_spring$height),
+         vpd = median(cox_early_spring$vpd),
+         wue = median(cox_early_spring$wue),
+         les_2 = median(cox_early_spring$les_2),
+         soil_moisture = median(cox_early_spring$soil_moisture)) %>% 
+  mutate(hazard = predict(cox_early_spring_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(cox_early_spring_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+         lower_int = hazard - interval,
+         upper_int = hazard + interval)
+
+soil_moisture_spring <- tibble(soil_moisture = seq(from = min(cox_early_spring$soil_moisture),
+                                          to = max(cox_early_spring$soil_moisture),
+                                          by = 0.1))%>%
+  mutate(start_time = 0, 
+         end_time =126,
+         dead = 0,
+         les_1 = median(cox_early_spring$les_1),
+         height = median(cox_early_spring$height),
+         vpd = median(cox_early_spring$vpd),
+         wue = median(cox_early_spring$wue),
+         les_2 = median(cox_early_spring$les_2),
+         wood_density = median(cox_early_spring$wood_density)) %>% 
+  mutate(hazard = predict(cox_early_spring_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(cox_early_spring_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+         lower_int = hazard - interval,
+         upper_int = hazard + interval)
+
+vpd_spring <- tibble(vpd = seq(from = min(cox_early_spring$vpd),
+                                          to = max(cox_early_spring$vpd),
+                                          by = 0.1))%>%
+  mutate(start_time = 0, 
+         end_time =126,
+         dead = 0,
+         les_1 = median(cox_early_spring$les_1),
+         height = median(cox_early_spring$height),
+         soil_moisture = median(cox_early_spring$soil_moisture),
+         wue = median(cox_early_spring$wue),
+         les_2 = median(cox_early_spring$les_2),
+         wood_density = median(cox_early_spring$wood_density)) %>% 
+  mutate(hazard = predict(cox_early_spring_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(cox_early_spring_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+         lower_int = hazard - interval,
+         upper_int = hazard + interval)
+
+les_1_spring_plot <- ggplot(height_les1_spring, aes(x = height, y = hazard, colour = as.factor(les_1), group = as.factor(les_1))) +
+  geom_line()+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int), alpha = 0.25)+
+  #geom_point(data = cox_early_spring, aes(x = soil_moisture, y = dead), alpha = 0.25)+
+  theme_classic()+
+  scale_color_manual(values = c("#648FFF", "#DC267F", "#FFB000"))+
+  geom_hline(yintercept = 0, linetype = "dashed")+
+  ylim(-.08,1)+
+  labs(x = "Height",
+       y = "Survival Probability",
+       colour = "LES 1")+
+  theme(text=element_text(size=21))
+  
+
+les_2_spring_plot <- ggplot(height_les2_spring, aes(x = height, y = hazard, colour = as.factor(les_2), group = as.factor(les_2))) +
+  geom_line()+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int), alpha = 0.25)+
+  #geom_point(data = cox_early_spring, aes(x = soil_moisture, y = dead), alpha = 0.25)+
+  theme_classic()+
+  scale_color_manual(values = c("#648FFF", "#DC267F", "#FFB000"))+
+  geom_hline(yintercept = 0, linetype = "dashed")+
+  ylim(-.03,1.1)+
+  labs(x = "Height",
+       y = "Survival Probability",
+       colour = "LES 2")+
+  theme(text=element_text(size=21))
+
+wue_spring_plot <- ggplot(height_wue_spring, aes(x = height, y = hazard, colour = as.factor(wue), group = as.factor(wue))) +
+  geom_line()+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int), alpha = 0.25)+
+  #geom_point(data = cox_early_spring, aes(x = soil_moisture, y = dead), alpha = 0.25)+
+  theme_classic()+
+  geom_hline(yintercept = 0, linetype = "dashed")+
+  ylim(-.03,1.1)+
+  scale_color_manual(values = c("#648FFF", "#DC267F", "#FFB000"))+
+  labs(x = "Height",
+       y = "Survival Probability", 
+       colour = "Water Use Efficiency")+
+  theme(text=element_text(size=21))
+
+wood_spring_plot <- ggplot(wood_density_spring, aes(x = wood_density, y = hazard)) +
+  geom_line()+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int), alpha = 0.25)+
+  geom_text(data = plant_traits, aes(x = wood_density, y = 0.75, label = species),
+            hjust = c(1,0,0,0,0,0,0,0,0),
+            vjust = c(4,0,-1,2,1,2.5,-2,-2,0.5),
+            size = 5)+
+  theme_classic()+
+  geom_hline(yintercept = 0, linetype = "dashed")+
+  ylim(-.03,1)+
+  labs(x = "Wood Density",
+       y = "Survival Probability")+
+  theme(text=element_text(size=21))
+
+soil_spring_plot <- ggplot(soil_moisture_spring, aes(x = soil_moisture, y = hazard)) +
+  geom_line()+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int), alpha = 0.25)+
+  #geom_point(data = cox_early_spring, aes(x = soil_moisture, y = dead), alpha = 0.25)+
+  theme_classic()+
+  geom_hline(yintercept = 0, linetype = "dashed")+
+  ylim(-.03,1)+
+  labs(x = "Soil moisture",
+       y = "Survival Probability")+
+  theme(text=element_text(size=21))
+
+vpd_spring_plot <- ggplot(vpd_spring, aes(x = vpd, y = hazard)) +
+  geom_line()+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int), alpha = 0.25)+
+  #geom_point(data = cox_early_spring, aes(x = soil_moisture, y = dead), alpha = 0.25)+
+  theme_classic()+
+  geom_hline(yintercept = 0, linetype = "dashed")+
+  ylim(-.03,1)+
+  labs(x = "Vapor Pressure Deficit",
+       y = "Survival Probability")+
+  theme(text=element_text(size=21))
+
+figure_5 <- (soil_spring_plot + vpd_spring_plot)/(wood_spring_plot + les_1_spring_plot)/(les_2_spring_plot + wue_spring_plot) + plot_annotation(tag_levels = "A")
+ggsave(filename = "figure_5.png",
+       plot = figure_5, 
+       path = here("figures"),
+       width = 8, 
+       height = 11,
+       units = "in",
+       dpi = 325,
+       scale = 1.5)
+```
+
+summer model
+
+```{r}
+height_les1_summer <- expand.grid(les_1 = c(min(cox_summer$les_1), 
+                                      median(cox_summer$les_1),
+                                      max(cox_summer$les_1)), 
+                           height = seq(from = min(cox_summer$height),
+                                       to = max(cox_summer$height),
+                                       by = 0.1))%>%
+  mutate(start_time = 0, 
+         end_time =280,
+         dead = 0,
+         soil_moisture = median(cox_summer$soil_moisture),
+         vpd = median(cox_summer$vpd),
+         wue = median(cox_summer$wue),
+         wood_density = median(cox_summer$wood_density)) %>% 
+  mutate(hazard = predict(cox_summer_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(cox_summer_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+         lower_int = hazard - interval,
+         upper_int = hazard + interval,
+         les_1 = case_when(les_1 < -1 ~ "acquisitive",
+                           les_1 < 0 & les_1 > -1 ~ "moderate",
+                           les_1 > 1 ~ "conservative"))
+
+height_les1_summer$les_1 <- factor(height_les1_summer$les_1, levels = c("acquisitive", "moderate", "conservative"))
+
+vpd_les1_summer <- expand.grid(les_1 = c(min(cox_summer$les_1), 
+                                      median(cox_summer$les_1),
+                                      max(cox_summer$les_1)), 
+                           vpd = seq(from = min(cox_summer$vpd),
+                                       to = max(cox_summer$vpd),
+                                       by = 0.1))%>%
+  mutate(start_time = 0, 
+         end_time =280,
+         dead = 0,
+         soil_moisture = median(cox_summer$soil_moisture),
+         height = median(cox_summer$height),
+         wue = median(cox_summer$wue),
+         wood_density = median(cox_summer$wood_density)) %>% 
+  mutate(hazard = predict(cox_summer_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(cox_summer_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+         lower_int = hazard - interval,
+         upper_int = hazard + interval,
+         les_1 = case_when(les_1 < -1 ~ "acquisitive",
+                           les_1 < 0 & les_1 > -1 ~ "moderate",
+                           les_1 > 1 ~ "conservative"))
+
+soil_les1_summer <- expand.grid(les_1 = c(min(cox_summer$les_1), 
+                                      median(cox_summer$les_1),
+                                      max(cox_summer$les_1)), 
+                           soil_moisture = seq(from = min(cox_summer$soil_moisture),
+                                       to = max(cox_summer$soil_moisture),
+                                       by = 0.1))%>%
+  mutate(start_time = 0, 
+         end_time =280,
+         dead = 0,
+         vpd = median(cox_summer$vpd),
+         height = median(cox_summer$height),
+         wue = median(cox_summer$wue),
+         wood_density = median(cox_summer$wood_density)) %>% 
+  mutate(hazard = predict(cox_summer_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(cox_summer_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+         lower_int = hazard - interval,
+         upper_int = hazard + interval,
+         les_1 = case_when(les_1 < -1 ~ "acquisitive",
+                           les_1 < 0 & les_1 > -1 ~ "moderate",
+                           les_1 > 1 ~ "conservative"))
+
+vpd_les1_summer$les_1 <- factor(vpd_les1_summer$les_1, levels = c("acquisitive", "moderate", "conservative"))
+soil_les1_summer$les_1 <- factor(soil_les1_summer$les_1, levels = c("acquisitive", "moderate", "conservative"))
+
+soil_moisture_summer <- tibble(soil_moisture = seq(from = min(cox_summer$soil_moisture),
+                                                   to = max(cox_summer$soil_moisture),
+                                                   by = 0.1))%>%
+  mutate(start_time = 0, 
+         end_time =280,
+         dead = 0,
+         les_1 = median(cox_summer$les_1),
+         height = median(cox_summer$height),
+         vpd = median(cox_summer$vpd),
+         wue = median(cox_summer$wue),
+         wood_density = median(cox_summer$wood_density)) %>% 
+  mutate(hazard = predict(cox_summer_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(cox_summer_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+         lower_int = hazard - interval,
+         upper_int = hazard + interval)
+
+
+wue_summer <- tibble(wue = seq(from = min(cox_summer$wue),
+                                                   to = max(cox_summer$wue),
+                                                   by = 0.1))%>%
+  mutate(start_time = 0, 
+         end_time =280,
+         dead = 0,
+         les_1 = median(cox_summer$les_1),
+         height = median(cox_summer$height),
+         vpd = median(cox_summer$vpd),
+         soil_moisture = median(cox_summer$soil_moisture),
+         wood_density = median(cox_summer$wood_density)) %>% 
+  mutate(hazard = predict(cox_summer_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(cox_summer_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+         lower_int = hazard - interval,
+         upper_int = hazard + interval)
+
+height_summer_plot <- ggplot(height_les1_summer, aes(x = height, y = hazard, colour = as.factor(les_1), group = as.factor(les_1))) +
+  geom_line()+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int), alpha = 0.25)+
+  theme_classic()+
+  geom_hline(yintercept = 0, linetype = "dashed")+
+  ylim(-.03,1)+
+  scale_color_manual(values = c("#648FFF", "#DC267F", "#FFB000"))+
+  labs(x = "Height",
+       y = "Survival Probability", 
+       colour = "LES 1")+
+  theme(text=element_text(size=21))
+
+vpd_summer_plot <- ggplot(vpd_les1_summer, aes(x = vpd, y = hazard, colour = as.factor(les_1), group = as.factor(les_1))) +
+  geom_line()+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int), alpha = 0.25)+
+  theme_classic()+
+  geom_hline(yintercept = 0, linetype = "dashed")+
+  ylim(-.03,1)+
+  scale_color_manual(values = c("#648FFF", "#DC267F", "#FFB000"))+
+  labs(x = "Vapor Pressure Deficit",
+       y = "Survival Probability", 
+       colour = "LES 1")+
+  theme(text=element_text(size=21))
+
+soil_summer_plot <- ggplot(soil_moisture_summer, aes(x = soil_moisture, y = hazard)) +
+  geom_line()+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int), alpha = 0.25)+
+  #geom_point(data = cox_early_spring, aes(x = soil_moisture, y = dead), alpha = 0.25)+
+  theme_classic()+
+  geom_hline(yintercept = 0, linetype = "dashed")+
+  ylim(-.03,1)+
+  labs(x = "Soil Moisture",
+       y = "Survival Probability")+
+  theme(text=element_text(size=21))
+
+wue_summer_plot <- ggplot(wue_summer, aes(x = wue, y = hazard)) +
+  geom_line()+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int), alpha = 0.25)+
+  geom_text(data = plant_traits, aes(x = wue, label = species, y = 0.5),
+            vjust= c(1,4,5,6.5,7,0,7,2,8),
+            size = 5)+
+  theme_classic()+
+  geom_hline(yintercept = 0, linetype = "dashed")+
+  ylim(-.03,1)+
+  xlim(-2,2)+
+  labs(x = "Water Use Efficiency",
+       y = "Survival Probability")+
+  theme(text=element_text(size=21))
+
+figure_6 <- (soil_summer_plot + vpd_summer_plot)/(height_summer_plot + wue_summer_plot)+ plot_annotation(tag_levels = "A")
+
+ggsave(filename = "figure_6.png",
+       plot = figure_6, 
+       path = here("figures"),
+       width = 8, 
+       height = 8,
+       units = "in",
+       dpi = 325,
+       scale = 1.5)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+cool_dry <- expand.grid(species = plant_traits$species, 
+                                soil_moisture =  seq(from = min(cox_early_spring$soil_moisture),
+                                                     to = max(cox_early_spring$soil_moisture), by = 0.1)) %>%
+  left_join(plant_traits, by = "species") %>% 
+  filter(species != "HEWH") %>% 
+  mutate(start_time = 0, 
+         end_time =140,
+         dead = 0,
+         vpd = min(cox_early_spring$vpd),
+         height = mean(cox_early_spring$height)) %>% 
+  mutate(hazard = predict(cox_early_spring_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(cox_early_spring_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+         lower_int = hazard - interval,
+         upper_int = hazard + interval)
+
+moderate_dry <- expand.grid(species = plant_traits$species, 
+                                soil_moisture =  seq(from = min(cox_early_spring$soil_moisture),
+                                                     to = max(cox_early_spring$soil_moisture), by = 0.1)) %>%
+  left_join(plant_traits, by = "species") %>% 
+  filter(species != "HEWH") %>% 
+  mutate(start_time = 0, 
+         end_time =140,
+         dead = 0,
+         vpd = mean(cox_early_spring$vpd),
+         height = mean(cox_early_spring$height)) %>% 
+  mutate(hazard = predict(cox_early_spring_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(cox_early_spring_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+         lower_int = hazard - interval,
+         upper_int = hazard + interval)
+
+hot_dry <- expand.grid(species = plant_traits$species, 
+                                soil_moisture =  seq(from = min(cox_early_spring$soil_moisture),
+                                                     to = max(cox_early_spring$soil_moisture), by = 0.1)) %>%
+  left_join(plant_traits, by = "species") %>% 
+  filter(species != "HEWH") %>% 
+  mutate(start_time = 0, 
+         end_time =140,
+         dead = 0,
+         vpd = max(cox_early_spring$vpd),
+         height = mean(cox_early_spring$height)) %>% 
+  mutate(hazard = predict(cox_early_spring_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(cox_early_spring_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+         lower_int = hazard - interval,
+         upper_int = hazard + interval)
+
+
+
+
+ggplot(cool_dry, aes(x = soil_moisture, y = hazard, colour = species)) +
+  geom_line()+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int), alpha = 0.25)+
+  #geom_point(data = cox_early_spring, aes(x = soil_moisture, y = dead), alpha = 0.25)+
+  theme_classic()+
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  facet_wrap(~species)
+
+ggplot(moderate_dry, aes(x = soil_moisture, y = hazard, colour = species)) +
+  geom_line()+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int), alpha = 0.25)+
+  #geom_point(data = cox_early_spring, aes(x = soil_moisture, y = dead), alpha = 0.25)+
+  theme_classic()+
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  facet_wrap(~species)
+
+ggplot(hot_dry, aes(x = soil_moisture, y = hazard, colour = species)) +
+  geom_line()+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int), alpha = 0.25)+
+  #geom_point(data = cox_early_spring, aes(x = soil_moisture, y = dead), alpha = 0.25)+
+  theme_classic()+
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  facet_wrap(~species)
+```
+
+```{r}
+wet_hot <- expand.grid(species = plant_traits$species, 
+                                vpd =  seq(from = min(cox_early_spring$vpd),
+                                                     to = max(cox_early_spring$vpd), by = 0.1)) %>%
+  left_join(plant_traits, by = "species") %>% 
+  filter(species != "HEWH") %>% 
+  mutate(start_time = 0, 
+         end_time =140,
+         dead = 0,
+         soil_moisture = max(cox_early_spring$soil_moisture),
+         height = mean(cox_early_spring$height)) %>% 
+  mutate(hazard = predict(cox_early_spring_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(cox_early_spring_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+         lower_int = hazard - interval,
+         upper_int = hazard + interval)
+
+moderate_hot <- expand.grid(species = plant_traits$species, 
+                                vpd =  seq(from = min(cox_early_spring$vpd),
+                                                     to = max(cox_early_spring$vpd), by = 0.1)) %>%
+  left_join(plant_traits, by = "species") %>% 
+  filter(species != "HEWH") %>% 
+  mutate(start_time = 0, 
+         end_time =140,
+         dead = 0,
+         soil_moisture = mean(cox_early_spring$soil_moisture),
+         height = mean(cox_early_spring$height)) %>% 
+  mutate(hazard = predict(cox_early_spring_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(cox_early_spring_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+         lower_int = hazard - interval,
+         upper_int = hazard + interval)
+
+dry_hot <- expand.grid(species = plant_traits$species, 
+                                vpd =  seq(from = min(cox_early_spring$vpd),
+                                                     to = max(cox_early_spring$vpd), by = 0.1)) %>%
+  left_join(plant_traits, by = "species") %>% 
+  filter(species != "HEWH") %>% 
+  mutate(start_time = 0, 
+         end_time =140,
+         dead = 0,
+         soil_moisture = min(cox_early_spring$soil_moisture),
+         height = mean(cox_early_spring$height)) %>% 
+  mutate(hazard = predict(cox_early_spring_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(cox_early_spring_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+         lower_int = hazard - interval,
+         upper_int = hazard + interval)
+
+
+
+
+ggplot(wet_hot, aes(x = vpd, y = hazard, colour = species)) +
+  geom_line()+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int), alpha = 0.25)+
+  #geom_point(data = cox_early_spring, aes(x = soil_moisture, y = dead), alpha = 0.25)+
+  theme_classic()+
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  facet_wrap(~species)
+
+ggplot(moderate_hot, aes(x = vpd, y = hazard, colour = species)) +
+  geom_line()+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int), alpha = 0.25)+
+  #geom_point(data = cox_early_spring, aes(x = soil_moisture, y = dead), alpha = 0.25)+
+  theme_classic()+
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  facet_wrap(~species)
+
+ggplot(dry_hot, aes(x = vpd, y = hazard, colour = species)) +
+  geom_line()+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int), alpha = 0.25)+
+  #geom_point(data = cox_early_spring, aes(x = soil_moisture, y = dead), alpha = 0.25)+
+  theme_classic()+
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  facet_wrap(~species)
+```
+
+
+
+```{r}
+cool_dry_summer <- expand.grid(species = plant_traits$species, 
+                                soil_moisture =  seq(from = min(cox_summer$soil_moisture),
+                                                     to = max(cox_summer$soil_moisture), by = 0.1)) %>%
+  left_join(mean_july_heights, by = "species") %>% 
+  left_join(plant_traits, by = "species") %>% 
+  filter(species != "HEWH") %>% 
+  mutate(start_time = 0, 
+         end_time =280,
+         dead = 0,
+         vpd = min(cox_summer$vpd)) %>% 
+  mutate(hazard = predict(cox_summer_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(cox_summer_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+         lower_int = hazard - interval,
+         upper_int = hazard + interval)
+
+moderate_dry_summer <- expand.grid(species = plant_traits$species, 
+                                soil_moisture =  seq(from = min(cox_summer$soil_moisture),
+                                                     to = max(cox_summer$soil_moisture), by = 0.1)) %>%
+  left_join(mean_july_heights, by = "species") %>% 
+  left_join(plant_traits, by = "species") %>% 
+  filter(species != "HEWH") %>% 
+  mutate(start_time = 0, 
+         end_time =280,
+         dead = 0,
+         vpd = mean(cox_summer$vpd)) %>% 
+  mutate(hazard = predict(cox_summer_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(cox_summer_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+         lower_int = hazard - interval,
+         upper_int = hazard + interval)
+
+hot_dry_summer <- expand.grid(species = plant_traits$species, 
+                                soil_moisture =  seq(from = min(cox_summer$soil_moisture),
+                                                     to = max(cox_summer$soil_moisture), by = 0.1)) %>%
+  left_join(mean_july_heights, by = "species") %>% 
+  left_join(plant_traits, by = "species") %>% 
+  filter(species != "HEWH") %>% 
+  mutate(start_time = 0, 
+         end_time =280,
+         dead = 0,
+         vpd = max(cox_summer$vpd)) %>% 
+  mutate(hazard = predict(cox_summer_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(cox_summer_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+         lower_int = hazard - interval,
+         upper_int = hazard + interval)
+
+
+
+
+ggplot(cool_dry_summer, aes(x = soil_moisture, y = hazard, colour = species)) +
+  geom_line()+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int), alpha = 0.25)+
+  #geom_point(data = cox_summer, aes(x = soil_moisture, y = dead), alpha = 0.25)+
+  theme_classic()+
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  facet_wrap(~species)
+
+ggplot(moderate_dry_summer, aes(x = soil_moisture, y = hazard, colour = species)) +
+  geom_line()+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int), alpha = 0.25)+
+  #geom_point(data = cox_summer, aes(x = soil_moisture, y = dead), alpha = 0.25)+
+  theme_classic()+
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  facet_wrap(~species)
+
+ggplot(hot_dry_summer, aes(x = soil_moisture, y = hazard, colour = species)) +
+  geom_line()+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int), alpha = 0.25)+
+  #geom_point(data = cox_summer, aes(x = soil_moisture, y = dead), alpha = 0.25)+
+  theme_classic()+
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  facet_wrap(~species)
+```
+
+
+```{r}
+wet_hot_summer <- expand.grid(species = plant_traits$species, 
+                                vpd =  seq(from = min(cox_summer$vpd),
+                                                     to = max(cox_summer$vpd), by = 0.1)) %>%
+  left_join(mean_july_heights, by = "species") %>% 
+  left_join(plant_traits, by = "species") %>% 
+  filter(species != "HEWH") %>% 
+  mutate(start_time = 0, 
+         end_time =280,
+         dead = 0,
+         soil_moisture = max(cox_summer$soil_moisture)) %>% 
+  mutate(hazard = predict(cox_summer_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(cox_summer_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+         lower_int = hazard - interval,
+         upper_int = hazard + interval)
+
+moderate_hot_summer <- expand.grid(species = plant_traits$species, 
+                                vpd =  seq(from = min(cox_summer$vpd),
+                                                     to = max(cox_summer$vpd), by = 0.1)) %>%
+  left_join(mean_july_heights, by = "species") %>% 
+  left_join(plant_traits, by = "species") %>% 
+  filter(species != "HEWH") %>% 
+  mutate(start_time = 0, 
+         end_time =280,
+         dead = 0,
+         soil_moisture = mean(cox_summer$soil_moisture)) %>% 
+  mutate(hazard = predict(cox_summer_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(cox_summer_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+         lower_int = hazard - interval,
+         upper_int = hazard + interval)
+
+dry_hot_summer <- expand.grid(species = plant_traits$species, 
+                                vpd =  seq(from = min(cox_summer$vpd),
+                                                     to = max(cox_summer$vpd), by = 0.1)) %>%
+  left_join(mean_july_heights, by = "species") %>% 
+  left_join(plant_traits, by = "species") %>% 
+  filter(species != "HEWH") %>% 
+  mutate(start_time = 0, 
+         end_time =280,
+         dead = 0,
+         soil_moisture = min(cox_summer$soil_moisture)) %>% 
+  mutate(hazard = predict(cox_summer_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(cox_summer_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+         lower_int = hazard - interval,
+         upper_int = hazard + interval)
+
+
+
+
+ggplot(wet_hot_summer, aes(x = vpd, y = hazard, colour = species)) +
+  geom_line()+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int), alpha = 0.25)+
+  #geom_point(data = cox_summer, aes(x = soil_moisture, y = dead), alpha = 0.25)+
+  theme_classic()+
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  facet_wrap(~species)
+
+ggplot(moderate_hot_summer, aes(x = vpd, y = hazard, colour = species)) +
+  geom_line()+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int), alpha = 0.25)+
+  #geom_point(data = cox_summer, aes(x = soil_moisture, y = dead), alpha = 0.25)+
+  theme_classic()+
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  facet_wrap(~species)
+
+ggplot(dry_hot_summer, aes(x = vpd, y = hazard, colour = species)) +
+  geom_line()+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int), alpha = 0.25)+
+  #geom_point(data = cox_summer, aes(x = soil_moisture, y = dead), alpha = 0.25)+
+  theme_classic()+
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  facet_wrap(~species)
+```
+
+
+
+
+wet-hot and cool-dry
+
+enca, rhov, same ceol or saap
+
+```{r}
+ggplot(wet_hot_summer %>% filter(species == "ENCA"), aes(x= vpd, y = hazard, color = species)) +
+  geom_line(size = 2)+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int, fill = species), alpha = 0.25, lty = 0)+
+  #geom_point(data = cox_summer, aes(x = soil_moisture, y = dead), alpha = 0.25)+
+  theme_classic()+
+  scale_color_manual(values = "#648FFF")+
+  scale_fill_manual(values = "#648FFF")+
+  theme(legend.position = "none")+
+  labs(x = "",
+       y = "")+
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  ylim(0,1)
+ggplot(wet_hot_summer %>% filter(species %in% c("ENCA", "SAME")), aes(x= vpd, y = hazard, color = species)) +
+  geom_line(size = 2)+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int, fill = species), alpha = 0.25, lty = 0)+
+  #geom_point(data = cox_summer, aes(x = soil_moisture, y = dead), alpha = 0.25)+
+  theme_classic()+
+  scale_color_manual(values = c("#648FFF", "#FFB000"))+
+  scale_fill_manual(values = c("#648FFF", "#FFB000"))+
+  theme(legend.position = "none")+
+  labs(x = "",
+       y = "")+
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  ylim(0,1)
+ggplot(wet_hot_summer %>% filter(species %in% c("ENCA", "SAME", "RHOV")), aes(x= vpd, y = hazard, color = species)) +
+  geom_line(size = 2)+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int, fill = species), alpha = 0.25, lty = 0)+
+  #geom_point(data = cox_summer, aes(x = soil_moisture, y = dead), alpha = 0.25)+
+  theme_classic()+
+  scale_color_manual(values = c("#648FFF", "#DC267F", "#FFB000"))+
+  scale_fill_manual(values = c("#648FFF", "#DC267F", "#FFB000"))+
+  theme(legend.position = "none")+
+  labs(x = "",
+       y = "")+
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  ylim(0,1)
+```
+
+```{r}
+ggplot(cool_dry_summer %>% filter(species == "RHOV"), aes(x= soil_moisture, y = hazard, color = species)) +
+  geom_line(size = 2)+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int, fill = species), alpha = 0.25, lty = 0)+
+  #geom_point(data = cox_summer, aes(x = soil_moisture, y = dead), alpha = 0.25)+
+  theme_classic()+
+  scale_color_manual(values = "#DC267F")+
+  scale_fill_manual(values = "#DC267F")+
+  geom_hline(yintercept = 0, linetype = "dashed")+
+  theme(legend.position = "none")+
+  labs(x = "",
+       y = "")+
+  ylim(0,1)
+ggplot(cool_dry_summer %>% filter(species %in% c("SAME", "ADFA")), aes(x= soil_moisture, y = hazard, color = species)) +
+  geom_line(size = 2)+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int, fill = species), alpha = 0.25, lty = 0)+
+  #geom_point(data = cox_summer, aes(x = soil_moisture, y = dead), alpha = 0.25)+
+  theme_classic()+
+  scale_color_manual(values = c("#DC267F", "#FFB000"))+
+  scale_fill_manual(values = c("#DC267F", "#FFB000"))+
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  theme(legend.position = "none")+
+  labs(x = "",
+       y = "")+
+  ylim(0,1)
+ggplot(cool_dry_summer %>% filter(species %in% c("ENCA", "SAME", "RHOV")), aes(x= soil_moisture, y = hazard, color = species)) +
+  geom_line(size = 2)+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int, fill = species), alpha = 0.25, lty = 0)+
+  #geom_point(data = cox_summer, aes(x = soil_moisture, y = dead), alpha = 0.25)+
+  theme_classic()+
+  scale_color_manual(values = c("#DC267F","#648FFF","#FFB000"))+
+  scale_fill_manual(values = c("#DC267F","#648FFF","#FFB000"))+
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  theme(legend.position = "none")+
+  labs(x = "",
+       y = "")+
+  ylim(0,1)
+```
+
+```{r}
+rhov_test <- spring_environmental %>% 
+  select(plot_number, soil_moisture, vpd) %>% 
+  mutate(species = "RHOV", 
+         start_time = 0,
+         end_time = 126,
+         dead = 0) %>% 
+  left_join(plant_traits, by = "species") %>% 
+  left_join(mean_planting_heights, by = "species") %>% 
+  mutate(prob_alive = predict(cox_early_spring_model, newdata = ., type = "survival")) %>% 
+  filter(prob_alive >= 0.75)
+
+ggplot(rhov_test, aes(x = soil_moisture, y = vpd, col = prob_alive))+
+  geom_point()+
+  theme_classic()+
+  geom_hline(yintercept = 0)+
+  geom_vline(xintercept = 0)+
+  ylim(-2,2)+
+  xlim(-2,2)
+
+enca_test <- spring_environmental %>% 
+  select(plot_number, soil_moisture, vpd) %>% 
+  mutate(species = "ENCA", 
+         start_time = 0,
+         end_time = 126,
+         dead = 0) %>% 
+  left_join(plant_traits, by = "species") %>% 
+  left_join(mean_planting_heights, by = "species") %>% 
+  mutate(prob_alive = predict(cox_early_spring_model, newdata = ., type = "survival")) %>% 
+  filter(prob_alive >= 0.75)
+
+ggplot(enca_test, aes(x = soil_moisture, y = vpd, col = prob_alive))+
+  geom_point()+
+  theme_classic()+
+  geom_hline(yintercept = 0)+
+  geom_vline(xintercept = 0)+
+  ylim(-2,2)+
+  xlim(-2,2)
+
+
+  
+```
+
+```{r}
+adfa_test <- summer_environmental %>% 
+  select(plot_number, soil_moisture, vpd) %>% 
+  mutate(species = "ADFA",
+         start_time = 0,
+         end_time = 280, 
+         dead = 0) %>% 
+  left_join(plant_traits, by = "species") %>% 
+  left_join(mean_july_heights, by = "species") %>% 
+  mutate(prob_alive = predict(cox_summer_model, newdata = ., type = "survival")) %>% 
+  filter(prob_alive >= 0.5)
+
+rhov_test <- summer_environmental %>% 
+  select(plot_number, soil_moisture, vpd) %>% 
+  mutate(species = "RHOV",
+         start_time = 0,
+         end_time = 280, 
+         dead = 0) %>% 
+  left_join(plant_traits, by = "species") %>% 
+  left_join(mean_july_heights, by = "species") %>% 
+  mutate(prob_alive = predict(cox_summer_model, newdata = ., type = "survival")) %>% 
+  filter(prob_alive >= 0.5)
+
+enca_test <- summer_environmental %>% 
+  select(plot_number, soil_moisture, vpd) %>% 
+  mutate(species = "ENCA",
+         start_time = 0,
+         end_time = 280, 
+         dead = 0) %>% 
+  left_join(plant_traits, by = "species") %>% 
+  left_join(mean_july_heights, by = "species") %>% 
+  mutate(prob_alive = predict(cox_summer_model, newdata = ., type = "survival")) %>% 
+  filter(prob_alive >= 0.5)
+
+sani_test <- summer_environmental %>% 
+  select(plot_number, soil_moisture, vpd) %>% 
+  mutate(species = "SANI",
+         start_time = 0,
+         end_time = 280, 
+         dead = 0) %>% 
+  left_join(plant_traits, by = "species") %>% 
+  left_join(mean_july_heights, by = "species") %>% 
+  mutate(prob_alive = predict(cox_summer_model, newdata = ., type = "survival")) %>% 
+  filter(prob_alive >= 0.5)
+
+same_test <- summer_environmental %>% 
+  select(plot_number, soil_moisture, vpd) %>% 
+  mutate(species = "SAME",
+         start_time = 0,
+         end_time = 280, 
+         dead = 0) %>% 
+  left_join(plant_traits, by = "species") %>% 
+  left_join(mean_july_heights, by = "species") %>% 
+  mutate(prob_alive = predict(cox_summer_model, newdata = ., type = "survival")) %>% 
+  filter(prob_alive >= 0.5)
+
+top_survivors <- rbind(rhov_test, adfa_test, enca_test, sani_test, same_test) %>% 
+  mutate(type = case_when(species %in% c("ENCA", "SANI", "SAME") ~ "Acquisitive/low WUE",
+                          species %in% c("ADFA", "RHOV") ~ "Conservative/high WUE"))
+top_survivors$species <- factor(top_survivors$species, levels = c("ENCA", "SANI", "SAME", "ADFA", "RHOV"))
+
+figure_10 <- ggplot(top_survivors %>% filter(species %in% c("ENCA", "RHOV")), aes(x = soil_moisture, y = vpd))+
+  geom_point(aes(col = species, shape = type),alpha = 0.5)+
+  geom_point(data = summer_environmental, aes(x = soil_moisture, y = vpd), alpha = 0.1)+
+  theme_classic()+
+  geom_hline(yintercept = 0)+
+  geom_vline(xintercept = 0)+
+  ylim(-2,2)+
+  xlim(-2,2)+
+  labs(x = "Soil Moisture",
+       y = "Vapor Pressure Deficit")+
+  geom_text(aes(x = -1.5, y = 1.5, label = "Hot and Dry"))+
+  geom_text(aes(x = 1.5, y = 1.5, label = "Hot and Wet"))+
+  geom_text(aes(x = -1.5, y = -1.75, label = "Cool and Dry"))+
+  geom_text(aes(x = 1.5, y = -1.75, label = "Cool and Wet"))+
+  scale_color_manual(values = c("#FFB000", "#648FFF"))
+figure_10
+
+
+ggsave(filename = "figure_10.png",
+       plot = figure_10,
+       path = here("figures"),
+       width = 4, 
+       height = 4, 
+       units = "in", 
+       dpi = 325, 
+       scale = 1.5)
+
+top_survivors_big <- top_survivors %>% 
+  filter(species %in% c("ENCA", "RHOV")) %>% 
+  mutate(type = case_when(type == "Conservative/high WUE" ~ "Conservative\n high WUE",
+                          type == "Acquisitive/low WUE" ~ "Acquisitive \nlow WUE"))
+
+figure_10_big <- ggplot(top_survivors_big, aes(x = soil_moisture, y = vpd))+
+  geom_point(aes(col = species, shape = type),alpha = 0.5)+
+  geom_point(data = summer_environmental, aes(x = soil_moisture, y = vpd), alpha = 0.1)+
+  theme_classic()+
+  geom_hline(yintercept = 0)+
+  geom_vline(xintercept = 0)+
+  ylim(-2,2)+
+  xlim(-2,2)+
+  labs(x = "Soil Moisture",
+       y = "Vapor Pressure Deficit")+
+  geom_text(aes(x = -1.5, y = 1.5, label = "Hot \n Dry"), size = 5)+
+  geom_text(aes(x = 1.5, y = 1.5, label = "Hot \n Wet"), size = 5)+
+  geom_text(aes(x = -1.5, y = -1.75, label = "Cool \n Dry"), size = 5)+
+  geom_text(aes(x = 1.5, y = -1.75, label = "Cool \n Wet"), size = 5)+
+  scale_color_manual(values = c("#FFB000", "#648FFF"))+
+  theme(text = element_text(size = 20))
+figure_10_big
+
+
+ggsave(filename = "figure_10_big.png",
+       plot = figure_10_big,
+       path = here("figures"),
+       width = 4, 
+       height = 4, 
+       units = "in", 
+       dpi = 325, 
+       scale = 1.5)
+```
+
+

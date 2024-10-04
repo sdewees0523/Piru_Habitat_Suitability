@@ -1,0 +1,322 @@
+---
+title: "Survival and growth cleaning"
+author: "Shane Dewees"
+date: "12/15/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(here)
+library(lubridate)
+library(sf)
+library(raster)
+library(tidyverse)
+library(stats)
+library(jtools)
+library(ggparty)
+library(partykit)
+library(ggfortify)
+library(vroom)
+library(gmodels)
+```
+
+```{r}
+planting <- read.csv(here("data", "raw_data", "planting.csv")) %>% 
+  rename("plot_number" = "ID") %>% 
+  mutate(date_planted = mdy(Date.Planted)) %>% 
+  drop_na(date_planted) %>% 
+  dplyr::select(!Date.Planted & !Pot.Size) %>% 
+  mutate(Plant = case_when(Plant == "ENCA (Pink)" ~ "ENCA",
+                           Plant == "CEOL (Orange)" ~ "CEOL",
+                           Plant == "HEWH (White)" ~ "HEWH",
+                           Plant == "SAME (Orange + Pink)" ~ "SAME",
+                           Plant == "SANI (Orange + Yellow)" ~ "SANI",
+                           Plant == "RHOV (White + Pink)" ~ "RHOV",
+                           Plant == "SAAP (White + Green)" ~ "SAAP",
+                           Plant == "MALA (White + Yellow)" ~ "MALA",
+                           Plant == "HEAR" ~ "HEAR",
+                           Plant == "ADFA (Orange + Green)" ~ "ADFA",
+                           Plant == "RHOV SAAP (White + Pink)" ~ "SAAP",
+                           Plant == "ENCA CEOL (Pink)" ~ "CEOL", 
+                           Plant == "HEWH (White) RHOV" ~ "RHOV",
+                           Plant == "NO PLANT" ~ "No Plant")) %>% 
+  filter(Plant != "No Plant") %>%
+  dplyr::select(plot_number, Plant, Height, date_planted) %>% 
+  mutate(dead = 0,
+         time_since_planting = 0) %>% 
+  dplyr::select(plot_number, Plant, dead, date_planted, time_since_planting, Height)
+watering <- read.csv(here("data", "raw_data","watering.csv"))%>% 
+  rename("plot_number" = "ID") %>% 
+  mutate(Watering.2.Date = str_replace(Watering.2.Date, "May", "05-2020"),
+         date_watered = dmy(Watering.2.Date)) %>% 
+  drop_na(date_watered) %>% 
+  dplyr::select(plot_number, Plant, Alive.1, date_watered) %>% 
+  mutate(Plant = case_when(Plant == "ENCA (Pink)" ~ "ENCA",
+                           Plant == "CEOL (Orange)" ~ "CEOL",
+                           Plant == "HEWH (White)" ~ "HEWH",
+                           Plant == "SAME (Orange + Pink)" ~ "SAME",
+                           Plant == "SANI (Orange + Yellow)" ~ "SANI",
+                           Plant == "SANI (Orange + Yellow) CEOL" ~ "SANI",
+                           Plant == "RHOV (White + Pink)" ~ "RHOV",
+                           Plant == "SAAP (White + Green)" ~ "SAAP",
+                           Plant == "MALA (White + Yellow)" ~ "MALA",
+                           Plant == "SANI  MALA" ~ "SANI",
+                           Plant == "HEAR" ~ "HEAR",
+                           Plant == "ADFA (Orange + Green)" ~ "ADFA",
+                           Plant == "RHOV SAAP (White + Pink)" ~ "SAAP",
+                           Plant == "ENCA CEOL (Pink)" ~ "CEOL", 
+                           Plant == "HEWH (White) ENCA" ~ "ENCA",
+                           Plant == "SANI " ~ "SANI",
+                           TRUE ~ Plant)) %>% 
+  rename(dead = Alive.1) %>% 
+  mutate(dead = case_when(dead %in% c("n", "np", "N", "NP") ~ 1,
+                          dead %in% c("y", "Y") ~ 0))
+measuring <- read.csv(here("data", "raw_data", "measuring.csv"))%>% 
+  rename("plot_number" = "ID") %>% 
+  mutate(Date.Measured = str_replace(Date.Measured, "-Jun", "/06/2020"),
+         date_measured = dmy(Date.Measured),
+         date_measured = case_when(plot_number == 1503 ~ mdy("6/26/2020"),
+                          TRUE ~ date_measured)) %>% 
+  drop_na(date_measured) %>% 
+  dplyr::select(plot_number, Plant, Height, date_measured, Notes) %>%
+  mutate(Plant = case_when(Plant == "ENCA (Pink)" ~ "ENCA",
+                           Plant == "CEOL (Orange)" ~ "CEOL",
+                           Plant == "HEWH (White)" ~ "HEWH",
+                           Plant == "SAME (Orange + Pink)" ~ "SAME",
+                           Plant == "SANI (Orange + Yellow)" ~ "SANI", 
+                           Plant == "RHOV (White + Pink)" ~ "RHOV",
+                           Plant == "SAAP (White + Green)" ~ "SAAP",
+                           Plant == "MALA (White + Yellow)" ~ "MALA",
+                           Plant == "ADFA (Orange + Green)" ~ "ADFA",
+                           Plant == "HEAR" ~ "HEAR",
+                           Plant == "ENCA CEOL (Pink)" ~ "CEOL",
+                           Plant == "NO PLANT" ~ "No Plant",
+                           Plant == "HEWH (White) RHOV" ~ "RHOV",
+                           Plant == "HEWH" ~ "HEWH"),
+         dead = case_when(is.na(Height) == T ~ 1,
+                          is.na(Height) == F & Notes == "dead" ~ 1,
+                          is.na(Height) == F ~ 0,
+                          )) %>% 
+  dplyr::select(!Notes)
+measuring_2 <- read.csv(here("data", "raw_data", "measuring_2.csv"))%>% 
+  rename("plot_number" = "ID") %>% 
+  mutate(Date.Measured = str_replace(Date.Measured, "-Oct", "/10/2020"),
+         Date.Measured = str_replace(Date.Measured, "-Nov", "/11/2020"),
+         Date.Measured = str_replace(Date.Measured, "-Dec", "/12/2020"),
+         date_measured_2 = dmy(Date.Measured),
+         dead = case_when(is.na(Height) == T ~ 1,
+                          is.na(Height) == F & Notes == "DAG" ~ 1,
+                          is.na(Height) == F ~ 0)) %>% 
+  drop_na(date_measured_2) %>% 
+  dplyr::select(plot_number, Plant, date_measured_2, dead, Height)
+measuring_3 <- read.csv(here("data", "raw_data", "measuring_3.csv"))%>% 
+  rename("plot_number" = "ID") %>% 
+  mutate(Date.Measured = str_replace(Date.Measured, "-Nov", "/11/2021"),
+         Date.Measured = str_replace(Date.Measured, "-Dec", "/12/2021"),
+         date_measured_3 = dmy(Date.Measured),
+         dead = case_when(is.na(Height) == T ~ 1,
+                          is.na(Height) == F & Notes == "DAG" ~ 1,
+                          is.na(Height) == F ~ 0)) %>% 
+  drop_na(date_measured_3) %>% 
+  dplyr::select(plot_number, Plant, date_measured_3, dead, Height) 
+
+
+
+
+# Table of only plants alive by March 2020
+survival_1 <- planting %>% 
+  full_join(watering, by = c("plot_number", "Plant")) %>% 
+  rename(start_time = time_since_planting,
+         dead = dead.y,
+         start_date = date_planted,
+         end_date = date_watered) %>%
+  mutate(end_time = as.numeric(end_date-start_date)) %>%
+  dplyr::select(plot_number, Plant, start_date, start_time, end_date, end_time, dead)
+survival_2 <- planting %>% 
+  left_join(watering, by = c("plot_number", "Plant")) %>% 
+  left_join(measuring, by = c("plot_number", "Plant")) %>% 
+  mutate(dead.y = case_when(dead == 0 ~ 0, 
+                            TRUE ~ dead.y),
+         start_date = date_watered,
+         start_time = as.numeric(date_watered - date_planted), 
+         end_date = date_measured,
+         end_time = as.numeric(date_measured - date_planted),
+         start_date = case_when(is.na(start_date) == T ~ date_planted,
+                                TRUE ~ start_date),
+         start_time = case_when(is.na(start_time) == T ~ 0,
+                                TRUE ~ start_time)) %>% 
+  dplyr::select(plot_number, Plant, start_date, start_time, end_date, end_time, dead) %>% 
+  drop_na(dead)
+
+survival_3 <-  planting %>% 
+  left_join(watering, by = c("plot_number", "Plant")) %>% 
+  left_join(measuring, by = c("plot_number", "Plant")) %>% 
+  left_join(measuring_2, by = c("plot_number", "Plant")) %>% 
+  mutate(start_date = date_measured,
+         start_time = as.numeric(date_measured - date_planted),
+         end_date = date_measured_2, 
+         end_time = as.numeric(date_measured_2 - date_planted),
+         dead = dead.y.y,
+         start_date = case_when(is.na(start_date) == T & is.na(end_date) == F ~ date_watered,
+                                 TRUE ~ start_date),
+         start_time = case_when(is.na(start_time) == T & is.na(end_time) == F ~ as.numeric(date_watered - date_planted),
+                                TRUE ~ start_time)) %>% 
+  dplyr::select(plot_number, Plant, start_date, start_time, end_date, end_time, dead) %>% 
+  drop_na(dead)
+
+survival_4 <- planting %>% 
+  left_join(watering, by = c("plot_number", "Plant")) %>% 
+  left_join(measuring, by = c("plot_number", "Plant")) %>% 
+  left_join(measuring_2, by = c("plot_number", "Plant")) %>% 
+  left_join(measuring_3, by = c("plot_number", "Plant")) %>% 
+  mutate(start_date = date_measured_2, 
+         start_time = as.numeric(date_measured_2 - date_planted),
+         end_date = date_measured_3,
+         end_time = as.numeric(date_measured_3 - date_planted),
+         start_date = case_when(is.na(start_date) == T & is.na(end_date) == F ~ date_measured,
+                                TRUE ~ start_date),
+         start_time = case_when(is.na(start_time) == T & is.na(end_time) == F ~ as.numeric(date_measured - date_planted),
+                                TRUE ~ start_time)) %>%
+  dplyr::select(plot_number, Plant, start_date, start_time, end_date, end_time, dead) %>% 
+  drop_na(dead)
+
+survival <- rbind(survival_1, survival_2, survival_3, survival_4) %>% 
+  group_by(plot_number) %>% 
+  mutate(dead = case_when(lead(dead) == 0 ~ 0,
+                          TRUE ~ dead)) %>% 
+  mutate(dead = case_when(lead(dead) == 0 ~ 0,
+                          TRUE ~ dead)) %>% 
+  mutate(dead = case_when(lead(dead) == 0 ~ 0,
+                          TRUE ~ dead)) %>% 
+  drop_na() %>% 
+  ungroup() %>% 
+  group_by(plot_number) %>% 
+  filter(lag(dead) != 1 | is.na(lag(dead)) == T) %>% 
+  ungroup()
+
+  
+  
+
+write.csv(survival, here("data", "clean_data", "survival_raw_kapplin.csv"))
+```
+
+
+
+## Looking at survival without gopher kill 
+  - unintuitably labelled gopher
+  
+  
+```{r}
+watering_gopher_plots <- read.csv(here("data", "raw_data", "watering.csv")) %>% 
+  filter(Notes.1 %in% c("gopher", "gopher activity", "GOPHER", "GOPHER ACTIVITY")) %>% #, "5/15 np"
+  rename(plot_number = ID,
+         date = Watering.2.Date) %>% 
+  dplyr::select(plot_number, date) %>% 
+  mutate(date = str_replace(date, "May", "05-2020"),
+         date = dmy(date))
+measuring_gopher_plots <- read.csv(here("data", "raw_data", "measuring.csv")) %>% 
+  filter(Notes %in% c("np, g", "np, buried", "g.a.", "dead, g.a.", "np, g (no coin catch#2)", "np, g.a.", "herbivorized, g.a.", "dead, g", "sad, g.a.", "np,g"))%>% # "np", 
+  rename(plot_number = ID,
+         date = Date.Measured) %>% 
+  dplyr::select(plot_number, date) %>% 
+  mutate(date = str_replace(date, "Jun", "06-2020"),
+         date = dmy(date))
+measuring_2_gopher_plots <- read.csv(here("data", "raw_data", "measuring_2.csv")) %>% 
+  filter(Notes %in% c("GOPHER"))%>% #"NP", "NP ", "MISSING",  , "NP? NO TAG", "MISSNG"
+  rename(plot_number = ID,
+         date = Date.Measured) %>% 
+  dplyr::select(plot_number, date) %>% 
+  mutate(date = str_replace(date, "Oct", "10-2020"),
+         date = str_replace(date, "Nov", "11-2020"),
+         date = str_replace(date, "Dec", "12-2020"),
+         date = dmy(date))
+measuring_3_gopher_plots <- read.csv(here("data", "raw_data", "measuring_3.csv")) %>% 
+ # filter(Notes %in% c("NP"))%>% 
+  rename(plot_number = ID,
+         date = Date.Measured) %>% 
+  dplyr::select(plot_number, date) %>% 
+  mutate(date = str_replace(date, "Nov", "11-2021"),
+         date = str_replace(date, "Dec", "12-2021"),
+         date = dmy(date))
+
+gopher_plots <- rbind(watering_gopher_plots, measuring_gopher_plots, measuring_2_gopher_plots) %>% #, measuring_3_gopher_plots
+  distinct() %>% 
+  rename(end_date = date) %>% 
+  mutate(gopher = 1)
+
+survival_gopher <- survival %>% 
+  left_join(gopher_plots, by = c("plot_number", "end_date")) %>% 
+  mutate(dead = case_when(gopher == 1 ~ 2,
+                          TRUE ~ dead)) %>% 
+  group_by(plot_number) %>% 
+  filter(!lag(dead) == 2 | is.na(lag(dead) == T)) %>% 
+  ungroup() %>% 
+  mutate(dead = case_when(dead == 2 ~ 0,
+                          TRUE ~ dead),
+         gopher = replace_na(gopher, 0))
+
+write.csv(survival_gopher, here("data","clean_data", "survival_gopher_raw.csv"))
+```
+
+## Cleaning and initial visualization of growth data
+
+```{r}
+height_1 <- planting %>% 
+  full_join(measuring, by = c("plot_number", "Plant")) %>% 
+  rename(start_time = time_since_planting,
+         dead = dead.y,
+         start_date = date_planted,
+         end_date = date_measured,
+         height = Height.x) %>%
+  mutate(end_time = as.numeric(end_date-start_date)) %>%
+  dplyr::select(plot_number, Plant, start_date, start_time, end_date, end_time, dead, height) %>% 
+  drop_na(start_time)
+
+height_2 <-  planting %>% 
+  left_join(measuring, by = c("plot_number", "Plant")) %>% 
+  left_join(measuring_2, by = c("plot_number", "Plant")) %>% 
+  mutate(start_date = date_measured,
+         start_time = as.numeric(date_measured - date_planted),
+         end_date = date_measured_2, 
+         end_time = as.numeric(date_measured_2 - date_planted),
+         height = Height.y,
+         start_date = case_when(is.na(start_date) == T & is.na(end_date) == F ~ date_measured,
+                                 TRUE ~ start_date),
+         start_time = case_when(is.na(start_time) == T & is.na(end_time) == F ~ as.numeric(date_measured - date_planted),
+                                TRUE ~ start_time)) %>% 
+  dplyr::select(plot_number, Plant, start_date, start_time, end_date, end_time, dead, height) %>% 
+  drop_na(dead)
+
+
+
+height <- rbind(height_1, height_2) %>% 
+  group_by(plot_number) %>% 
+  mutate(dead = case_when(lead(dead) == 0 ~ 0,
+                          TRUE ~ dead)) %>% 
+  drop_na() %>% 
+  ungroup() %>% 
+  group_by(plot_number) %>% 
+  filter(lag(dead) != 1 | is.na(lag(dead)) == T) %>% 
+  ungroup() %>% 
+  left_join(gopher_plots, by = c("plot_number", "end_date")) %>% 
+  mutate(dead = case_when(gopher == 1 & dead == 1 ~ 0,
+                          TRUE ~ dead),
+         gopher = replace_na(gopher, 0))
+
+  
+  
+
+write.csv(height, here("data", "clean_data", "height_gopher_kapplin.csv"))
+```
+
+## Growth dataset
+
+```{r}
+growth <- full_join(measuring, measuring_2, by = c("plot_number", "Plant")) %>% 
+  rename(july_height = Height.x, fall_height = Height.y) %>% 
+  drop_na()
+
+write.csv(growth, here("data", "clean_data", "fall_growth.csv"))
+```
+

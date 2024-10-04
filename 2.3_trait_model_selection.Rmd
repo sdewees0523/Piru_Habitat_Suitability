@@ -1,0 +1,252 @@
+---
+title: "Untitled"
+output: html_document
+date: "2024-02-22"
+---
+
+```{r setup, include=FALSE}
+library(here)
+library(tidyverse)
+library(lubridate)
+library(MuMIn)
+library(survival)
+library(rms)
+library(parallel)
+library(snow)
+library(gtsummary)
+```
+
+```{r}
+plant_traits <- read.csv(here("data", "clean_data", "cox_plant_traits.csv")) %>% 
+  mutate(les_1 = scale(les_1)[,1],
+         les_2 = scale(les_2)[,1],
+         wood_density = scale(wood_density)[,1],
+         wue = scale(wue)[,1],
+         wue = wue*-1)
+
+environmental <- read.csv(here("data", "clean_data", "predicted_environmental.csv")) %>% 
+  select(!X) %>% 
+  mutate(date = ymd(date)) %>% 
+  group_by(date) %>% 
+  mutate(temperature = scale(temperature)[,1],
+         vpd = scale(vpd)[,1]) %>% 
+  ungroup()
+
+height <- read.csv(here("data", "clean_data", "height_gopher_kapplin.csv"))%>% 
+  dplyr::select(!X) %>% 
+   mutate(alive = case_when(dead == 1 ~ 0,
+                           dead == 0 ~ 1)) %>% 
+  mutate(start_date = ymd(start_date),
+         end_date = ymd(end_date),
+         height = scale(height)[,1])
+height_environment_trait<- height %>% 
+  left_join(environmental, by = "plot_number", multiple = "all") %>% 
+  rename(species = Plant) %>% 
+  left_join(plant_traits, by = "species")
+
+cox_spring_all <- height_environment_trait %>% 
+  filter(species != "HEWH") %>% 
+  filter(date <= "2020-06-26" & end_date <= "2020-06-26") %>%
+  filter(date <= end_date) %>% 
+  group_by(plot_number) %>% 
+  reframe(start_time = mean(start_time), 
+          end_time = mean(end_time), 
+          dead = mean(dead), 
+          soil_moisture = mean(soil_moisture), 
+          temperature = mean(temperature), 
+          vpd = mean(vpd), 
+          les_1 = mean(les_1), 
+          les_2 = mean(les_2), 
+          wood_density = mean(wood_density), 
+          wue = mean(wue), 
+          height = mean(height))
+
+cox_early_spring <- height_environment_trait %>% 
+  filter(species != "HEWH") %>% 
+  filter(date <= "2020-05-30" & end_date <= "2020-06-26") %>% 
+  group_by(plot_number) %>%
+  reframe(start_time = mean(start_time), 
+          end_time = mean(end_time), 
+          dead = mean(dead), 
+          soil_moisture = mean(soil_moisture), 
+          temperature = mean(temperature), 
+          vpd = mean(vpd), 
+          les_1 = mean(les_1), 
+          les_2 = mean(les_2), 
+          wood_density = mean(wood_density), 
+          wue = mean(wue), 
+          height = mean(height))
+
+cox_late_spring <- height_environment_trait %>% 
+  filter(species != "HEWH") %>% 
+  filter(date > "2020-05-30" & date <= "2020-06-26" & end_date <= "2020-06-26") %>%
+  filter(date <= end_date) %>%
+  group_by(plot_number) %>%
+  reframe(start_time = mean(start_time), 
+          end_time = mean(end_time), 
+          dead = mean(dead), 
+          soil_moisture = mean(soil_moisture), 
+          temperature = mean(temperature), 
+          vpd = mean(vpd), 
+          les_1 = mean(les_1), 
+          les_2 = mean(les_2), 
+          wood_density = mean(wood_density), 
+          wue = mean(wue), 
+          height = mean(height))
+
+cox_summer_all <- height_environment_trait %>% 
+  filter(species != "HEWH") %>% 
+  filter(end_date > "2020-06-26") %>% 
+  filter(date >= start_date & date <= end_date) %>% 
+  group_by(plot_number) %>%
+  reframe(start_time = mean(start_time), 
+          end_time = mean(end_time), 
+          dead = mean(dead), 
+          soil_moisture = mean(soil_moisture), 
+          temperature = mean(temperature), 
+          vpd = mean(vpd), 
+          les_1 = mean(les_1), 
+          les_2 = mean(les_2), 
+          wood_density = mean(wood_density), 
+          wue = mean(wue), 
+          height = mean(height))
+
+cox_summer <- height_environment_trait %>% 
+  filter(species != "HEWH") %>% 
+  filter(end_date > "2020-06-26") %>% 
+  filter(date >= start_date & date <= "2020-09-30") %>% 
+  group_by(plot_number) %>%
+  reframe(start_time = mean(start_time), 
+          end_time = mean(end_time), 
+          dead = mean(dead), 
+          soil_moisture = mean(soil_moisture), 
+          temperature = mean(temperature), 
+          vpd = mean(vpd), 
+          les_1 = mean(les_1), 
+          les_2 = mean(les_2), 
+          wood_density = mean(wood_density), 
+          wue = mean(wue), 
+          height = mean(height))
+
+cox_fall <- height_environment_trait %>% 
+  filter(species != "HEWH") %>% 
+  filter(end_date > "2020-06-26") %>% 
+  filter(date >= "2020-10-01" & date <= end_date) %>% 
+  group_by(plot_number) %>%
+  reframe(start_time = mean(start_time), 
+          end_time = mean(end_time), 
+          dead = mean(dead), 
+          soil_moisture = mean(soil_moisture), 
+          temperature = mean(temperature), 
+          vpd = mean(vpd), 
+          les_1 = mean(les_1), 
+          les_2 = mean(les_2), 
+          wood_density = mean(wood_density), 
+          wue = mean(wue), 
+          height = mean(height))
+```
+
+multimodel ensembling? 
+
+```{r}
+options(na.action = "na.fail")
+nCores <- detectCores() - 1
+clu <- makeCluster(nCores, type = "SOCK")
+spring_all_dredge_input <- survival::coxph(survival::Surv(end_time, dead) ~ les_1* temperature + les_1*soil_moisture + les_1* vpd + les_2 * temperature + les_2*soil_moisture + les_2* vpd + wue*temperature + wue* soil_moisture + wue*vpd + wood_density*temperature + wood_density*soil_moisture + wood_density*vpd + temperature*soil_moisture + temperature*vpd + soil_moisture*vpd + height*les_1 + height*les_2 + height*wood_density + height*wue, 
+      data = cox_spring_all)
+# Export all objects to be used to all the cores in the cluster
+clusterExport(clu, list("cox_spring_all","spring_all_dredge_input"))
+# Load packages to be used
+clusterEvalQ(clu,library(MuMIn, survival,logical.return =T))
+
+spring_all_dredge <- MuMIn::dredge(spring_all_dredge_input, trace=2, cluster=clu)
+spring_all_dredge_filter <- spring_all_dredge %>% 
+  filter(delta < 2) %>% 
+  filter(df == min(df))
+
+options(na.action = "na.fail")
+early_spring_dredge_input <- survival::coxph(survival::Surv(end_time, dead) ~ les_1* temperature + les_1*soil_moisture + les_1* vpd + les_2 * temperature + les_2*soil_moisture + les_2* vpd + wue*temperature + wue* soil_moisture + wue*vpd + wood_density*temperature + wood_density*soil_moisture + wood_density*vpd + temperature*soil_moisture + temperature*vpd + soil_moisture*vpd + height*les_1 + height*les_2 + height*wood_density + height*wue, 
+      data = cox_early_spring)
+clusterExport(clu, list("cox_early_spring","early_spring_dredge_input"))
+early_spring_dredge <- MuMIn::dredge(early_spring_dredge_input, trace=2, cluster=clu)
+
+early_spring_dredge_filter <- early_spring_dredge %>% 
+  filter(delta < 2) %>% 
+  filter(df == min(df))
+
+options(na.action = "na.fail")
+late_spring_dredge_input <- survival::coxph(survival::Surv(end_time, dead) ~ les_1* temperature + les_1*soil_moisture + les_1* vpd + les_2 * temperature + les_2*soil_moisture + les_2* vpd + wue*temperature + wue* soil_moisture + wue*vpd + wood_density*temperature + wood_density*soil_moisture + wood_density*vpd + temperature*soil_moisture + temperature*vpd + soil_moisture*vpd + height*les_1 + height*les_2 + height*wood_density + height*wue, 
+      data = cox_late_spring)
+clusterExport(clu, list("cox_late_spring","late_spring_dredge_input"))
+late_spring_dredge <- MuMIn::dredge(late_spring_dredge_input, trace=2, cluster=clu)
+
+late_spring_dredge_filter <- late_spring_dredge %>% 
+  filter(delta < 2) %>% 
+  filter(df == min(df))
+```
+
+
+```{r}
+cox_early_spring_model <- coxph(Surv(end_time, dead) ~ height + les_1 + les_2 + wood_density + wue + soil_moisture + vpd + height*les_1 +
+                                  height*les_2 + height*wue,
+      data = cox_early_spring, x = T)
+cox.zph(cox_early_spring_model)
+plot(cox.zph(cox_early_spring_model))
+cox_early_spring_model %>% 
+  tbl_regression(exp = T)
+
+AICc(cox_early_spring_model)
+
+save(cox_early_spring_model, file = here("data", "models", "early_spring_model.rda"))
+```
+
+
+```{r}
+options(na.action = "na.fail")
+nCores <- detectCores() - 1
+clu <- makeCluster(nCores, type = "SOCK")
+summer_all_dredge_input <- survival::coxph(survival::Surv(end_time, dead) ~ les_1* temperature + les_1*soil_moisture + les_1* vpd + les_2 * temperature + les_2*soil_moisture + les_2* vpd + wue*temperature + wue* soil_moisture + wue*vpd + wood_density*temperature + wood_density*soil_moisture + wood_density*vpd + temperature*soil_moisture + temperature*vpd + soil_moisture*vpd + height*les_1 + height*les_2 + height*wood_density + height*wue, 
+      data = cox_summer_all)
+# Export all objects to be used to all the cores in the cluster
+clusterExport(clu, list("cox_summer_all","summer_all_dredge_input"))
+# Load packages to be used
+clusterEvalQ(clu,library(MuMIn, survival,logical.return =T))
+
+summer_all_dredge <- MuMIn::dredge(summer_all_dredge_input, trace=2, cluster=clu)
+summer_all_dredge_filter <- summer_all_dredge %>% 
+  filter(delta < 2) %>% 
+  filter(df == min(df))
+
+options(na.action = "na.fail")
+summer_dredge_input <- survival::coxph(survival::Surv(end_time, dead) ~ les_1* temperature + les_1*soil_moisture + les_1* vpd + les_2 * temperature + les_2*soil_moisture + les_2* vpd + wue*temperature + wue* soil_moisture + wue*vpd + wood_density*temperature + wood_density*soil_moisture + wood_density*vpd + temperature*soil_moisture + temperature*vpd + soil_moisture*vpd + height*les_1 + height*les_2 + height*wood_density + height*wue, 
+      data = cox_summer)
+clusterExport(clu, list("cox_summer","summer_dredge_input"))
+summer_dredge <- MuMIn::dredge(summer_dredge_input, trace=2, cluster=clu)
+
+summer_dredge_filter <- summer_dredge %>% 
+  filter(delta < 2) %>% 
+  filter(df == min(df))
+
+options(na.action = "na.fail")
+fall_dredge_input <- survival::coxph(survival::Surv(end_time, dead) ~ les_1* temperature + les_1*soil_moisture + les_1* vpd + les_2 * temperature + les_2*soil_moisture + les_2* vpd + wue*temperature + wue* soil_moisture + wue*vpd + wood_density*temperature + wood_density*soil_moisture + wood_density*vpd + temperature*soil_moisture + temperature*vpd + soil_moisture*vpd + height*les_1 + height*les_2 + height*wood_density + height*wue, 
+      data = cox_fall)
+clusterExport(clu, list("cox_fall","fall_dredge_input"))
+fall_dredge <- MuMIn::dredge(fall_dredge_input, trace=2, cluster=clu)
+
+fall_dredge_filter <- fall_dredge %>% 
+  filter(delta < 2) %>% 
+  filter(df == min(df))
+```
+
+```{r}
+cox_summer_model <- coxph(Surv(end_time, dead) ~ height + les_1 + wue + soil_moisture + vpd +  height*les_1 + vpd*les_1,
+      data = cox_summer, x = T)
+cox.zph(cox_summer_model)
+cox_summer_model %>%
+  tbl_regression(exp = T)
+
+save(cox_summer_model, file = here("data", "models", "summer_model.rda"))
+```
+
+
+

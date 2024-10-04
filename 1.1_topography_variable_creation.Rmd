@@ -1,0 +1,42 @@
+---
+title: "Making topographic variables"
+author: "Shane Dewees"
+date: "2/9/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(sf)
+library(raster)
+library(spatialEco)
+library(here)
+library(terra)
+```
+
+```{r}
+elevation <- raster(here("data", "raw_data",  "elevation.tif"))
+heat_load_index <- hli(elevation)
+hierarchical_slope_position <- hsp(elevation)
+diurnal_heat_index <- dahi(elevation)
+topographic_position <- tpi(elevation, scale = 7)
+sol_rad_aspect <- trasp(elevation)
+terrain_ruggedness <- tri(elevation, s = 7)
+ruggedness_vector <- vrm(elevation, s= 7)
+saga_wetness <- raster(here("data", "raw_data", "saga_wetness.tif"))
+twi <- raster(here("data", "raw_data", "twi.tif"))
+```
+
+
+```{r}
+writeRaster(heat_load_index, filename = here("data", "clean_data", "heat_load_index.tif"), overwrite = TRUE)
+writeRaster(hierarchical_slope_position, filename = here("data", "clean_data", "hierarchical_slope_position.tif"), overwrite = TRUE)
+writeRaster(diurnal_heat_index, filename = here("data", "clean_data", "diurnal_heat.tif"), overwrite = TRUE)
+writeRaster(topographic_position, filename = here("data", "clean_data", "topographic_position.tif"), overwrite = TRUE)
+writeRaster(sol_rad_aspect, filename = here("data", "clean_data", "sol_rad_aspect.tif"), overwrite = TRUE)
+writeRaster(terrain_ruggedness, filename = here("data", "clean_data", "terrain_ruggedness.tif"), overwrite = TRUE)
+writeRaster(ruggedness_vector, filename = here("data", "clean_data", "ruggedness_vector.tif"), overwrite = TRUE)
+```
+
+
+

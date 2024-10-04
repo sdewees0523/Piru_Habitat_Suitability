@@ -1,0 +1,316 @@
+---
+title: "Untitled"
+output: html_document
+date: "2024-04-23"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(here)
+library(tidyverse)
+library(patchwork)
+```
+
+```{r}
+spring_height <- read.csv(here("data", "clean_data", "height_gopher_kapplin.csv")) %>% 
+  mutate(height_date = case_when(start_time == 0 ~ "planting_height",
+                                 start_time != 0 ~ "spring_height")) %>% 
+  select(plot_number, Plant, height, height_date, end_time) %>% 
+  group_by(plot_number) %>% 
+  mutate(end_time = min(end_time)) %>% 
+  ungroup() %>% 
+  pivot_wider(id_cols = c(plot_number, Plant, end_time), names_from = height_date, values_from = height) %>% 
+  drop_na() %>%
+  mutate(growth = (spring_height - planting_height)/end_time) %>% 
+  rename(species = Plant) %>% 
+  mutate(planting_height = scale(planting_height)[,1])
+
+fall_height <- read.csv(here("data", "clean_data", "fall_growth.csv")) %>% 
+  mutate(date_measured = ymd(date_measured),
+         date_measured_2 = ymd(date_measured_2)) %>% 
+  select(plot_number, Plant, july_height, fall_height, date_measured, date_measured_2) %>% 
+  mutate(growth = (fall_height - july_height)/(as.numeric(date_measured_2 - date_measured))) %>%
+  rename(species = Plant) %>% 
+  select(plot_number, species, july_height, growth) %>% 
+  mutate(july_height = scale(july_height)[,1])
+
+plant_traits <- read.csv(here("data", "clean_data", "cox_plant_traits.csv")) %>% 
+  mutate(les_1 = scale(les_1)[,1],
+         les_2 = scale(les_2)[,1],
+         wood_density = scale(wood_density)[,1],
+         wue = scale(wue)[,1])
+
+environmental <- read.csv(here("data", "clean_data", "predicted_environmental.csv")) %>% 
+  select(!X) %>% 
+  mutate(date = ymd(date)) %>% 
+  group_by(date) %>% 
+  mutate(temperature = scale(temperature)[,1],
+         vpd = scale(vpd)[,1]) %>% 
+  ungroup() 
+
+environmental_spring <- environmental %>% 
+  filter(date <= "2020-06-26") %>% 
+  group_by(plot_number) %>% 
+  reframe(soil_moisture = mean(soil_moisture),
+          temperature = mean(temperature),
+          vpd = mean(temperature))
+
+environmental_fall <- environmental %>% 
+  filter(date > "2020-09-30") %>% 
+  group_by(plot_number) %>% 
+  reframe(soil_moisture = mean(soil_moisture),
+          temperature = mean(temperature),
+          vpd = mean(temperature))
+
+growth_spring_data <- spring_height %>% 
+  inner_join(plant_traits, by = "species") %>% 
+  inner_join(environmental_spring, by = "plot_number") %>% 
+  select(growth, les_1, les_2, wood_density, wue, temperature, soil_moisture, vpd, planting_height)
+
+growth_fall_data <- fall_height %>% 
+  inner_join(plant_traits, by = "species") %>% 
+  inner_join(environmental_fall, by = "plot_number") %>% 
+  select(growth, les_1, les_2, wood_density, wue, temperature, soil_moisture, vpd, july_height)
+```
+
+```{r}
+load(here("data", "models", "spring_growth_model.rda"))
+summary(spring_growth_model)
+
+spring_planting_height <- expand.grid(planting_height = seq(from = min(growth_spring_data$planting_height), to = max(growth_spring_data$planting_height), by = 0.1),
+                                      les_1 = c(min(plant_traits$les_1),
+                                                median(plant_traits$les_1),
+                                                max(plant_traits$les_1))) %>% 
+  mutate(soil_moisture = median(growth_spring_data$soil_moisture),
+         les_2 = median(growth_spring_data$les_2),
+         temperature = median(growth_spring_data$temperature)) %>% 
+  mutate(growth = predict(spring_growth_model, newdata = . ),
+         interval = predict(spring_growth_model, newdata = ., se.fit = T, interval = "confidence")[[2]],
+         upper = growth + interval,
+         lower = growth - interval,
+         les_1 = case_when(les_1 < -1 ~ "acquisitive",
+                           les_1 > -1 & les_1 < 0 ~ "moderate",
+                           les_1 > 1 ~ "conservative"))
+
+spring_soil_moisture <- tibble(soil_moisture = seq(from = min(growth_spring_data$soil_moisture), to = max(growth_spring_data$soil_moisture), by = 0.1)) %>% 
+  mutate(planting_height = median(growth_spring_data$planting_height),
+         les_1 = median(growth_spring_data$les_1),
+         les_2 = median(growth_spring_data$les_2),
+         temperature = median(growth_spring_data$temperature)) %>% 
+  mutate(growth = predict(spring_growth_model, newdata = . ),
+         interval = predict(spring_growth_model, newdata = ., se.fit = T, interval = "confidence")[[2]],
+         upper = growth + interval,
+         lower = growth - interval)
+
+spring_les2 <- tibble(les_2 = seq(from = min(growth_spring_data$les_2), to = max(growth_spring_data$les_2), by = 0.1)) %>% 
+  mutate(soil_moisture = median(growth_spring_data$soil_moisture),
+         planting_height = median(growth_spring_data$planting_height),
+         les_1 = median(growth_spring_data$les_1),
+         temperature = median(growth_spring_data$temperature)) %>% 
+  mutate(growth = predict(spring_growth_model, newdata = . ),
+         interval = predict(spring_growth_model, newdata = ., se.fit = T, interval = "confidence")[[2]],
+         upper = growth + interval,
+         lower = growth - interval)
+
+spring_les_temp <- expand.grid(temperature = seq(from = min(growth_spring_data$temperature), to = max(growth_spring_data$temperature), by = 0.1),
+                               les_1 = c(min(plant_traits$les_1), median(plant_traits$les_1), max(plant_traits$les_1))) %>% 
+  mutate(soil_moisture = median(growth_spring_data$soil_moisture),
+         les_2 = median(growth_spring_data$les_2),
+         planting_height = median(growth_spring_data$planting_height)) %>% 
+  mutate(growth = predict(spring_growth_model, newdata = . ),
+         interval = predict(spring_growth_model, newdata = ., se.fit = T, interval = "confidence")[[2]],
+         upper = growth + interval,
+         lower = growth - interval,
+         les_1 = case_when(les_1 < -1 ~ "acquisitive",
+                           les_1 > -1 & les_1 < 0 ~ "moderate",
+                           les_1 > 1 ~ "conservative"))
+
+spring_les_temp$les_1 <- factor(spring_les_temp$les_1, levels = c("acquisitive", "moderate", "conservative"))
+spring_planting_height$les_1 <- factor(spring_planting_height$les_1, levels = c("acquisitive", "moderate", "conservative"))
+```
+
+```{r}
+spring_height_graph <- ggplot(spring_planting_height, aes(x = planting_height, y = growth, col = as.factor(les_1)))+
+  geom_line()+
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.5)+
+  theme_classic()+
+  scale_color_manual(values = c("#648FFF", "#DC267F", "#FFB000"))+
+  geom_hline(yintercept = 0, linetype = "dashed")+
+  labs(x = "Planting Height",
+       y = "Growth Rate (cm/day)",
+       col = "LES 1")+
+  ylim(-0.26,0.2)+
+  theme(text=element_text(size=21))
+
+spring_soil_graph <- ggplot(spring_soil_moisture, aes(x = soil_moisture, y = growth))+
+  geom_line()+
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.5)+
+  theme_classic()+
+  geom_hline(yintercept = 0, linetype = "dashed")+
+  labs(x = "Soil Moisture", 
+       y = "Growth Rate (cm/day)")+
+  ylim(-0.26,0.2)+
+  theme(text=element_text(size=21))
+
+spring_les2_graph <- ggplot(spring_les2, aes(x = les_2, y = growth))+
+  geom_line()+
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.5)+
+  geom_text(data = plant_traits, aes(x= wood_density, y = 0.05, label = species),
+            vjust = c(-4,-3,-4,0,-1,0.5,-0.5,-2,3),
+            hjust= c(1,0,0,0,0,0,0,0,0),
+            size = 5)+
+  theme_classic()+
+  geom_hline(yintercept = 0, linetype = "dashed")+
+  labs(x = "LES 2",
+       y = "Growth Rate (cm/day)")+
+  ylim(-0.26,0.2)+
+  theme(text=element_text(size=21))
+
+
+
+spring_temp_graph <- ggplot(spring_les_temp, aes(x = temperature, y = growth, col = as.factor(les_1)))+
+  geom_line()+
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.5)+
+  theme_classic()+
+  scale_color_manual(values = c("#648FFF", "#DC267F", "#FFB000"))+
+  geom_hline(yintercept = 0, linetype = "dashed")+
+  labs(x = "Temperature",
+       y = "Growth Rate (cm/day)",
+       col = "LES 1")+
+  ylim(-0.15,0.2)+
+  theme(text=element_text(size=21))
+
+figure_8 <- (spring_soil_graph+ spring_les2_graph)/(spring_height_graph + spring_temp_graph)+ plot_annotation(tag_levels = "A")
+
+ggsave(filename = "figure_8.png",
+       plot = figure_8,
+       path = here("figures"),
+       width = 8,
+       height = 8,
+       units = "in",
+       dpi = 315,
+       scale = 1.5)
+
+```
+
+
+```{r}
+load(here("data", "models", "fall_growth_model.rda"))
+summary(fall_growth_model)
+
+fall_wood <- tibble(wood_density = seq(from = min(growth_fall_data$wood_density), 
+                                       to = max(growth_fall_data$wood_density), 
+                                       by = 0.1)) %>% 
+  mutate(soil_moisture = median(growth_fall_data$soil_moisture),
+         temperature = median(growth_fall_data$temperature),
+         les_2 = median(growth_fall_data$les_2),
+         wue = median(growth_fall_data$wue)) %>% 
+  mutate(growth = predict(fall_growth_model, newdata = .),
+         interval = predict(fall_growth_model, newdata = ., se.fit = T, interval = "confidence")[[2]],
+         upper = growth + interval,
+         lower = growth - interval)
+
+fall_soil_moisture <- expand.grid(soil_moisture = seq(from = min(growth_fall_data$soil_moisture), 
+                                                      to = max(growth_fall_data$soil_moisture), 
+                                                      by = 0.1),
+                                  temperature = c(min(growth_fall_data$temperature),
+                                                      median(growth_fall_data$temperature),
+                                                      max(growth_fall_data$temperature))) %>% 
+  mutate(les_2 = median(growth_fall_data$les_2),
+         wood_density = median(growth_fall_data$wood_density),
+         wue = median(growth_fall_data$wue)) %>% 
+  mutate(growth = predict(fall_growth_model, newdata = .),
+         interval = predict(fall_growth_model, newdata = ., se.fit = T, interval = "confidence")[[2]],
+         upper = growth + interval,
+         lower = growth - interval,
+         temperature = round(temperature, digits = 1))
+
+fall_temperature <- expand.grid(temperature = seq(from = min(growth_fall_data$temperature), 
+                                                  to = max(growth_fall_data$temperature), 
+                                                  by = 0.1),
+                                les_2 = c(min(plant_traits$les_2), 
+                                          median(plant_traits$les_2),
+                                          max(plant_traits$les_2))) %>% 
+  mutate(wood_density = median(growth_fall_data$wood_density),
+         soil_moisture = median(growth_fall_data$soil_moisture),
+         wue = median(growth_fall_data$wue)) %>% 
+  mutate(growth = predict(fall_growth_model, newdata = .),
+         interval = predict(fall_growth_model, newdata = ., se.fit = T, interval = "confidence")[[2]],
+         upper = growth + interval,
+         lower = growth - interval,
+         les_2 = round(les_2, digits = 2))
+
+fall_wue <- tibble(wue = seq(from = min(plant_traits$wue),
+                             to = max(plant_traits$wue),
+                             by = 0.1)) %>% 
+  mutate(les_2 = median(growth_fall_data$les_2),
+         soil_moisture = median(growth_fall_data$soil_moisture),
+         wood_density = median(growth_fall_data$wood_density),
+         temperature = median(growth_fall_data$temperature)) %>% 
+  mutate(growth = predict(fall_growth_model, newdata = .),
+         interval = predict(fall_growth_model, newdata = ., se.fit = T, interval = "confidence")[[2]],
+         upper = growth + interval,
+         lower = growth - interval,
+         wue = round(wue, digits = 2))
+```
+
+```{r}
+fall_les2_graph <- ggplot(fall_temperature, aes(x = temperature, y = growth, col = as.factor(les_2)))+
+  geom_line()+
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.5)+
+  theme_classic()+
+  scale_color_manual(values = c("#648FFF", "#DC267F", "#FFB000"))+
+  geom_hline(yintercept = 0, linetype = "dashed")+
+  ylim(-.2, 0.35)+
+  labs(x = "Temperature",
+       y = "Growth Rate (cm/day)",
+       col = "LES 2")+
+  theme(text=element_text(size=21))
+
+fall_soil_graph <- ggplot(fall_soil_moisture, aes(x = soil_moisture, y = growth, col = as.factor(temperature)))+
+  geom_line()+
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.5)+
+  theme_classic()+
+  scale_color_manual(values = c("#648FFF", "#DC267F", "#FFB000"))+
+  geom_hline(yintercept = 0, linetype = "dashed")+
+  ylim(-.2, 0.35)+
+  labs(x = "Soil Moisture",
+       y = "Growth Rate (cm/day)",
+       col = "Temperature")+
+  theme(text=element_text(size=21))
+
+fall_wood_graph <- ggplot(fall_wood, aes(x = wood_density, y = growth))+
+  geom_line()+
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.5)+
+  geom_text(data = plant_traits, aes(x = wood_density, y = 0.05, label = species),
+            hjust= c(1,0,0,0,0,0,0,0,0),
+            vjust = c(-2,3.5,2,0,0.5,-1,3,0.5,8))+
+  theme_classic()+
+  geom_hline(yintercept = 0, linetype = "dashed")+
+  ylim(-.2, 0.35)+
+  labs(x = "Wood Density",
+       y = "Growth Rate (cm/day)")+
+  theme(text=element_text(size=21))
+
+fall_wue_graph <- ggplot(fall_wue, aes(x = wue, y = growth))+
+  geom_line()+
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.5)+
+  theme_classic()+
+  geom_hline(yintercept = 0, linetype = "dashed")+
+  ylim(-.2, 0.35)+
+  labs(x = "Water Use Efficiency",
+       y = "Growth Rate (cm/day)")+
+  theme(text=element_text(size=21))
+
+figure_9 <- (fall_wood_graph + fall_wue_graph)/(fall_les2_graph + fall_soil_graph) + plot_annotation(tag_levels = "A")
+
+ggsave(filename = "figure_9.png",
+       plot = figure_9,
+       path = here("figures"),
+       width = 8,
+       height = 8,
+       units = "in",
+       dpi = 315, 
+       scale = 1.5)
+```
+

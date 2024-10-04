@@ -1,0 +1,162 @@
+---
+title: "Untitled"
+output: html_document
+date: "2024-05-01"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(here)
+library(survival)
+library(stars)
+library(sf)
+library(randomForest)
+```
+
+```{r}
+elevation <- read_stars(here("data", "raw_data", "elevation.tif")) 
+aspect <- read_stars(here("data", "raw_data", "aspect.tif"))
+aspect <- cos((aspect * pi/180) - (225 * pi/180))
+slope <- read_stars(here("data", "raw_data", "slope.tif"))
+summer_solar_radiation <- read_stars(here("data", "raw_data", "summer_sol_rad.tif"))
+spring_solar_radiation <- read_stars(here("data", "raw_data", "spring_sol_rad.tif"))
+winter_solar_radiation <- read_stars(here("data", "raw_data", "winter_sol_rad.tif"))
+heat_load <- read_stars(here("data", "clean_data", "heat_load_index.tif")) %>% 
+  st_warp(elevation)
+diurnal_heat <- read_stars(here("data", "clean_data", "diurnal_heat.tif"))%>% 
+  st_warp(elevation)
+topo_position <- read_stars(here("data", "clean_data", "topographic_position.tif"))%>% 
+  st_warp(elevation)
+sol_rad_aspect <- read_stars(here("data", "clean_data", "sol_rad_aspect.tif")) %>% 
+  st_warp(elevation)
+terrain_ruggedness <- read_stars(here("data", "clean_data", "terrain_ruggedness.tif"))%>% 
+  st_warp(elevation)
+saga_wetness <- read_stars(here("data", "raw_data", "saga_wetness.tif"))%>% 
+  st_warp(elevation)
+twi <- read_stars(here("data", "raw_data", "twi.tif"))%>% 
+  st_warp(elevation)
+load(here("data", "models", "vpd_rf.rds"))
+load(here("data", "models", "soil_rf.rds"))
+
+spring_dates <- seq(as.Date("2020-01-01"), as.Date("2020-05-30"), 1)
+summer_dates <- seq(as.Date("2020-06-26"), as.Date("2020-09-30"), 1)
+environmental_model_input <- c(elevation, aspect, slope, summer_solar_radiation, spring_solar_radiation, winter_solar_radiation, heat_load, diurnal_heat, topo_position, sol_rad_aspect, terrain_ruggedness, saga_wetness, twi) %>% 
+  st_as_sf() %>% 
+  drop_na() %>% 
+  rename(elevation = elevation.tif,
+         aspect = aspect.tif,
+         slope = slope.tif,
+         summer_solar_radiation = summer_sol_rad.tif,
+         spring_solar_radiation = spring_sol_rad.tif,
+         winter_solar_radiation = winter_sol_rad.tif,
+         heat_load = heat_load_index.tif,
+         diurnal_heat = diurnal_heat.tif, 
+         topo_position = topographic_position.tif,
+         sol_rad_aspect = sol_rad_aspect.tif,
+         terrain_ruggedness = terrain_ruggedness.tif,
+         saga_wetness = saga_wetness.tif,
+         twi = twi.tif) 
+
+vpd_spring <- data.frame(matrix(nrow = 0, ncol = 3))
+colnames(vpd_spring) <- c("date", "vpd", "geometry")
+
+vpd_summer <- data.frame(matrix(nrow = 0, ncol = 3))
+colnames(vpd_summer) <- c("date", "vpd", "geometry")
+  
+
+for (i in spring_dates)
+{
+  environmental_model_input_dates <- environmental_model_input %>% 
+    mutate(date = i) %>% 
+    mutate(vpd = predict(vpd_rf, newdata = .))
+  vpd_spring <- vpd_spring %>% 
+    rbind(tibble("date" = environmental_model_input_dates$date,
+                   "vpd" = environmental_model_input_dates$vpd,
+                   "geometry"= environmental_model_input_dates$geometry))
+}
+
+vpd_spring_spatial <- vpd_spring %>% 
+  group_by(geometry) %>% 
+  reframe(vpd = mean(vpd)) %>% 
+  st_as_sf() %>% 
+  st_rasterize()
+
+
+write_stars(vpd_spring_spatial, 
+            "vpd_spring.tif")
+
+for (i in summer_dates)
+{
+  environmental_model_input_dates <- environmental_model_input %>% 
+    mutate(date = i) %>% 
+    mutate(vpd = predict(vpd_rf, newdata = .))
+  vpd_summer <- vpd_summer %>% 
+    rbind(tibble("date" = environmental_model_input_dates$date,
+                   "vpd" = environmental_model_input_dates$vpd,
+                   "geometry"= environmental_model_input_dates$geometry))
+}
+
+vpd_summer_spatial <- vpd_summer %>% 
+  group_by(geometry) %>% 
+  reframe(vpd = mean(vpd))%>% 
+  st_as_sf() %>% 
+  st_rasterize()
+
+write_stars(vpd_summer_spatial, 
+            "vpd_summer.tif")
+
+```
+
+
+
+
+```{r}
+soil_spring <- data.frame(matrix(nrow = 0, ncol = 3))
+colnames(soil_spring) <- c("date", "soil", "geometry")
+
+soil_summer <- data.frame(matrix(nrow = 0, ncol = 3))
+colnames(soil_summer) <- c("date", "soil", "geometry")
+  
+
+for (i in spring_dates)
+{
+  environmental_model_input_dates <- environmental_model_input %>% 
+    mutate(date = i) %>% 
+    mutate(soil = predict(soil_rf, newdata = .))
+  soil_spring <- soil_spring %>% 
+    rbind(tibble("date" = environmental_model_input_dates$date,
+                   "soil" = environmental_model_input_dates$soil,
+                   "geometry"= environmental_model_input_dates$geometry))
+}
+
+soil_spring_spatial <- soil_spring %>% 
+  group_by(geometry) %>% 
+  reframe(soil = mean(soil))%>% 
+  st_as_sf() %>% 
+  st_rasterize()
+
+for (i in summer_dates)
+{
+  environmental_model_input_dates <- environmental_model_input %>% 
+    mutate(date = i) %>% 
+    mutate(soil = predict(soil_rf, newdata = .))
+  soil_summer <- soil_summer %>% 
+    rbind(tibble("date" = environmental_model_input_dates$date,
+                   "soil" = environmental_model_input_dates$soil,
+                   "geometry"= environmental_model_input_dates$geometry))
+}
+
+soil_summer_spatial <- soil_summer %>% 
+  group_by(geometry) %>% 
+  reframe(soil = mean(soil))%>% 
+  st_as_sf() %>% 
+  st_rasterize()
+
+write_stars(soil_spring_spatial, 
+            "soil_spring.tif")
+
+write_stars(soil_summer_spatial, 
+            "soil_summer.tif")
+```
+

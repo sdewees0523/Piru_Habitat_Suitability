@@ -1,0 +1,2992 @@
+---
+title: "Untitled"
+output: html_document
+date: "2023-03-03"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(here)
+library(broom)
+library(gmodels)
+#library(survMisc)
+library(survival)
+library(lubridate)
+library(ggfortify)
+library(ggsurvfit)
+library(gtsummary)
+library(partykit)
+library(coin)
+library(visreg)
+library(timereg)
+library(patchwork)
+library(survminer)
+library(sf)
+library(viridis)
+library(multcompView)
+library(MuMIn)
+library(emmeans)
+```
+
+Reading in data first
+
+```{r}
+survival_raw <- read.csv(here("data",  "survival_raw_kapplin.csv")) %>% 
+  dplyr::select(!X) %>% 
+  group_by(plot_number) %>% 
+  mutate(tgroup = c(1:length(plot_number)))
+
+
+
+survival_gopher_raw <- read.csv(here("data", "clean_data", "survival_gopher_raw.csv"))%>% 
+  dplyr::select(!X) %>% 
+  #filter(end_time < 300 ) %>% 
+  group_by(plot_number) %>% 
+  filter(!lag(gopher) == 1 | is.na(lag(gopher) == T)) %>%
+  ungroup() %>% 
+  mutate(tgroup = case_when(month(end_date) == 5 ~ "spring",
+                            month(end_date) == 6 ~ "early summer",
+                            month(end_date) > 6 ~ "summer-fall"))
+         
+
+survival_gopher_raw$tgroup <- factor(survival_gopher_raw$tgroup, levels = c("spring", "early summer", "summer-fall"))
+
+survival_gopher_clean <- survival_gopher_raw %>% 
+  #group_by(plot_number) %>% 
+  #filter(dead == 1 | gopher == 1 | end_time >= 200) %>%
+  #ungroup() %>% 
+  mutate(community = case_when(Plant %in% c("MALA", "RHOV", "ADFA", "HEAR", "CEOL") ~ "Chaparral",
+                               Plant %in% c("HEWH", "SAAP", "SAME", "ENCA", "SANI") ~ "CSS"))
+
+height <- read.csv(here("data", "clean_data", "height_gopher_kapplin.csv"))%>% 
+  dplyr::select(!X) %>% 
+  mutate(tgroup = case_when(month(end_date) == 5 ~ "spring",
+                            month(end_date) == 6 ~ "early summer",
+                            month(end_date) > 6 ~ "summer-fall"),
+         alive = case_when(dead == 1 ~ 0,
+                           dead == 0 ~ 1))
+
+height_clean <- height %>% 
+  group_by(plot_number) %>% 
+  filter(dead == 1 | gopher == 1 | start_time != 0) %>%
+  ungroup()
+  
+```
+
+```{r}
+alive_end <- survival_gopher_clean %>% 
+  filter(end_date > "2021-01-01") %>% 
+  mutate(alive = case_when(dead == 1 ~ 0,
+                           dead == 0 ~ 1)) %>% 
+  group_by(Plant) %>% 
+  reframe(alive = sum(alive))
+
+alive_end <- survival_gopher_clean %>% 
+  filter(end_date < "2021-01-01" & end_date > "2020-08-01") %>% 
+  mutate(alive = case_when(dead == 1 ~ 0,
+                           dead == 0 ~ 1)) %>% 
+  group_by(Plant) %>% 
+  reframe(alive = sum(alive))
+```
+
+
+```{r}
+ceol_survival <- autoplot(survfit(Surv(time = end_time, event = dead) ~ 1, data = survival_gopher_clean %>% filter(Plant == "CEOL"), id = plot_number), surv.colour = "#00BFC4", censor.colour = "black") +
+  theme_classic() +
+  labs(x = "",
+       y = "Probability of Survival",
+       title = "Ceanothus oliganthus")
+hear_survival <- autoplot(survfit(Surv(time = end_time, event = dead) ~ 1, data = survival_gopher_clean %>% filter(Plant == "HEAR")), surv.colour = "#00BFC4", censor.colour = "black") +
+  theme_classic()+
+  labs(x = "",
+       y = "",
+       title = "Heteromeles arbutifolia")+
+  xlim(0, 669)
+mala_survival <- autoplot(survfit(Surv(time = end_time, event = dead) ~ 1, data = survival_gopher_clean %>% filter(Plant == "MALA")), surv.colour = "#00BFC4", censor.colour = "black") +
+  theme_classic()+
+  labs(x = "",
+       y = "",
+       title = "Malosma laurina")
+rhov_survival <- autoplot(survfit(Surv(time = end_time, event = dead) ~ 1, data = survival_gopher_clean %>% filter(Plant == "RHOV")), surv.colour = "#00BFC4", censor.colour = "black") +
+  theme_classic()+
+  labs(x = "",
+       y = "",
+       title = "Rhus ovata")
+adfa_survival <- autoplot(survfit(Surv(time = end_time, event = dead) ~ 1, data = survival_gopher_clean %>% filter(Plant == "ADFA")), surv.colour = "#00BFC4", censor.colour = "black") +
+  theme_classic()+
+  labs(x = "",
+       y = "",
+       title = "Adenostoma fasciculatum")
+sani_survival <- autoplot(survfit(Surv(time = end_time, event = dead) ~ 1, data = survival_gopher_clean %>% filter(Plant == "SANI")), surv.colour = "#C77CFF", censor.colour = "black") +
+  theme_classic()+
+  labs(x = "",
+       y = "",
+       title = "Sambucus nigra")
+saap_survival <- autoplot(survfit(Surv(time = end_time, event = dead) ~ 1, data = survival_gopher_clean %>% filter(Plant == "SAAP")), surv.colour = "#C77CFF", censor.colour = "black") +
+  theme_classic()+
+  labs(x = "",
+       y = "",
+       title = "Salvia apiana")
+same_survival <- autoplot(survfit(Surv(time = end_time, event = dead) ~ 1, data = survival_gopher_clean %>% filter(Plant == "SAME")), surv.colour = "#C77CFF", censor.colour = "black") +
+  theme_classic()+
+  labs(x = "",
+       y = "",
+       title = "Salvia mellifera")
+enca_survival <- autoplot(survfit(Surv(time = end_time, event = dead) ~ 1, data = survival_gopher_clean %>% filter(Plant == "ENCA")), surv.colour = "#C77CFF", censor.colour = "black") +
+  theme_classic()+
+  labs(x = "Time Since Planting (Days)",
+       y = "",
+       title = "Encelia californica")
+hewh_survival <- autoplot(survfit(Surv(time = end_time, event = dead) ~ 1, data = survival_gopher_clean %>% filter(Plant == "HEWH")), surv.colour = "#C77CFF", censor.colour = "black") +
+  theme_classic()+
+  labs(x = "Time Since Planting (Days)",
+       y = "",
+       title = "Hesperoyucca whipplei")
+
+figure3 <- (adfa_survival + rhov_survival)/(mala_survival + hear_survival)/(ceol_survival + sani_survival)/(saap_survival + same_survival)/(enca_survival + hewh_survival) + plot_annotation(tag_levels = "A")
+
+ggsave(filename = "figure3.png",
+       plot = figure3,
+       path = here("figures"),
+       width = 8.5,
+       height = 11,
+       units = "in",
+       dpi = 325)
+
+survival_gopher_clean$Plant <- factor(survival_gopher_clean$Plant, levels = c("HEWH", "RHOV", "ENCA", "ADFA", "SAME", "CEOL", "SANI", "MALA", "SAAP", "HEAR"))
+
+first_year_hazard_model <- coxph(Surv(start_time, end_time, dead) ~ Plant, data = survival_gopher_clean %>% filter(end_time < 400), id = plot_number)
+first_year_hazard_emmeans <- emmeans(first_year_hazard_model, "Plant")
+first_year_letters <- multcomp::cld(first_year_hazard_emmeans) %>% 
+  mutate(.group = str_replace(.group, "1", "a"),
+         .group = str_replace(.group, "2", "b"),
+         .group = str_replace(.group, "3", "c"),
+         .group = str_replace(.group, "4", "d")) %>% 
+  filter(Plant != "HEWH") %>% 
+  dplyr::select(Plant, .group) %>% 
+  rename(species = Plant)
+first_year_hazard <- first_year_hazard_model%>%
+  tbl_regression(exp = TRUE)
+
+whole_study_hazard_model <- coxph(Surv(start_time, end_time, dead) ~ Plant, data = survival_gopher_clean, id = plot_number)
+whole_study_hazard_emmeans <- emmeans(whole_study_hazard_model, "Plant")
+whole_study_letters <- multcomp::cld(whole_study_hazard_emmeans) %>% 
+  mutate(.group = str_replace(.group, "1", "a"),
+         .group = str_replace(.group, "2", "b"),
+         .group = str_replace(.group, "3", "c"),
+         .group = str_replace(.group, "4", "d")) %>% 
+  filter(Plant != "HEWH") %>% 
+  dplyr::select(Plant, .group) %>% 
+  rename(species = Plant)
+whole_study_hazard <- coxph(Surv(start_time, end_time, dead) ~ Plant, data = survival_gopher_clean, id = plot_number) %>%
+  tbl_regression(exp = TRUE)
+
+first_year_species_survival <- first_year_hazard[["table_body"]]$label %>% 
+  as.data.frame() %>% 
+  mutate(hazard = first_year_hazard[["table_body"]]$estimate,
+         upper = first_year_hazard[["table_body"]]$conf.high,
+         lower = first_year_hazard[["table_body"]]$conf.low) %>% 
+  rownames_to_column() %>% 
+  rename(species = ".") %>% 
+  dplyr::select(!rowname) %>% 
+  filter(species != "Plant") %>% 
+  filter(species != "HEWH") %>% 
+  left_join(first_year_letters, by = "species") %>% 
+  mutate(community = case_when(species %in% c("RHOV", "MALA", "ADFA", "CEOL", "HEAR") ~ "chaparral",
+                               species %in% c("ENCA", "SANI", "SAAP", "SAME", "HEWH") ~ "sage"))
+
+whole_study_species_survival <- whole_study_hazard[["table_body"]]$label %>% 
+  as.data.frame() %>% 
+  mutate(hazard = whole_study_hazard[["table_body"]]$estimate,
+         upper = whole_study_hazard[["table_body"]]$conf.high,
+         lower = whole_study_hazard[["table_body"]]$conf.low) %>% 
+  rownames_to_column() %>% 
+  rename(species = ".") %>% 
+  dplyr::select(!rowname) %>% 
+  filter(species != "Plant") %>% 
+  filter(species != "HEWH") %>% 
+  left_join(whole_study_letters, by = "species")%>% 
+  mutate(community = case_when(species %in% c("RHOV", "MALA", "ADFA", "CEOL", "HEAR") ~ "chaparral",
+                               species %in% c("ENCA", "SANI", "SAAP", "SAME", "HEWH") ~ "sage"))
+
+first_year_hazard_graph <- ggplot(first_year_species_survival, aes(x = fct_reorder(species, hazard), y = hazard))+
+  geom_point()+
+  geom_text(aes(y = upper+0.2, label = .group)) +
+  geom_errorbar(aes(ymin = lower, ymax = upper))+
+  geom_hline(yintercept = 1, linetype = "dashed")+
+  coord_flip()+
+  theme_classic()+
+  labs(x = "Species",
+       y = "Hazard Ratio")+
+  theme(axis.text.y = element_text(colour = c("#00BFC4","#00BFC4","#C77CFF","#C77CFF","#00BFC4","#C77CFF","#C77CFF","#00BFC4","#00BFC4")))
+
+whole_study_hazard_graph <- ggplot(whole_study_species_survival, aes(x = fct_reorder(species, hazard), y = hazard))+
+  geom_point()+
+  geom_text(aes(y = upper +0.2, label = .group)) +
+  geom_errorbar(aes(ymin = lower, ymax = upper))+
+  geom_hline(yintercept = 1, linetype = "dashed")+
+  coord_flip()+
+  theme_classic()+
+  labs(x = "Species",
+       y = "Hazard Ratio")+
+  theme(axis.text.y = element_text(colour = c("#00BFC4","#C77CFF","#00BFC4","#C77CFF","#C77CFF","#00BFC4", "#C77CFF","#00BFC4","#00BFC4")))
+
+figure4 <- first_year_hazard_graph + whole_study_hazard_graph + plot_annotation(tag_levels = "A")
+
+ggsave(filename = "figure4.png",
+       plot = figure4,
+       path = here("figures"),
+       width = 8,
+       height = 4,
+       units = "in",
+       dpi = 325)
+
+community_plot <- ggsurvplot(survfit(Surv(time = end_time, event = dead) ~community, data = survival_gopher_clean),
+           data = survival_gopher_clean,
+           palette = c("#00BFC4", "#C77CFF"),
+           conf.int = TRUE,
+           pval = TRUE,
+           legend.labs = c("Chaparral", "CSS"),
+           ggtheme = theme_classic())
+
+#ggsave(filename = "community_plot.png",
+#       plot = community_plot,
+#       path = here("figures"),
+#       width = 4,
+#       height = 4,
+#       units = "in",
+#       dpi = 325)
+```
+
+```{r}
+environmental <- read.csv(here("data", "clean_data", "predicted_environmental.csv")) %>% 
+  dplyr::select(!X)
+
+survival_environmental <- height %>%
+  left_join(environmental, by = "plot_number", multiple = "all")%>%
+  mutate(community = case_when(Plant %in% c("SAAP", "SAME", "ENCA", "SANI", "HEWH") ~ "CSS",
+                               Plant %in% c("RHOV", "CEOL", "MALA", "ADFA", "HEAR") ~ "Chap"))
+
+survival_environmental_all <- survival_environmental %>% 
+  filter(case_when(tgroup == "early summer" ~ date >= start_date & date <= end_date,
+                   tgroup == "summer-fall" ~ date >= start_date & date <= end_date)) %>% 
+  group_by(plot_number, Plant, start_time, end_time, tgroup, dead, alive, height, community) %>% 
+  reframe(temperature = mean(temperature, na.rm = T),
+          soil_moisture = mean(soil_moisture, na.rm = T),
+          vpd = mean(vpd, na.rm = T)) %>% 
+  ungroup() 
+
+survival_environmental_spring_summer <- survival_environmental %>% 
+  filter(case_when(tgroup == "early summer" ~ date >= start_date & date <= "2020-05-30",
+                   tgroup == "summer-fall" ~ date >= start_date & date <= "2020-09-30")) %>% 
+  group_by(plot_number, Plant, start_time, end_time, tgroup, dead, alive, height, community) %>% 
+  reframe(temperature = mean(temperature, na.rm = T),
+          soil_moisture = mean(soil_moisture, na.rm = T),
+          vpd = mean(vpd, na.rm = T)) %>% 
+  ungroup() 
+
+survival_environmental_spring_fall <- survival_environmental %>% 
+  filter(case_when(tgroup == "early summer" ~ date >= start_date & date <= "2020-05-30",
+                   tgroup == "summer-fall" ~ date >= "2020-10-01" & date <= end_date)) %>% 
+  group_by(plot_number, Plant, start_time, end_time, tgroup, dead, alive, height, community) %>% 
+  reframe(temperature = mean(temperature, na.rm = T),
+          soil_moisture = mean(soil_moisture, na.rm = T),
+          vpd = mean(vpd, na.rm = T)) %>% 
+  ungroup() 
+
+survival_environmental_summer_summer <- survival_environmental %>% 
+  filter(case_when(tgroup == "early summer" ~ date >= "2020-06-01" & date <= end_date,
+                   tgroup == "summer-fall" ~ date >= start_date & date <= "2020-09-30")) %>% 
+  group_by(plot_number, Plant, start_time, end_time, tgroup, dead, alive, height, community) %>% 
+  reframe(temperature = mean(temperature, na.rm = T),
+          soil_moisture = mean(soil_moisture, na.rm = T),
+          vpd = mean(vpd, na.rm = T)) %>% 
+  ungroup() 
+
+survival_environmental_summer_fall <- survival_environmental %>% 
+  filter(case_when(tgroup == "early summer" ~ date >= "2020-06-01" & date <= end_date,
+                   tgroup == "summer-fall" ~ date >= "2020-10-01" & date <= end_date)) %>% 
+  group_by(plot_number, Plant, start_time, end_time, tgroup, dead, alive, height, community) %>% 
+  reframe(temperature = mean(temperature, na.rm = T),
+          soil_moisture = mean(soil_moisture, na.rm = T),
+          vpd = mean(vpd, na.rm = T)) %>% 
+  ungroup() 
+survival_environmental_all_fall <- survival_environmental %>% 
+  filter(case_when(tgroup == "early summer" ~ date >= start_date & date <= end_date,
+                   tgroup == "summer-fall" ~ date >= "2020-10-01" & date <= end_date)) %>% 
+  group_by(plot_number, Plant, start_time, end_time, tgroup, dead, alive, height, community) %>% 
+  reframe(temperature = mean(temperature, na.rm = T),
+          soil_moisture = mean(soil_moisture, na.rm = T),
+          vpd = mean(vpd, na.rm = T)) %>% 
+  ungroup() 
+```
+
+
+
+```{r}
+plant_traits <- read.csv(here("data", "clean_data", "cox_plant_traits.csv")) %>% 
+  rename(Plant = species,
+         PC1 = les_1,
+         PC2 = les_2) %>% 
+  mutate(wood_density = scale(wood_density)[,1])
+
+trait_spring_all <- survival_environmental_all %>% 
+  filter(tgroup == "early summer") %>% 
+  left_join(plant_traits, by = "Plant") %>%
+  filter(Plant != "HEWH")
+
+trait_spring <- survival_environmental_spring_fall %>% 
+  filter(tgroup == "early summer") %>% 
+  left_join(plant_traits, by = "Plant") %>%
+  filter(Plant != "HEWH")
+
+trait_early_summer <- survival_environmental_summer_fall %>% 
+  filter(tgroup == "early summer") %>% 
+  left_join(plant_traits, by = "Plant") %>% 
+  filter(Plant != "HEWH")
+
+trait_summer_all <- survival_environmental_all %>% 
+  filter(tgroup == "summer-fall") %>% 
+  left_join(plant_traits, by = "Plant") %>%  
+  filter(Plant != "HEWH")
+
+trait_late_summer <- survival_environmental_summer_summer %>% 
+  filter(tgroup == "summer-fall") %>% 
+  left_join(plant_traits, by = "Plant") %>%  
+  filter(Plant != "HEWH")
+
+trait_fall <- survival_environmental_summer_fall %>% 
+  filter(tgroup == "summer-fall") %>% 
+  left_join(plant_traits, by = "Plant") %>%
+  filter(Plant != "HEWH")
+
+
+
+trait_only_spring_model <- coxph(Surv(end_time, dead) ~ PC1 + PC2 + wue + wood_density + height, data = trait_early_summer)
+
+trait_only_spring_model
+
+enviro_only_spring_model <- coxph(Surv(end_time, dead) ~ temperature + soil_moisture + vpd, data = trait_early_summer)
+enviro_only_spring_model
+
+all_spring_model <- coxph(Surv(end_time, dead) ~ PC1*temperature + PC2*temperature + wue*vpd + wood_density*temperature + soil_moisture + height, data = trait_early_summer)
+all_spring_model
+
+visreg(all_spring_model, "wue", "vpd", gg = T)+
+  theme_classic()
+trait_only_summer_model <- coxph(Surv(end_time, dead) ~ PC1 + PC2 + wue + wood_density + height, data = trait_fall)
+trait_only_summer_model
+
+enviro_summer_model <- coxph(Surv(end_time, dead) ~ temperature + soil_moisture + vpd, data = trait_fall)
+enviro_summer_model
+
+all_summer_model <- coxph(Surv(end_time, dead) ~ PC1 + PC2 + wue + wood_density + temperature + soil_moisture + vpd + height, data = trait_fall)
+all_summer_model
+
+visreg(all_summer_model, "wue", "soil_moisture", gg = T) +
+  theme_classic() +
+  geom_hline(yintercept = 0, linetype = "dashed")
+
+visreg(trait_only_summer_model, "wood_density", gg = T) +
+  theme_classic() +
+  geom_hline(yintercept = 0, linetype = "dashed")
+```
+
+Spring all
+
+```{r}
+AIC(coxph(Surv(end_time, dead) ~ PC1 + PC2 + wue + wood_density + temperature + soil_moisture + vpd + height,
+      data = trait_spring_all))
+
+AIC(coxph(Surv(end_time, dead) ~ PC1 * temperature + PC2 + wue + wood_density + soil_moisture + vpd + height,
+      data = trait_spring_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2* temperature + wue + wood_density + soil_moisture + vpd + height,
+      data = trait_spring_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue* temperature + wood_density + soil_moisture + vpd + height,
+      data = trait_spring_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density* temperature + soil_moisture + vpd + height,
+      data = trait_spring_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture* temperature + vpd + height,
+      data = trait_spring_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture + vpd* temperature + height,
+      data = trait_spring_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture + vpd + height* temperature,
+      data = trait_spring_all))
+
+AIC(coxph(Surv(end_time, dead) ~ PC1 * soil_moisture + PC2 + wue + wood_density + temperature + vpd + height,
+      data = trait_spring_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2* soil_moisture + wue + wood_density + temperature + vpd + height,
+      data = trait_spring_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue* soil_moisture + wood_density + temperature + vpd + height,
+      data = trait_spring_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density* soil_moisture + temperature + vpd + height,
+      data = trait_spring_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture* temperature + vpd + height,
+      data = trait_spring_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + temperature + vpd* soil_moisture + height,
+      data = trait_spring_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + temperature + vpd + height* soil_moisture,
+      data = trait_spring_all))
+
+AIC(coxph(Surv(end_time, dead) ~ PC1 * vpd + PC2 + wue + wood_density + soil_moisture + temperature + height,
+      data = trait_spring_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2* vpd + wue + wood_density + soil_moisture + temperature + height,
+      data = trait_spring_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue* vpd + wood_density + soil_moisture + temperature + height,
+      data = trait_spring_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density* vpd + soil_moisture + temperature + height,
+      data = trait_spring_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture* vpd + temperature + height,
+      data = trait_spring_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture + vpd* temperature + height,
+      data = trait_spring_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture + temperature + height*vpd,
+      data = trait_spring_all))
+
+AIC(coxph(Surv(end_time, dead) ~ PC1 * height + PC2 + wue + wood_density + soil_moisture + vpd + temperature,
+      data = trait_spring_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2* height + wue + wood_density + soil_moisture + vpd + temperature,
+      data = trait_spring_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue* height + wood_density + soil_moisture + vpd + temperature,
+      data = trait_spring_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density* height + soil_moisture + vpd + temperature,
+      data = trait_spring_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture* height + vpd + temperature,
+      data = trait_spring_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture + vpd* height + temperature,
+      data = trait_spring_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture + vpd + height* temperature,
+      data = trait_spring_all))
+
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2* height + wue + wood_density + soil_moisture + vpd + temperature,
+      data = trait_spring_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2* height + wue + wood_density + soil_moisture*temperature + vpd,
+      data = trait_spring_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2* height + wue*height + wood_density + soil_moisture + vpd + temperature,
+      data = trait_spring_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2* height + wue + wood_density*height + soil_moisture + vpd + temperature,
+      data = trait_spring_all))
+
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2* height + wue + wood_density + soil_moisture*temperature + vpd,
+      data = trait_spring_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2* height + wue*height + wood_density + soil_moisture*temperature + vpd,
+      data = trait_spring_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2* height + wue + wood_density*height + soil_moisture*temperature + vpd,
+      data = trait_spring_all))
+
+
+
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2* height + wue + wood_density + soil_moisture*temperature + vpd,
+      data = trait_spring_all))
+AIC(coxph(Surv(end_time, dead) ~ PC2* height + wue + wood_density + soil_moisture*temperature + vpd,
+      data = trait_spring_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + height + wue + wood_density + soil_moisture*temperature + vpd,
+      data = trait_spring_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture*temperature + vpd,
+      data = trait_spring_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2* height + wood_density + soil_moisture*temperature + vpd,
+      data = trait_spring_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2* height + wue + soil_moisture*temperature + vpd,
+      data = trait_spring_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2* height + wue + wood_density + temperature + vpd,
+      data = trait_spring_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2* height + wue + wood_density + soil_moisture + vpd,
+      data = trait_spring_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2* height + wue + wood_density + soil_moisture*temperature,
+      data = trait_spring_all))
+
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2* height + wue + wood_density + soil_moisture*temperature + vpd,
+      data = trait_spring_all))
+```
+
+6283
+
+Spring
+
+```{r}
+AIC(coxph(Surv(end_time, dead) ~ PC1 + PC2 + wue + wood_density + temperature + soil_moisture + vpd + height,
+      data = trait_spring))
+
+AIC(coxph(Surv(end_time, dead) ~ PC1 * temperature + PC2 + wue + wood_density + soil_moisture + vpd + height,
+      data = trait_spring))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2* temperature + wue + wood_density + soil_moisture + vpd + height,
+      data = trait_spring))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue* temperature + wood_density + soil_moisture + vpd + height,
+      data = trait_spring))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density* temperature + soil_moisture + vpd + height,
+      data = trait_spring))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture* temperature + vpd + height,
+      data = trait_spring))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture + vpd* temperature + height,
+      data = trait_spring))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture + vpd + height* temperature,
+      data = trait_spring))
+
+AIC(coxph(Surv(end_time, dead) ~ PC1 * soil_moisture + PC2 + wue + wood_density + temperature + vpd + height,
+      data = trait_spring))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2* soil_moisture + wue + wood_density + temperature + vpd + height,
+      data = trait_spring))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue* soil_moisture + wood_density + temperature + vpd + height,
+      data = trait_spring))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density* soil_moisture + temperature + vpd + height,
+      data = trait_spring))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture* temperature + vpd + height,
+      data = trait_spring))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + temperature + vpd* soil_moisture + height,
+      data = trait_spring))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + temperature + vpd + height* soil_moisture,
+      data = trait_spring))
+
+AIC(coxph(Surv(end_time, dead) ~ PC1 * vpd + PC2 + wue + wood_density + soil_moisture + temperature + height,
+      data = trait_spring))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2* vpd + wue + wood_density + soil_moisture + temperature + height,
+      data = trait_spring))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue* vpd + wood_density + soil_moisture + temperature + height,
+      data = trait_spring))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density* vpd + soil_moisture + temperature + height,
+      data = trait_spring))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture* vpd + temperature + height,
+      data = trait_spring))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture + vpd* temperature + height,
+      data = trait_spring))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture + temperature + height*vpd,
+      data = trait_spring))
+
+AIC(coxph(Surv(end_time, dead) ~ PC1 * height + PC2 + wue + wood_density + soil_moisture + vpd + temperature,
+      data = trait_spring))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2* height + wue + wood_density + soil_moisture + vpd + temperature,
+      data = trait_spring))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue* height + wood_density + soil_moisture + vpd + temperature,
+      data = trait_spring))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density* height + soil_moisture + vpd + temperature,
+      data = trait_spring))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture* height + vpd + temperature,
+      data = trait_spring))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture + vpd* height + temperature,
+      data = trait_spring))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture + vpd + height* temperature,
+      data = trait_spring))
+
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2* height + wue + wood_density + soil_moisture + vpd + temperature,
+      data = trait_spring))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2*height + wue* height + wood_density + soil_moisture + vpd + temperature,
+      data = trait_spring))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2*height + wue + wood_density* height + soil_moisture + vpd + temperature,
+      data = trait_spring))
+
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2* height + wue + wood_density + soil_moisture + vpd + temperature,
+      data = trait_spring))
+AIC(coxph(Surv(end_time, dead) ~ PC2* height + wue + wood_density + soil_moisture + vpd + temperature,
+      data = trait_spring))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + height + wue + wood_density + soil_moisture + vpd + temperature,
+      data = trait_spring))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture + vpd + temperature,
+      data = trait_spring))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2* height + wood_density + soil_moisture + vpd + temperature,
+      data = trait_spring))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2* height + wue + soil_moisture + vpd + temperature,
+      data = trait_spring))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2* height + wue + wood_density + vpd + temperature,
+      data = trait_spring))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2* height + wue + wood_density + soil_moisture + temperature,
+      data = trait_spring))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2* height + wue + wood_density + soil_moisture + vpd,
+      data = trait_spring))
+
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2* height + wue + wood_density + soil_moisture + vpd + temperature,
+      data = trait_spring))
+```
+
+6275.625
+
+Early Summer
+
+```{r}
+options(na.action = "na.fail")
+dredge_test <- cph(Surv(end_time, dead) ~ PC1* temperature + PC1*soil_moisture +PC1* vpd + PC1*height + PC2 * temperature + PC2*soil_moisture + PC2* vpd + PC2*height + wue*temperature + wue* soil_moisture + wue*vpd + wue*height+ wood_density*temperature + wood_density*soil_moisture + wood_density*vpd + wood_density*height + temperature*soil_moisture + temperature*vpd + soil_moisture*vpd,
+      data = trait_early_summer, x = T, y = T)
+dredge_result <- dredge(dredge_test)
+dredge_result_filter <- dredge_result %>% 
+  filter(delta < 2)
+dredge_result_filter
+options(na.action = "na.omit")
+
+dredge_model <- cph(Surv(end_time, dead) ~ PC1*height + PC2 + wood_density*height + wue*height + PC1*temperature + PC1*vpd + soil_moisture*vpd + temperature*vpd, data = trait_early_summer, x = T, y = T)
+AIC(dredge_model)
+dredge_model %>% 
+  tbl_regression(exp = T)
+
+```
+
+```{r}
+library(rms)
+validate(dredge_test, B = 200)
+validate(dredge_test, B = 200, bw = T, rule = "aic", type = "individual")
+vcph
+validate_model <- coxph(Surv(end_time, dead) ~ height + PC2 + PC1*height + soil_moisture*wue + height*wue + temperature*vpd + soil_moisture*vpd, data = trait_early_summer)
+validate(validate_model, b = 200)
+
+validate_model2 <- cph(Surv(end_time, dead) ~ height + PC2 + PC1*height + height*wue + temperature*vpd + soil_moisture*vpd, data = trait_early_summer, x = T, y = T)
+validate(validate_model2, b = 200)
+
+validate_model
+ddist <- datadist(trait_early_summer$height, 
+                  trait_early_summer$PC2, 
+                  trait_early_summer$PC1, 
+                  trait_early_summer$wue, 
+                  trait_early_summer$temperature, 
+                  trait_early_summer$vpd, 
+                  trait_early_summer$soil_moisture)
+options(datadist='ddist')
+
+pc1 <- expand.grid(PC1 = plant_traits$PC1, 
+                   height = seq(from = min(trait_early_summer$height), to = max(trait_early_summer$height), by = 1)) %>% 
+  left_join(plant_traits, by = "PC1") %>% 
+  filter(Plant != "HEWH") %>% 
+   mutate(start_time = 0, 
+         end_time =140,
+         dead = 0,
+         PC2 = mean(trait_early_summer$PC2),
+         wue = mean(trait_early_summer$wue),
+         temperature = mean(trait_early_summer$temperature),
+         soil_moisture = mean(trait_early_summer$soil_moisture),
+         vpd = mean(trait_early_summer$vpd)) %>% 
+  mutate(hazard = predict(validate_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(validate_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+         lower_int = hazard - interval,
+         upper_int = hazard + interval) %>% 
+  filter(height %in% c(quantile(height, 0.1), median(height), quantile(height, 0.9)))
+
+ggplot(pc1, aes(x = PC1, y = hazard, color = as.factor(height))) +
+  geom_line()+
+  #geom_text(aes(x = height, y = hazard, label = Plant), position = "dodge")+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int), alpha = 0.25) +
+  theme_classic()+
+  scale_color_viridis(discrete=TRUE, option="viridis")+
+  labs(y = "Survival Probability",
+       x = "LES PC1",
+       color = "Height (cm)")
+```
+
+6228.853
+
+```{r}
+options(na.action = "na.fail")
+dredge_test2 <- coxph(Surv(end_time, dead) ~ PC1* temperature + PC1* vpd + PC1*height + wue*temperature + wue* soil_moisture + wue*vpd + wue*height+ wood_density*temperature + wood_density*vpd + wood_density*height + temperature*soil_moisture + temperature*vpd + soil_moisture*vpd,
+      data = trait_early_summer)
+dredge_result2 <- dredge(dredge_test2)
+dredge_result2
+options(na.action = "na.omit")
+
+dredge_model2 <- coxph(Surv(end_time, dead) ~ PC1*height + PC1*temperature + PC1*vpd + wue*height + soil_moisture*vpd + temperature*vpd, 
+                      data = trait_early_summer)
+
+
+```
+```{r}
+early_summer_no_height_model <- coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density*vpd + vpd* soil_moisture,
+      data = trait_early_summer, model = TRUE)
+save(early_summer_no_height_model, file = here("early_summer_trait_model.rda"))
+```
+
+
+```{r}
+early_summer_trait_model <- coxph(Surv(end_time, dead) ~ PC1  + PC2 * height + wue + wood_density*vpd + vpd* soil_moisture,
+      data = trait_early_summer)
+early_summer_trait_model
+estm_val <- cph(Surv(end_time, dead) ~ PC1  + PC2 * height + wue + wood_density*vpd + vpd* soil_moisture,
+      data = trait_early_summer, x = T, y = T)
+cox.zph(early_summer_trait_model)
+plot(cox.zph(early_summer_trait_model)[3])
+plot(cox.zph(early_summer_trait_model)[6])
+plot(cox.zph(early_summer_trait_model)[8])
+plot(cox.zph(early_summer_trait_model)[10])
+
+pc1 <- plant_traits %>%
+  dplyr::select(Plant, PC1) %>% 
+  filter(Plant != "HEWH") %>% 
+  mutate(start_time = 0, 
+         end_time =140,
+         dead = 0,
+         PC2 = mean(trait_early_summer$PC2),
+         height = mean(trait_early_summer$height),
+         wue = mean(trait_early_summer$wue),
+         wood_density = mean(trait_early_summer$wood_density),
+         soil_moisture = mean(trait_early_summer$soil_moisture),
+         vpd = mean(trait_early_summer$vpd)) %>% 
+  mutate(hazard = predict(early_summer_trait_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(early_summer_trait_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+         lower_int = hazard - interval,
+         upper_int = hazard + interval)
+
+pc2 <- expand.grid(PC2 = plant_traits$PC2, 
+                   height = seq(from = min(trait_early_summer$height), to = max(trait_early_summer$height), by = 1)) %>% 
+  left_join(plant_traits, by = "PC2") %>% 
+  filter(Plant != "HEWH") %>% 
+   mutate(start_time = 0, 
+         end_time =140,
+         dead = 0,
+         PC1 = mean(trait_early_summer$PC1),
+         wue = mean(trait_early_summer$wue),
+         wood_density = mean(trait_early_summer$wood_density),
+         soil_moisture = mean(trait_early_summer$soil_moisture),
+         vpd = mean(trait_early_summer$vpd)) %>% 
+  mutate(hazard = predict(early_summer_trait_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(early_summer_trait_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+         lower_int = hazard - interval,
+         upper_int = hazard + interval) %>% 
+  filter(height %in% c(quantile(height, 0.1), median(height), quantile(height, 0.9)))
+
+wue <- plant_traits %>%
+  dplyr::select(Plant, wue) %>% 
+  filter(Plant != "HEWH") %>% 
+  mutate(start_time = 0, 
+         end_time =140,
+         dead = 0,
+         PC2 = mean(trait_early_summer$PC2),
+         height = mean(trait_early_summer$height),
+         PC1 = mean(trait_early_summer$PC1),
+         wood_density = mean(trait_early_summer$wood_density),
+         soil_moisture = mean(trait_early_summer$soil_moisture),
+         vpd = mean(trait_early_summer$vpd)) %>% 
+  mutate(hazard = predict(early_summer_trait_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(early_summer_trait_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+         lower_int = hazard - interval,
+         upper_int = hazard + interval)
+
+wood_density_summer <- expand.grid(wood_density = plant_traits$wood_density, 
+                   vpd = seq(from = min(trait_early_summer$vpd), to = max(trait_early_summer$vpd), by = 0.1)) %>%
+  left_join(plant_traits, by = "wood_density") %>% 
+  filter(Plant != "HEWH") %>% 
+   mutate(start_time = 0, 
+         end_time =140,
+         dead = 0,
+         PC1 = mean(trait_early_summer$PC1),
+         wue = mean(trait_early_summer$wue),
+         PC2 = mean(trait_early_summer$PC2),
+         soil_moisture = mean(trait_early_summer$soil_moisture),
+         height = mean(trait_early_summer$height)) %>% 
+  mutate(hazard = predict(early_summer_trait_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(early_summer_trait_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+         lower_int = hazard - interval,
+         upper_int = hazard + interval)
+
+vpd_soil <- expand.grid(soil_moisture = seq(from = min(trait_early_summer$soil_moisture), to = max(trait_early_summer$soil_moisture), by = 0.1), 
+                   vpd = seq(from = min(trait_early_summer$vpd), to = max(trait_early_summer$vpd), by = 0.1)) %>% 
+   mutate(start_time = 0, 
+         end_time =140,
+         dead = 0,
+         PC1 = mean(trait_early_summer$PC1),
+         wue = mean(trait_early_summer$wue),
+         PC2 = mean(trait_early_summer$PC2),
+         wood_density = mean(trait_early_summer$wood_density),
+         height = mean(trait_early_summer$height)) %>% 
+  mutate(hazard = predict(early_summer_trait_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(early_summer_trait_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+         lower_int = hazard - interval,
+         upper_int = hazard + interval)
+vpd_emphasis <- vpd_soil %>% 
+  filter(vpd %in% c(quantile(vpd_soil$vpd, 0.1), median(vpd_soil$vpd), quantile(vpd_soil$vpd, 0.9))) %>% 
+  mutate(vpd = round(vpd, digits = 2))
+soil_emphasis <- vpd_soil %>%
+  mutate(soil_moisture = round(soil_moisture, digits = 2)) %>% 
+  filter(soil_moisture %in% c(-1.88,0.02,1.22))
+
+wood_density_emphasis <- wood_density_summer %>%
+  filter(vpd %in% c(quantile(wood_density_summer$vpd, 0.1), median(wood_density_summer$vpd), quantile(wood_density_summer$vpd,0.9))) %>% 
+  mutate(vpd = round(vpd, digits = 2))
+
+alive_sum <- trait_early_summer %>% 
+  group_by(PC1, wue) %>% 
+  reframe(alive = sum(alive),
+          dead = sum(dead)) %>% 
+  group_by(PC1, wue) %>% 
+  reframe(prop_alive = alive/(alive + dead))
+
+alive_sum <- trait_early_summer %>% 
+  group_by(PC1, wue) %>% 
+  reframe(alive = sum(alive),
+          dead = sum(dead)) %>% 
+  group_by(PC1, wue) %>% 
+  reframe(prop_alive = alive/(alive + dead))
+
+pc1_early_summer <- ggplot(pc1, aes(x = PC1, y = hazard)) +
+  geom_line()+
+  geom_text(aes(x = PC1, y = hazard, label = Plant), 
+            vjust = c(1.5,-1,-1,-2,-1.5,-1,-1.5,0,1.5),
+            hjust = c(0,0,1,0,0,0,0,0,0.5),
+            size = 3)+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int), alpha = 0.25) +
+  theme_classic() +
+  labs(y = "Survival Probability",
+       x = "LES PC1",
+       color = "Count")+
+  ylim(0,1)
+
+pc2_early_summer <- ggplot(pc2, aes(x = PC2, y = hazard, color = as.factor(height))) +
+  geom_line()+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int), alpha = 0.25) +
+  theme_classic()+
+  scale_color_viridis(discrete=TRUE, option="viridis")+
+  labs(y = "Survival Probability",
+       x = "LES PC2",
+       color = "Height (cm)")
+
+wood_density_early_summer <- ggplot() +
+  geom_line(data = wood_density_emphasis, aes(x = wood_density, y = hazard, col = as.factor(vpd)))+
+  geom_ribbon(data = wood_density_emphasis, aes(x = wood_density, ymin = lower_int, ymax = upper_int, col = as.factor(vpd)), alpha = 0.25)+
+  theme_classic()+
+  scale_color_viridis(discrete=TRUE, option="viridis")+
+  labs(x = "Wood density (g/cm3)",
+       y = "Survival Probability",
+       color = "Vapor Pressure \n Deficit (kPa)")+
+  ylim(-0.1,1)
+
+soil_moisture_early_summer <- ggplot()+
+  geom_line(data = vpd_emphasis, aes(x = soil_moisture, y = hazard, col = as.factor(vpd)))+
+  geom_ribbon(data = vpd_emphasis, aes(x = soil_moisture, ymin = lower_int, ymax = upper_int, col = as.factor(vpd)), alpha = 0.25)+
+  theme_classic() +
+  scale_color_viridis(discrete=TRUE, option="viridis") +
+  labs(x = "Soil Moisture",
+       y = "Survival Probability",
+       color = "Vapor Pressure \n Deficit (kPa)")+
+  ylim(-0.1,1)
+
+
+vpd_early_summer <- ggplot() +
+  geom_line(data = soil_emphasis, aes(x = vpd, y = hazard, col = as.factor(soil_moisture)))+
+  geom_ribbon(data = soil_emphasis, aes(x = vpd, ymin = lower_int, ymax = upper_int, col = as.factor(soil_moisture)), alpha = 0.25)+
+  theme_classic()+
+  scale_color_viridis(discrete=TRUE, option="viridis") +
+  labs(x = "Vapor Pressure Deficit (kPa)",
+       y = "Survival Probability",
+       color = "Soil Moisture")+
+  ylim(-0.1,1)
+  
+
+wue_early_summer <- ggplot(wue, aes(x = wue, y = hazard)) +
+  geom_line()+
+  geom_text(aes(x = wue, y = hazard, label = Plant), 
+            vjust = c(-1,-1,-1,1,1,-1,-3,1,-1),
+            hjust = c(0,0,-0.25,0,0,1,0,0,0),
+            size = 3)+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int), alpha = 0.25) +
+  theme_classic()+
+  ylim(0,1)+ 
+  labs(x = "Integrated Water Use Efficiency",
+       y = "Survival Probability",
+       color = "Count")
+
+figure6 <- (wood_density_early_summer + soil_moisture_early_summer)/(vpd_early_summer + pc1_early_summer)/(pc2_early_summer + wue_early_summer) + plot_annotation(tag_levels = "A")
+
+ggsave("figure6.png", plot = figure6, path = here("figures"), width = 8, height = 11, units = "in", dpi = 325)
+
+early_summer_trait_model %>% 
+  tbl_regression(exponentiate = T)
+```
+
+
+## Worth including? Maybe Supplementary
+
+```{r}
+species_early_summer_predict <- trait_early_summer %>% 
+  mutate(survival_pred = predict(early_summer_trait_model, newdata = ., type = "survival")) %>% 
+  group_by(Plant) %>% 
+  reframe(survival_pred = mean(survival_pred))
+
+species_alive_sum <- trait_early_summer %>% 
+  group_by(Plant) %>% 
+  reframe(alive = sum(alive),
+          dead = sum(dead)) %>% 
+  group_by(Plant) %>% 
+  reframe(prop_alive = alive/(alive + dead))
+
+ggplot(species_early_summer_predict, aes(x = Plant, y = survival_pred)) +
+  geom_point(col = "blue")+
+  geom_point(data = species_alive_sum, aes(x = Plant, y = prop_alive))+
+  theme_classic() +
+  ylim(0,1)
+```
+
+
+```{r}
+early_summer_height <- expand.grid(Plant = plant_traits$Plant, 
+                                height =  seq(from = min(trait_early_summer$height), to = max(trait_early_summer$height), by = 1)) %>%
+  left_join(plant_traits, by = "Plant") %>% 
+  dplyr::select(!X & !crown_height & !crown_width) %>% 
+  filter(Plant != "HEWH") %>% 
+  mutate(start_time = 0, 
+         end_time =140,
+         dead = 0,
+         soil_moisture = mean(trait_early_summer$soil_moisture),
+         vpd = mean(trait_early_summer$vpd)) %>% 
+  mutate(hazard = predict(early_summer_trait_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(early_summer_trait_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+         lower_int = hazard - interval,
+         upper_int = hazard + interval)
+#         lower_int = case_when(hazard < 0 & interval < 0  ~ hazard + interval,
+#                               hazard < 0 & interval >= 0 ~ hazard - interval,
+#                               hazard >= 0 & interval >= 0 ~ hazard - interval,
+#                               hazard >= 0 & interval < 0 ~ hazard + interval),
+#         upper_int = case_when(hazard < 0 & interval < 0  ~ hazard - interval,
+#                               hazard < 0 & interval >= 0 ~ hazard + interval,
+#                               hazard >= 0 & interval >= 0 ~ hazard + interval,
+#                               hazard >= 0 & interval < 0 ~ hazard - interval))
+
+early_summer_soil_moisture <- expand.grid(Plant = plant_traits$Plant, 
+                                soil_moisture =  seq(from = min(trait_early_summer$soil_moisture), to = max(trait_early_summer$soil_moisture), by = 0.1)) %>%
+  left_join(plant_traits, by = "Plant") %>% 
+  dplyr::select(!X & !crown_height & !crown_width) %>% 
+  filter(Plant != "HEWH") %>% 
+  mutate(start_time = 0, 
+         end_time =140,
+         dead = 0,
+         height = mean(trait_early_summer$height),
+         vpd = min(trait_early_summer$vpd)) %>% 
+  mutate(hazard = predict(early_summer_trait_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(early_summer_trait_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+         lower_int = hazard - interval,
+         upper_int = hazard + interval)
+#         lower_int = case_when(hazard < 0 & interval < 0  ~ hazard + interval,
+#                               hazard < 0 & interval >= 0 ~ hazard - interval,
+#                               hazard >= 0 & interval >= 0 ~ hazard - interval,
+#                               hazard >= 0 & interval < 0 ~ hazard + interval),
+#         upper_int = case_when(hazard < 0 & interval < 0  ~ hazard - interval,
+#                               hazard < 0 & interval >= 0 ~ hazard + interval,
+#                               hazard >= 0 & interval >= 0 ~ hazard + interval,
+#                               hazard >= 0 & interval < 0 ~ hazard - interval))
+
+early_summer_vpd <- expand.grid(Plant = plant_traits$Plant, 
+                                vpd =  seq(from = min(trait_early_summer$vpd), to = max(trait_early_summer$vpd), by = 0.1)) %>%
+  left_join(plant_traits, by = "Plant") %>% 
+  dplyr::select(!X & !crown_height & !crown_width) %>% 
+  filter(Plant != "HEWH") %>% 
+  mutate(start_time = 0, 
+         end_time =140,
+         dead = 0,
+         soil_moisture = max(trait_early_summer$soil_moisture),
+         height = mean(trait_early_summer$height)) %>% 
+   mutate(hazard = predict(early_summer_trait_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(early_summer_trait_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+         lower_int = hazard - interval,
+         upper_int = hazard + interval)
+#         lower_int = case_when(hazard < 0 & interval < 0  ~ hazard + interval,
+#                               hazard < 0 & interval >= 0 ~ hazard - interval,
+#                               hazard >= 0 & interval >= 0 ~ hazard - interval,
+#                               hazard >= 0 & interval < 0 ~ hazard + interval),
+#         upper_int = case_when(hazard < 0 & interval < 0  ~ hazard - interval,
+#                               hazard < 0 & interval >= 0 ~ hazard + interval,
+#                               hazard >= 0 & interval >= 0 ~ hazard + interval,
+#                               hazard >= 0 & interval < 0 ~ hazard - interval))
+
+
+ggplot(early_summer_height, aes(x = height, y = hazard, colour = Plant)) +
+  geom_line()+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int), alpha = 0.25)+
+  geom_point(data = trait_early_summer, aes(x = height, y = alive), alpha = 0.25)+
+  theme_classic()+
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  facet_wrap(~Plant)
+
+ggplot(early_summer_soil_moisture, aes(x = soil_moisture, y = hazard, colour = Plant)) +
+  geom_line()+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int), alpha = 0.25)+
+  geom_point(data = trait_early_summer, aes(x = soil_moisture, y = alive), alpha = 0.25)+
+  theme_classic()+
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  facet_wrap(~Plant)
+
+ggplot(early_summer_vpd, aes(x = vpd, y = hazard, colour = Plant)) +
+  geom_line()+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int), alpha = 0.25)+
+  geom_point(data = trait_early_summer, aes(x = vpd, y = alive), alpha = 0.25)+
+  theme_classic()+
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  facet_wrap(~Plant)
+  
+```
+
+
+Summer-fall
+
+```{r}
+AIC(coxph(Surv(end_time, dead) ~ PC1 + PC2 + wue + wood_density + temperature + soil_moisture + vpd + height,
+      data = trait_summer_all))
+
+AIC(coxph(Surv(end_time, dead) ~ PC1 * temperature + PC2 + wue + wood_density + soil_moisture + vpd + height,
+      data = trait_summer_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2* temperature + wue + wood_density + soil_moisture + vpd + height,
+      data = trait_summer_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue* temperature + wood_density + soil_moisture + vpd + height,
+      data = trait_summer_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density* temperature + soil_moisture + vpd + height,
+      data = trait_summer_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture* temperature + vpd + height,
+      data = trait_summer_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture + vpd* temperature + height,
+      data = trait_summer_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture + vpd + height* temperature,
+      data = trait_summer_all))
+
+AIC(coxph(Surv(end_time, dead) ~ PC1 * soil_moisture + PC2 + wue + wood_density + temperature + vpd + height,
+      data = trait_summer_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2* soil_moisture + wue + wood_density + temperature + vpd + height,
+      data = trait_summer_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue* soil_moisture + wood_density + temperature + vpd + height,
+      data = trait_summer_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density* soil_moisture + temperature + vpd + height,
+      data = trait_summer_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture* temperature + vpd + height,
+      data = trait_summer_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + temperature + vpd* soil_moisture + height,
+      data = trait_summer_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + temperature + vpd + height* soil_moisture,
+      data = trait_summer_all))
+
+AIC(coxph(Surv(end_time, dead) ~ PC1 * vpd + PC2 + wue + wood_density + soil_moisture + temperature + height,
+      data = trait_summer_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2* vpd + wue + wood_density + soil_moisture + temperature + height,
+      data = trait_summer_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue* vpd + wood_density + soil_moisture + temperature + height,
+      data = trait_summer_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density* vpd + soil_moisture + temperature + height,
+      data = trait_summer_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture* vpd + temperature + height,
+      data = trait_summer_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture + vpd* temperature + height,
+      data = trait_summer_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture + temperature + height*vpd,
+      data = trait_summer_all))
+
+AIC(coxph(Surv(end_time, dead) ~ PC1 * height + PC2 + wue + wood_density + soil_moisture + vpd + temperature,
+      data = trait_summer_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2* height + wue + wood_density + soil_moisture + vpd + temperature,
+      data = trait_summer_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue* height + wood_density + soil_moisture + vpd + temperature,
+      data = trait_summer_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density* height + soil_moisture + vpd + temperature,
+      data = trait_summer_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture* height + vpd + temperature,
+      data = trait_summer_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture + vpd* height + temperature,
+      data = trait_summer_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture + vpd + height* temperature,
+      data = trait_summer_all))
+
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density* temperature + soil_moisture + vpd + height,
+      data = trait_summer_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1 * temperature + PC2 + wue + wood_density*temperature + soil_moisture + vpd + height,
+      data = trait_summer_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density*temperature + soil_moisture + vpd* temperature + height,
+      data = trait_summer_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1 * vpd + PC2 + wue + wood_density*temperature + soil_moisture + height,
+      data = trait_summer_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density* vpd + soil_moisture + temperature*wood_density + height,
+      data = trait_summer_all))
+
+AIC(coxph(Surv(end_time, dead) ~ PC1 * temperature + PC2 + wue + wood_density*temperature + soil_moisture + vpd + height,
+      data = trait_summer_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1 * temperature + PC2 + wue + wood_density*temperature + soil_moisture + vpd*temperature + height,
+      data = trait_summer_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1 * temperature + PC2 + wue + wood_density*temperature + soil_moisture + vpd*PC1 + height,
+      data = trait_summer_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1 * temperature + PC2 + wue + wood_density*temperature + soil_moisture + vpd*wood_density + height,
+      data = trait_summer_all))
+
+AIC(coxph(Surv(end_time, dead) ~ PC1 * temperature + PC2 + wue + wood_density*temperature + soil_moisture + vpd + height,
+      data = trait_summer_all))
+AIC(coxph(Surv(end_time, dead) ~ temperature + PC2 + wue + wood_density*temperature + soil_moisture + vpd + height,
+      data = trait_summer_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1 + PC2 + wue + wood_density*temperature + soil_moisture + vpd + height,
+      data = trait_summer_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1 * temperature + wue + wood_density*temperature + soil_moisture + vpd + height,
+      data = trait_summer_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1 * temperature + PC2 + wood_density*temperature + soil_moisture + vpd + height,
+      data = trait_summer_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1 * temperature + PC2 + wue + temperature + soil_moisture + vpd + height,
+      data = trait_summer_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1 * temperature + PC2 + wue + wood_density + soil_moisture + vpd + height,
+      data = trait_summer_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1 * temperature + PC2 + wue + wood_density*temperature + vpd + height,
+      data = trait_summer_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1 * temperature + PC2 + wue + wood_density*temperature + soil_moisture + height,
+      data = trait_summer_all))
+AIC(coxph(Surv(end_time, dead) ~ PC1 * temperature + PC2 + wue + wood_density*temperature + soil_moisture + vpd,
+      data = trait_summer_all))
+
+AIC(coxph(Surv(end_time, dead) ~ PC1 * temperature + PC2 + wue + wood_density*temperature + soil_moisture + vpd + height,
+      data = trait_summer_all))
+
+```
+
+4892.442
+
+Late summer
+
+```{r}
+AIC(coxph(Surv(end_time, dead) ~ PC1 + PC2 + wue + wood_density + temperature + soil_moisture + vpd + height,
+      data = trait_late_summer))
+
+AIC(coxph(Surv(end_time, dead) ~ PC1 * temperature + PC2 + wue + wood_density + soil_moisture + vpd + height,
+      data = trait_late_summer))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2* temperature + wue + wood_density + soil_moisture + vpd + height,
+      data = trait_late_summer))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue* temperature + wood_density + soil_moisture + vpd + height,
+      data = trait_late_summer))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density* temperature + soil_moisture + vpd + height,
+      data = trait_late_summer))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture* temperature + vpd + height,
+      data = trait_late_summer))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture + vpd* temperature + height,
+      data = trait_late_summer))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture + vpd + height* temperature,
+      data = trait_late_summer))
+
+AIC(coxph(Surv(end_time, dead) ~ PC1 * soil_moisture + PC2 + wue + wood_density + temperature + vpd + height,
+      data = trait_late_summer))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2* soil_moisture + wue + wood_density + temperature + vpd + height,
+      data = trait_late_summer))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue* soil_moisture + wood_density + temperature + vpd + height,
+      data = trait_late_summer))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density* soil_moisture + temperature + vpd + height,
+      data = trait_late_summer))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture* temperature + vpd + height,
+      data = trait_late_summer))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + temperature + vpd* soil_moisture + height,
+      data = trait_late_summer))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + temperature + vpd + height* soil_moisture,
+      data = trait_late_summer))
+
+AIC(coxph(Surv(end_time, dead) ~ PC1 * vpd + PC2 + wue + wood_density + soil_moisture + temperature + height,
+      data = trait_late_summer))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2* vpd + wue + wood_density + soil_moisture + temperature + height,
+      data = trait_late_summer))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue* vpd + wood_density + soil_moisture + temperature + height,
+      data = trait_late_summer))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density* vpd + soil_moisture + temperature + height,
+      data = trait_late_summer))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture* vpd + temperature + height,
+      data = trait_late_summer))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture + vpd* temperature + height,
+      data = trait_late_summer))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture + temperature + height*vpd,
+      data = trait_late_summer))
+
+AIC(coxph(Surv(end_time, dead) ~ PC1 * height + PC2 + wue + wood_density + soil_moisture + vpd + temperature,
+      data = trait_late_summer))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2* height + wue + wood_density + soil_moisture + vpd + temperature,
+      data = trait_late_summer))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue* height + wood_density + soil_moisture + vpd + temperature,
+      data = trait_late_summer))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density* height + soil_moisture + vpd + temperature,
+      data = trait_late_summer))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture* height + vpd + temperature,
+      data = trait_late_summer))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture + vpd* height + temperature,
+      data = trait_late_summer))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture + vpd + height* temperature,
+      data = trait_late_summer))
+
+AIC(coxph(Surv(end_time, dead) ~ PC1 * height + PC2 + wue + wood_density + soil_moisture + vpd + temperature,
+      data = trait_late_summer))
+AIC(coxph(Surv(end_time, dead) ~ height + PC2 + wue + wood_density + soil_moisture + vpd + temperature,
+      data = trait_late_summer))
+AIC(coxph(Surv(end_time, dead) ~ PC1 + PC2 + wue + wood_density + soil_moisture + vpd + temperature,
+      data = trait_late_summer))
+AIC(coxph(Surv(end_time, dead) ~ PC1 * height + wue + wood_density + soil_moisture + vpd + temperature,
+      data = trait_late_summer))
+AIC(coxph(Surv(end_time, dead) ~ PC1 * height + PC2 + wood_density + soil_moisture + vpd + temperature,
+      data = trait_late_summer))
+AIC(coxph(Surv(end_time, dead) ~ PC1 * height + PC2 + wue + soil_moisture + vpd + temperature,
+      data = trait_late_summer))
+AIC(coxph(Surv(end_time, dead) ~ PC1 * height + PC2 + wue + wood_density + vpd + temperature,
+      data = trait_late_summer))
+AIC(coxph(Surv(end_time, dead) ~ PC1 * height + PC2 + wue + wood_density + soil_moisture + temperature,
+      data = trait_late_summer))
+AIC(coxph(Surv(end_time, dead) ~ PC1 * height + PC2 + wue + wood_density + soil_moisture + vpd,
+      data = trait_late_summer))
+
+AIC(coxph(Surv(end_time, dead) ~ PC1 * height + PC2 + wue + wood_density + soil_moisture + vpd + temperature,
+      data = trait_late_summer))
+```
+
+4940.952
+
+fall
+
+
+
+```{r}
+AIC(coxph(Surv(end_time, dead) ~ PC1 + PC2 + wue + wood_density + temperature + soil_moisture + vpd + height,
+      data = trait_fall))
+
+AIC(coxph(Surv(end_time, dead) ~ PC1 * temperature + PC2 + wue + wood_density + soil_moisture + vpd + height,
+      data = trait_fall))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2* temperature + wue + wood_density + soil_moisture + vpd + height,
+      data = trait_fall))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue* temperature + wood_density + soil_moisture + vpd + height,
+      data = trait_fall))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density* temperature + soil_moisture + vpd + height,
+      data = trait_fall))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture* temperature + vpd + height,
+      data = trait_fall))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture + vpd* temperature + height,
+      data = trait_fall))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture + vpd + height* temperature,
+      data = trait_fall))
+
+AIC(coxph(Surv(end_time, dead) ~ PC1 * soil_moisture + PC2 + wue + wood_density + temperature + vpd + height,
+      data = trait_fall))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2* soil_moisture + wue + wood_density + temperature + vpd + height,
+      data = trait_fall))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue* soil_moisture + wood_density + temperature + vpd + height,
+      data = trait_fall))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density* soil_moisture + temperature + vpd + height,
+      data = trait_fall))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture* temperature + vpd + height,
+      data = trait_fall))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + temperature + vpd* soil_moisture + height,
+      data = trait_fall))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + temperature + vpd + height* soil_moisture,
+      data = trait_fall))
+
+AIC(coxph(Surv(end_time, dead) ~ PC1 * vpd + PC2 + wue + wood_density + soil_moisture + temperature + height,
+      data = trait_fall))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2* vpd + wue + wood_density + soil_moisture + temperature + height,
+      data = trait_fall))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue* vpd + wood_density + soil_moisture + temperature + height,
+      data = trait_fall))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density* vpd + soil_moisture + temperature + height,
+      data = trait_fall))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture* vpd + temperature + height,
+      data = trait_fall))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture + vpd* temperature + height,
+      data = trait_fall))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture + temperature + height*vpd,
+      data = trait_fall))
+
+AIC(coxph(Surv(end_time, dead) ~ PC1 * height + PC2 + wue + wood_density + soil_moisture + vpd + temperature,
+      data = trait_fall))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2* height + wue + wood_density + soil_moisture + vpd + temperature,
+      data = trait_fall))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue* height + wood_density + soil_moisture + vpd + temperature,
+      data = trait_fall))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density* height + soil_moisture + vpd + temperature,
+      data = trait_fall))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture* height + vpd + temperature,
+      data = trait_fall))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture + vpd* height + temperature,
+      data = trait_fall))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density + soil_moisture + vpd + height* temperature,
+      data = trait_fall))
+
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density* temperature + soil_moisture + vpd + height,
+      data = trait_fall))
+AIC(coxph(Surv(end_time, dead) ~ PC1 * temperature + PC2 + wue + wood_density*temperature + soil_moisture + vpd + height,
+      data = trait_fall))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density*temperature + soil_moisture + vpd* temperature + height,
+      data = trait_fall))
+AIC(coxph(Surv(end_time, dead) ~ PC1 * vpd + PC2 + wue + wood_density*temperature + soil_moisture + height,
+      data = trait_fall))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density* vpd + soil_moisture + wood_density*temperature + height,
+      data = trait_fall))
+
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density* temperature + soil_moisture + vpd + height,
+      data = trait_fall))
+AIC(coxph(Surv(end_time, dead) ~ PC2 + wue + wood_density* temperature + soil_moisture + vpd + height,
+      data = trait_fall))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + wue + wood_density* temperature + soil_moisture + vpd + height,
+      data = trait_fall))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wood_density* temperature + soil_moisture + vpd + height,
+      data = trait_fall))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + temperature + soil_moisture + vpd + height,
+      data = trait_fall))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density+ soil_moisture + vpd + height,
+      data = trait_fall))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density* temperature + vpd + height,
+      data = trait_fall))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density* temperature + soil_moisture + height,
+      data = trait_fall))
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density* temperature + soil_moisture + vpd,
+      data = trait_fall))
+
+AIC(coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density* temperature + soil_moisture + vpd + height,
+      data = trait_fall))
+
+```
+
+4886.983
+
+
+```{r}
+dredge_test_fall <- cph(Surv(end_time, dead) ~ PC1* temperature + PC1*soil_moisture +PC1* vpd + PC1*height + PC2 * temperature + PC2*soil_moisture + PC2* vpd + PC2*height + wue*temperature + wue* soil_moisture + wue*vpd + wue*height+ wood_density*temperature + wood_density*soil_moisture + wood_density*vpd + wood_density*height + temperature*soil_moisture + temperature*vpd + soil_moisture*vpd,
+      data = trait_fall, x = T, y = T)
+
+validate(dredge_test_fall, b = 200, bw = T, rule = "aic")
+
+fall_validate_model <- coxph(Surv(end_time, dead) ~ PC1*temperature + PC2*vpd + wue*vpd + temperature*wood_density + temperature*vpd, 
+                           data = trait_fall)
+
+fall_validate_model %>% 
+  tbl_regression(exp = T)
+```
+
+```{r}
+fall_trait_no_height_model <- coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density* temperature + soil_moisture + vpd,
+      data = trait_fall, model = TRUE)
+save(fall_trait_no_height_model,file =  here("trait_survival_model.rda"))
+```
+
+
+```{r}
+fall_trait_model <- coxph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density* temperature + soil_moisture + vpd + height,
+      data = trait_fall)
+fall_trait_model
+ftmval <- cph(Surv(end_time, dead) ~ PC1  + PC2 + wue + wood_density* temperature + soil_moisture + vpd + height,
+      data = trait_fall, x = T, y = T)
+cox.zph(fall_trait_model)
+plot(cox.zph(fall_trait_model)[2])
+
+
+pc1_fall <- plant_traits %>%
+  dplyr::select(Plant, PC1) %>% 
+  filter(Plant != "HEWH") %>% 
+  mutate(start_time = min(trait_fall$start_time), 
+         end_time = 284,
+         dead = 0,
+         PC2 = mean(trait_fall$PC2),
+         height = mean(trait_fall$height),
+         wue = mean(trait_fall$wue),
+         wood_density = mean(trait_fall$wood_density),
+         temperature = mean(trait_fall$temperature),
+         soil_moisture = mean(trait_fall$soil_moisture),
+         vpd = mean(trait_fall$vpd)) %>% 
+  mutate(hazard = predict(fall_trait_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(fall_trait_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+         lower_int = hazard - interval,
+         upper_int = hazard + interval)
+
+pc2_fall <- plant_traits %>%
+  dplyr::select(Plant, PC2) %>% 
+  filter(Plant != "HEWH") %>% 
+  mutate(start_time = min(trait_fall$start_time), 
+         end_time = 284,
+         dead = 0,
+         PC1 = mean(trait_fall$PC1),
+         height = mean(trait_fall$height),
+         wue = mean(trait_fall$wue),
+         wood_density = mean(trait_fall$wood_density),
+         temperature = mean(trait_fall$temperature),
+         soil_moisture = mean(trait_fall$soil_moisture),
+         vpd = mean(trait_fall$vpd)) %>% 
+  mutate(hazard = predict(fall_trait_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(fall_trait_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+         lower_int = hazard - interval,
+         upper_int = hazard + interval)
+
+wue_fall <- plant_traits %>%
+  dplyr::select(Plant, wue) %>% 
+  filter(Plant != "HEWH") %>% 
+  mutate(start_time = min(trait_fall$start_time), 
+         end_time = 284,
+         dead = 0,
+         PC2 = mean(trait_fall$PC2),
+         height = mean(trait_fall$height),
+         PC1 = mean(trait_fall$PC1),
+         wood_density = mean(trait_fall$wood_density),
+         temperature = mean(trait_fall$temperature),
+         soil_moisture = mean(trait_fall$soil_moisture),
+         vpd = mean(trait_fall$vpd)) %>% 
+  mutate(hazard = predict(fall_trait_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(fall_trait_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+         lower_int = hazard - interval,
+         upper_int = hazard + interval)
+wood_density_fall<- expand.grid(wood_density = plant_traits$wood_density, 
+                   temperature = seq(from = min(trait_fall$temperature), to = max(trait_fall$temperature), by = 0.1)) %>% 
+  left_join(plant_traits, by = "wood_density") %>% 
+  filter(Plant != "HEWH") %>% 
+   mutate(start_time = min(trait_fall$start_time), 
+         end_time = 284,
+         dead = 0,
+         PC1 = mean(trait_fall$PC1),
+         wue = mean(trait_fall$wue),
+         PC2 = mean(trait_fall$PC2),
+         soil_moisture = mean(trait_fall$soil_moisture),
+         vpd = mean(trait_fall$vpd),
+         height = mean(trait_fall$height)) %>% 
+  mutate(hazard = predict(fall_trait_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(fall_trait_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+         lower_int = hazard - interval,
+         upper_int = hazard + interval)
+soil_moisture_fall <- data.frame(soil_moisture = seq(from= min(trait_fall$soil_moisture), to = max(trait_fall$soil_moisture), by = 0.1)) %>% 
+  mutate(start_time = min(trait_fall$start_time), 
+         end_time = 284,
+         dead = 0,
+         PC2 = mean(trait_fall$PC2),
+         height = mean(trait_fall$height),
+         wue = mean(trait_fall$wue),
+         wood_density = mean(trait_fall$wood_density),
+         temperature = mean(trait_fall$temperature),
+         PC1 = mean(trait_fall$PC1),
+         vpd = mean(trait_fall$vpd)) %>% 
+  mutate(hazard = predict(fall_trait_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(fall_trait_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+         lower_int = hazard - interval,
+         upper_int = hazard + interval)
+
+vpd_fall <- data.frame(vpd = seq(from= min(trait_fall$vpd), to = max(trait_fall$vpd), by = 0.1)) %>% 
+  mutate(start_time = min(trait_fall$start_time), 
+         end_time = 284,
+         dead = 0,
+         PC2 = mean(trait_fall$PC2),
+         height = mean(trait_fall$height),
+         wue = mean(trait_fall$wue),
+         wood_density = mean(trait_fall$wood_density),
+         temperature = mean(trait_fall$temperature),
+         PC1 = mean(trait_fall$PC1),
+         soil_moisture = mean(trait_fall$soil_moisture)) %>% 
+  mutate(hazard = predict(fall_trait_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(fall_trait_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+         lower_int = hazard - interval,
+         upper_int = hazard + interval)
+
+height_fall <- data.frame(height = seq(from= min(trait_fall$height), to = max(trait_fall$height), by = 1)) %>% 
+  mutate(start_time = min(trait_fall$start_time), 
+         end_time = 284,
+         dead = 0,
+         PC2 = mean(trait_fall$PC2),
+         soil_moisture = mean(trait_fall$soil_moisture),
+         wue = mean(trait_fall$wue),
+         wood_density = mean(trait_fall$wood_density),
+         temperature = mean(trait_fall$temperature),
+         PC1 = mean(trait_fall$PC1),
+         vpd = mean(trait_fall$vpd)) %>% 
+  mutate(hazard = predict(fall_trait_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(fall_trait_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+         lower_int = hazard - interval,
+         upper_int = hazard + interval)
+
+wood_density_emphasis_fall <- wood_density_fall %>%
+  filter(temperature %in% c(quantile(wood_density_fall$temperature, 0.1), median(wood_density_fall$temperature), quantile(wood_density_fall$temperature, 0.9))) %>% 
+  mutate(temperature = round(temperature, digits = 0))
+
+fall_alive_sum <- trait_fall %>% 
+  group_by(PC1, PC2, wue) %>% 
+  reframe(alive = sum(alive),
+          dead = sum(dead)) %>% 
+  group_by(PC1, PC2, wue) %>% 
+  reframe(prop_alive = alive/(alive + dead))
+
+pc1_fall_graph <- ggplot(pc1_fall, aes(x = PC1, y = hazard)) +
+  geom_line()+
+  geom_text(aes(x = PC1, y = hazard, label = Plant),
+            vjust = c(-1,-1,-1,-2.5,2,-1,-1,1,1.5),
+            hjust = c(0,0,1,0,0,-1,0,0,0.5))+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int), alpha = 0.25) +
+  theme_classic() +
+  labs(x = "LES PC1",
+       y = "Survival Probability", 
+       color = "Proportion alive")+
+  ylim(0,1)
+
+pc2_fall_graph <- ggplot(pc2_fall, aes(x = PC2, y = hazard)) +
+  geom_line()+
+  geom_text(aes(x = PC2, y = hazard, label = Plant),
+            vjust= c(2,1,1,-1,-1,-2,-2.5,-1, -1),
+            hjust = c(1,0,1,0,-1,0,0,0,1))+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int), alpha = 0.25) +
+  theme_classic()+
+  labs(x = "LES PC2",
+       y = "Survival Probability", 
+       color = "Proportion alive")+
+  ylim(0,1)
+
+wue_fall_graph <- ggplot(wue_fall, aes(x = wue, y = hazard)) +
+  geom_line()+
+  geom_text(aes(x = wue, y = hazard, label = Plant),
+            vjust = c(1.5,-1,1,-1,-1,1.5,2,-2,-1),
+            hjust = c(0,0,-1,0,0,1,0,0,0))+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int), alpha = 0.25) +
+  theme_classic() +
+  labs(x = "Integrated Water Use Efficiency",
+       y = "Survival Probability", 
+       color = "Proportion alive") +
+  ylim(0,1)
+
+wood_fall_graph <- ggplot() +
+  geom_line(data = wood_density_emphasis_fall, aes(x = wood_density, y = hazard, col = as.factor(temperature)))+
+  geom_ribbon(data = wood_density_emphasis_fall, aes(x = wood_density, ymin = lower_int, ymax = upper_int, col = as.factor(temperature)), alpha = 0.25)+
+  theme_classic()+
+  scale_color_viridis(discrete=TRUE, option="viridis") +
+  labs(x = "Wood Density (g/cm3)",
+       y = "Survival Probability",
+       color = "Temperature (F)")+
+  ylim(-0.1,1)
+
+
+soil_fall_graph <- ggplot(data = soil_moisture_fall, aes(x = soil_moisture, y = hazard)) +
+  geom_line()+
+  geom_ribbon(aes(x = soil_moisture, ymin = lower_int, ymax = upper_int), alpha = 0.25)+
+  theme_classic()+
+  labs(x = "Soil Moisture",
+       y = "Survival Probability")
+
+height_fall_graph <- ggplot(data = height_fall, aes(x = height, y = hazard)) +
+  geom_line()+
+  geom_ribbon(aes(x = height, ymin = lower_int, ymax = upper_int), alpha = 0.25)+
+  theme_classic() +
+  labs(x = "July Height (cm)",
+       y = "Survival Probability")
+
+figure7 <- (wood_fall_graph + pc1_fall_graph)/(pc2_fall_graph + wue_fall_graph)/(height_fall_graph + soil_fall_graph) + plot_annotation(tag_levels = "A")
+ggsave("figure7.png", plot = figure7, path = here("figures"), width = 8, height = 11, units = "in", dpi = 325)
+
+fall_trait_model %>% 
+  tbl_regression(exp = T)
+```
+
+```{r}
+fall_height <- expand.grid(Plant = plant_traits$Plant, 
+                                height =  seq(from = min(trait_fall$height), to = max(trait_fall$height), by = 1)) %>%
+  left_join(plant_traits, by = "Plant") %>% 
+  dplyr::select(!X & !crown_height & !crown_width) %>% 
+  filter(Plant != "HEWH") %>% 
+  mutate(start_time = min(trait_fall$start_time), 
+         end_time = 284,
+         dead = 0,
+         soil_moisture = mean(trait_fall$soil_moisture),
+         temperature = mean(trait_fall$temperature),
+         vpd = mean(trait_fall$vpd)) %>% 
+  mutate(hazard = predict(fall_trait_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(fall_trait_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+         lower_int = hazard - interval, 
+         upper_int = hazard + interval)
+#         lower_int = case_when(hazard < 0 & interval < 0  ~ hazard + interval,
+#                               hazard < 0 & interval >= 0 ~ hazard - interval,
+#                               hazard >= 0 & interval >= 0 ~ hazard - interval,
+#                               hazard >= 0 & interval < 0 ~ hazard + interval),
+#         upper_int = case_when(hazard < 0 & interval < 0  ~ hazard - interval,
+#                               hazard < 0 & interval >= 0 ~ hazard + interval,
+#                               hazard >= 0 & interval >= 0 ~ hazard + interval,
+#                               hazard >= 0 & interval < 0 ~ hazard - interval))
+
+fall_soil_moisture_cool <- expand.grid(Plant = plant_traits$Plant, 
+                                soil_moisture =  seq(from = min(trait_fall$soil_moisture), to = max(trait_fall$soil_moisture), by = 0.1)) %>%
+  left_join(plant_traits, by = "Plant") %>% 
+  dplyr::select(!X & !crown_height & !crown_width) %>% 
+  filter(Plant != "HEWH") %>% 
+  mutate(start_time = min(trait_fall$start_time), 
+         end_time = 284,
+         dead = 0,
+         height = mean(trait_fall$height),
+         temperature = mean(trait_fall$temperature),
+         vpd = mean(trait_fall$vpd)) %>% 
+  mutate(hazard = predict(fall_trait_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(fall_trait_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+         lower_int = hazard - interval,
+         upper_int = hazard + interval)
+
+fall_soil_moisture_hot <- expand.grid(Plant = plant_traits$Plant, 
+                                soil_moisture =  seq(from = min(trait_fall$soil_moisture), to = max(trait_fall$soil_moisture), by = 0.1)) %>%
+  left_join(plant_traits, by = "Plant") %>% 
+  dplyr::select(!X & !crown_height & !crown_width) %>% 
+  filter(Plant != "HEWH") %>% 
+  mutate(start_time = min(trait_fall$start_time), 
+         end_time = 284,
+         dead = 0,
+         height = mean(trait_fall$height),
+         temperature = max(trait_fall$temperature),
+         vpd = max(trait_fall$vpd)) %>% 
+  mutate(hazard = predict(fall_trait_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(fall_trait_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+         lower_int = hazard - interval,
+         upper_int = hazard + interval)
+
+fall_temperature_dry <- expand.grid(Plant = plant_traits$Plant, 
+                                temperature =  seq(from = min(trait_fall$temperature), to = max(trait_fall$temperature), by = 0.1)) %>%
+  left_join(plant_traits, by = "Plant") %>% 
+  dplyr::select(!X & !crown_height & !crown_width) %>% 
+  filter(Plant != "HEWH") %>% 
+  mutate(start_time = min(trait_fall$start_time), 
+         end_time = 284,
+         dead = 0,
+         soil_moisture = min(trait_fall$soil_moisture),
+         height = mean(trait_fall$height),
+         vpd = max(trait_fall$vpd)) %>% 
+  mutate(hazard = predict(fall_trait_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(fall_trait_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+         lower_int = hazard - interval,
+         upper_int = hazard + interval) 
+ 
+fall_temperature_wet <- expand.grid(Plant = plant_traits$Plant, 
+                                temperature =  seq(from = min(trait_fall$temperature), to = max(trait_fall$temperature), by = 0.1)) %>%
+  left_join(plant_traits, by = "Plant") %>% 
+  dplyr::select(!X & !crown_height & !crown_width) %>% 
+  filter(Plant != "HEWH") %>% 
+  mutate(start_time = min(trait_fall$start_time), 
+         end_time = 284,
+         dead = 0,
+         soil_moisture = mean(trait_fall$soil_moisture),
+         height = mean(trait_fall$height),
+         vpd = max(trait_fall$vpd)) %>% 
+  mutate(hazard = predict(fall_trait_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(fall_trait_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+         lower_int = hazard - interval,
+         upper_int = hazard + interval) 
+
+ggplot(fall_height, aes(x = height, y = hazard, colour = Plant)) +
+  geom_line()+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int), alpha = 0.25)+
+  geom_point(data = trait_fall, aes(x = height, y = alive), alpha = 0.25)+
+  theme_classic()+
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  facet_wrap(~Plant)
+
+ggplot(fall_soil_moisture_cool, aes(x = soil_moisture, y = hazard, colour = Plant)) +
+  geom_line()+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int), alpha = 0.25)+
+  geom_point(data = trait_fall, aes(x = soil_moisture, y = alive), alpha = 0.25)+
+  theme_classic()+
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  facet_wrap(~Plant)
+
+ggplot(fall_soil_moisture_hot, aes(x = soil_moisture, y = hazard, colour = Plant)) +
+  geom_line()+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int), alpha = 0.25)+
+  geom_point(data = trait_fall, aes(x = soil_moisture, y = alive), alpha = 0.25)+
+  theme_classic()+
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  facet_wrap(~Plant)
+
+ggplot(fall_temperature_dry, aes(x = temperature, y = hazard, colour = Plant)) +
+  geom_line()+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int), alpha = 0.25)+
+  geom_point(data = trait_fall, aes(x = temperature, y = alive), alpha = 0.25)+
+  theme_classic()+
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  facet_wrap(~Plant)
+
+ggplot(fall_temperature_wet, aes(x = temperature, y = hazard, colour = Plant)) +
+  geom_line()+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int), alpha = 0.25)+
+  geom_point(data = trait_fall, aes(x = temperature, y = alive), alpha = 0.25)+
+  theme_classic()+
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  facet_wrap(~Plant)
+  
+```
+
+```{r}
+fall_soil_moisture_cool_selection <- expand.grid(Plant = c("RHOV", "CEOL", "MALA"), 
+                                soil_moisture =  seq(from = min(trait_fall$soil_moisture), to = max(trait_fall$soil_moisture), by = 0.1)) %>%
+  left_join(plant_traits, by = "Plant") %>% 
+  dplyr::select(!X & !crown_height & !crown_width) %>% 
+  mutate(start_time = min(trait_fall$start_time), 
+         end_time = 284,
+         dead = 0,
+         height = mean(trait_fall$height),
+         temperature = mean(trait_fall$temperature),
+         vpd = mean(trait_fall$vpd)) %>% 
+  mutate(hazard = predict(fall_trait_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(fall_trait_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+         lower_int = hazard - interval,
+         upper_int = hazard + interval)
+
+fall_soil_moisture_cool_selection$Plant <- factor(fall_soil_moisture_cool_selection$Plant, levels = c("RHOV", "CEOL", "MALA"))
+
+fall_1 <- ggplot(fall_soil_moisture_cool_selection %>% filter(Plant == "RHOV"), aes(x = soil_moisture, y = hazard, colour = Plant)) +
+  geom_line()+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int), alpha = 0.25)+
+  geom_point(data = trait_fall %>% filter(Plant == "RHOV"), aes(x = soil_moisture, y = alive), alpha = 0.25)+
+  theme_classic() +
+  scale_color_viridis(discrete=TRUE, option="viridis") +
+  labs(x = "Soil moisture",
+       y = "Survival probability",
+       colour = "")
+
+fall_2 <- ggplot(fall_soil_moisture_cool_selection %>% filter(Plant %in% c("RHOV", "CEOL")), aes(x = soil_moisture, y = hazard, colour = Plant)) +
+  geom_line()+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int), alpha = 0.25)+
+  geom_point(data = trait_fall %>% filter(Plant %in% c("RHOV", "CEOL")), aes(x = soil_moisture, y = alive), alpha = 0.25)+
+  theme_classic() +
+  scale_color_viridis(discrete=TRUE, option="viridis") +
+  labs(x = "Soil moisture",
+       y = "Survival probability",
+       colour = "")
+
+fall_3 <- ggplot(fall_soil_moisture_cool_selection, aes(x = soil_moisture, y = hazard, colour = Plant)) +
+  geom_line()+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int), alpha = 0.25)+
+  geom_point(data = trait_fall %>% filter(Plant %in% c("RHOV", "CEOL", "MALA")), aes(x = soil_moisture, y = alive), alpha = 0.25)+
+  theme_classic() +
+  scale_color_viridis(discrete=TRUE, option="viridis") +
+  labs(x = "Soil moisture",
+       y = "Survival probability",
+       colour = "")
+
+ggsave("wue_1.png", fall_1, path = here("figures"), scale = 0.25)
+ggsave("wue_2.png", fall_2, path = here("figures"), scale = 0.25)
+ggsave("wue_3.png", fall_3, path = here("figures"), scale = 0.25)
+```
+```{r}
+fall_temperature_wet_selection <- expand.grid(Plant = c("CEOL", "SAME", "SANI"), 
+                                temperature =  seq(from = min(trait_fall$temperature), to = max(trait_fall$temperature), by = 0.1)) %>%
+  left_join(plant_traits, by = "Plant") %>% 
+  dplyr::select(!X & !crown_height & !crown_width) %>% 
+  filter(Plant != "HEWH") %>% 
+  mutate(start_time = min(trait_fall$start_time), 
+         end_time = 284,
+         dead = 0,
+         soil_moisture = min(trait_fall$soil_moisture),
+         height = mean(trait_fall$height),
+         vpd = max(trait_fall$vpd)) %>% 
+  mutate(hazard = predict(fall_trait_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(fall_trait_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+         lower_int = hazard - interval,
+         upper_int = hazard + interval) 
+
+fall_temp1 <- ggplot(fall_temperature_wet_selection %>% filter(Plant == "CEOL"), aes(x = temperature, y = hazard, colour = Plant)) +
+  geom_line()+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int), alpha = 0.25)+
+  geom_point(data = trait_fall %>% filter(Plant == "CEOL"), aes(x = temperature, y = alive), alpha = 0.25)+
+  theme_classic() +
+  scale_color_viridis(discrete=TRUE, option="viridis") +
+  labs(x = "Temperature (F)",
+       y = "Survival probability",
+       colour = "")
+
+fall_temp2 <- ggplot(fall_temperature_wet_selection %>% filter(Plant %in% c("CEOL", "SAME")), aes(x = temperature, y = hazard, colour = Plant)) +
+  geom_line()+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int), alpha = 0.25)+
+  geom_point(data = trait_fall %>% filter(Plant %in% c("CEOL", "SAME")), aes(x = temperature, y = alive), alpha = 0.25)+
+  theme_classic() +
+  scale_color_viridis(discrete=TRUE, option="viridis") +
+  labs(x = "Temperature (F)",
+       y = "Survival probability",
+       colour = "")
+
+
+fall_temp3 <- ggplot(fall_temperature_wet_selection %>% filter(Plant %in% c("CEOL", "SAME", "SANI")), aes(x = temperature, y = hazard, colour = Plant)) +
+  geom_line()+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int), alpha = 0.25)+
+  geom_point(data = trait_fall %>% filter(Plant %in% c("CEOL", "SAME", "SANI")), aes(x = temperature, y = alive), alpha = 0.25)+
+  theme_classic() +
+  scale_color_viridis(discrete=TRUE, option="viridis") +
+  labs(x = "Temperature (F)",
+       y = "Survival probability",
+       colour = "")
+
+
+ggsave("temp_1.png", fall_temp1, path = here("figures"), scale = 0.25)
+ggsave("temp_2.png", fall_temp2, path = here("figures"), scale = 0.25)
+ggsave("temp_3.png", fall_temp3, path = here("figures"), scale = 0.25)
+```
+
+
+```{r}
+july_height_spring_all <- trait_late_summer %>% 
+  dplyr::select(plot_number, height) %>% 
+  rename(july_height = height) %>% 
+  inner_join(trait_spring_all, by ="plot_number") %>% 
+  mutate(july_height = (july_height - height)/(end_time)) %>% 
+  dplyr::select(Plant, july_height, height, temperature, soil_moisture, vpd, PC1, PC2, wue, wood_density)
+```
+
+```{r}
+AIC(glm(july_height~PC1 + PC2 + wue + wood_density + temperature + soil_moisture + vpd + height, data = july_height_spring_all))
+AIC(glm(july_height~PC1 * temperature + PC2 + wue + wood_density + soil_moisture + vpd + height, data = july_height_spring_all))
+AIC(glm(july_height~PC1 + PC2 * temperature + wue + wood_density + soil_moisture + vpd + height, data = july_height_spring_all))
+AIC(glm(july_height~PC1 + PC2 + wue * temperature + wood_density + soil_moisture + vpd + height, data = july_height_spring_all))
+AIC(glm(july_height~PC1 + PC2 + wue + wood_density * temperature + soil_moisture + vpd + height, data = july_height_spring_all))
+AIC(glm(july_height~PC1 + PC2 + wue + wood_density + soil_moisture * temperature + vpd + height, data = july_height_spring_all))
+AIC(glm(july_height~PC1 + PC2 + wue + wood_density + soil_moisture + vpd * temperature + height, data = july_height_spring_all))
+AIC(glm(july_height~PC1 + PC2 + wue + wood_density + soil_moisture + vpd + height * temperature, data = july_height_spring_all))
+
+AIC(glm(july_height~PC1 * soil_moisture + PC2 + wue + wood_density + temperature + vpd + height, data = july_height_spring_all))
+AIC(glm(july_height~PC1 + PC2 * soil_moisture + wue + wood_density + temperature + vpd + height, data = july_height_spring_all))
+AIC(glm(july_height~PC1 + PC2 + wue * soil_moisture + wood_density + temperature + vpd + height, data = july_height_spring_all))
+AIC(glm(july_height~PC1 + PC2 + wue + wood_density * soil_moisture + temperature + vpd + height, data = july_height_spring_all))
+AIC(glm(july_height~PC1 + PC2 + wue + wood_density + soil_moisture * temperature + vpd + height, data = july_height_spring_all))
+AIC(glm(july_height~PC1 + PC2 + wue + wood_density + temperature + vpd * soil_moisture + height, data = july_height_spring_all))
+AIC(glm(july_height~PC1 + PC2 + wue + wood_density + temperature + vpd + height * soil_moisture, data = july_height_spring_all))
+
+AIC(glm(july_height~PC1 * vpd + PC2 + wue + wood_density + soil_moisture + temperature + height, data = july_height_spring_all))
+AIC(glm(july_height~PC1 + PC2 * vpd + wue + wood_density + soil_moisture + temperature + height, data = july_height_spring_all))
+AIC(glm(july_height~PC1 + PC2 + wue * vpd + wood_density + soil_moisture + temperature + height, data = july_height_spring_all))
+AIC(glm(july_height~PC1 + PC2 + wue + wood_density * vpd + soil_moisture + temperature + height, data = july_height_spring_all))
+AIC(glm(july_height~PC1 + PC2 + wue + wood_density + soil_moisture * vpd + temperature + height, data = july_height_spring_all))
+AIC(glm(july_height~PC1 + PC2 + wue + wood_density + soil_moisture + vpd * temperature + height, data = july_height_spring_all))
+AIC(glm(july_height~PC1 + PC2 + wue + wood_density + soil_moisture + temperature + height * vpd, data = july_height_spring_all))
+
+AIC(glm(july_height~PC1 * height + PC2 + wue + wood_density + soil_moisture + vpd + temperature, data = july_height_spring_all))
+AIC(glm(july_height~PC1 + PC2 * height + wue + wood_density + soil_moisture + vpd + temperature, data = july_height_spring_all))
+AIC(glm(july_height~PC1 + PC2 + wue * height + wood_density + soil_moisture + vpd + temperature, data = july_height_spring_all))
+AIC(glm(july_height~PC1 + PC2 + wue + wood_density * height + soil_moisture + vpd + temperature, data = july_height_spring_all))
+AIC(glm(july_height~PC1 + PC2 + wue + wood_density + soil_moisture * height + vpd + temperature, data = july_height_spring_all))
+AIC(glm(july_height~PC1 + PC2 + wue + wood_density + soil_moisture + vpd * height + temperature, data = july_height_spring_all))
+AIC(glm(july_height~PC1 + PC2 + wue + wood_density + soil_moisture + vpd + height * temperature, data = july_height_spring_all))
+
+AIC(glm(july_height~PC1 * temperature + PC2 + wue + wood_density + soil_moisture + vpd + height, data = july_height_spring_all))
+AIC(glm(july_height~PC1 * temperature + PC2 + wue + wood_density + soil_moisture + vpd * temperature + height, data = july_height_spring_all))
+AIC(glm(july_height~PC1 * temperature + PC2 + wue + wood_density * height + soil_moisture + vpd, data = july_height_spring_all))
+AIC(glm(july_height~PC1 * temperature + PC2 + wue*vpd + wood_density + soil_moisture + height, data = july_height_spring_all))
+
+AIC(glm(july_height~PC1 * temperature + PC2 + wue + wood_density + soil_moisture + vpd * temperature + height, data = july_height_spring_all))
+AIC(glm(july_height~PC1 * temperature + PC2 + wue + wood_density * height + soil_moisture + vpd *temperature, data = july_height_spring_all))
+
+AIC(glm(july_height~PC1 * temperature + PC2 + wue + wood_density * height + soil_moisture + vpd *temperature, data = july_height_spring_all))
+AIC(glm(july_height~PC1 * temperature + PC2 + wue*vpd + wood_density * height + soil_moisture + vpd *temperature, data = july_height_spring_all))
+
+AIC(glm(july_height~PC1 * temperature + PC2 + wue*vpd + wood_density * height + soil_moisture + vpd *temperature, data = july_height_spring_all))
+AIC(glm(july_height~temperature + PC2 + wue*vpd + wood_density * height + soil_moisture + vpd *temperature, data = july_height_spring_all))
+AIC(glm(july_height~PC1 + PC2 + wue*vpd + wood_density * height + soil_moisture + vpd *temperature, data = july_height_spring_all))
+AIC(glm(july_height~PC1 * temperature + wue*vpd + wood_density * height + soil_moisture + vpd *temperature, data = july_height_spring_all))
+AIC(glm(july_height~PC1 * temperature + PC2 + vpd + wood_density * height + soil_moisture + vpd *temperature, data = july_height_spring_all))
+AIC(glm(july_height~PC1 * temperature + PC2 + wue + wood_density * height + soil_moisture + vpd *temperature, data = july_height_spring_all))
+AIC(glm(july_height~PC1 * temperature + PC2 + wue*vpd + height + soil_moisture + vpd *temperature, data = july_height_spring_all))
+AIC(glm(july_height~PC1 * temperature + PC2 + wue*vpd + wood_density  + soil_moisture + vpd *temperature, data = july_height_spring_all))
+AIC(glm(july_height~PC1 * temperature + PC2 + wue*vpd + wood_density * height + vpd *temperature, data = july_height_spring_all))
+AIC(glm(july_height~PC1 * temperature + PC2 + wue*vpd + wood_density * height + soil_moisture + temperature, data = july_height_spring_all))
+AIC(glm(july_height~PC1 * temperature + PC2 + wue*vpd + wood_density * height + soil_moisture + vpd, data = july_height_spring_all))
+
+AIC(glm(july_height~PC1 * temperature + PC2 + wue*vpd + wood_density * height + soil_moisture + vpd *temperature, data = july_height_spring_all))
+```
+-1244.134
+
+
+```{r}
+july_growth_model <- glm(july_height~PC1 * temperature + PC2 + wue*vpd + wood_density * height + soil_moisture + vpd *temperature, data = july_height_spring_all)
+summary(july_growth_model)
+
+pc1_july_growth <- expand.grid(PC1 = plant_traits$PC1,
+                               temperature = c(quantile(july_height_spring_all$temperature, 0.1),
+                                               quantile(july_height_spring_all$temperature, 0.5),
+                                               quantile(july_height_spring_all$temperature, 0.9))) %>% 
+  mutate(temperature = round(temperature, digits = 0)) %>% 
+  left_join(plant_traits, by = "PC1") %>% 
+  filter(Plant != "HEWH") %>%
+  mutate(PC2 = mean(july_height_spring_all$PC2),
+         wue = mean(july_height_spring_all$wue),
+         wood_density = mean(july_height_spring_all$wood_density),
+         soil_moisture = mean(july_height_spring_all$soil_moisture),
+         vpd = mean(july_height_spring_all$vpd),
+         height = mean(july_height_spring_all$height)) %>% 
+  mutate(july_growth = predict(july_growth_model, newdata = ., se.fit = T, interval = "confidence")[[1]],
+         interval = predict(july_growth_model, newdata = ., se.fit = T, interval = "confidence")[[2]],
+         lower_int = july_growth -interval,
+         upper_int = july_growth + interval)
+
+
+wood_july_growth <- expand.grid(wood_density = plant_traits$wood_density,
+                               height = c(quantile(july_height_spring_all$height, 0.1), 40, quantile(july_height_spring_all$height, 0.9))) %>%
+  mutate(height = round(height, digits = 0)) %>% 
+  left_join(plant_traits, by = "wood_density") %>% 
+  filter(Plant != "HEWH")%>% 
+  mutate(PC2 = mean(july_height_spring_all$PC2),
+         temperature = mean(july_height_spring_all$temperature),
+         wue = mean(july_height_spring_all$wue),
+         PC1 = mean(july_height_spring_all$PC1),
+         soil_moisture = mean(july_height_spring_all$soil_moisture),
+         vpd = mean(july_height_spring_all$vpd)) %>% 
+  mutate(july_growth = predict(july_growth_model, newdata = ., se.fit = T, interval = "confidence")[[1]],
+         interval = predict(july_growth_model, newdata = ., se.fit = T, interval = "confidence")[[2]],
+         lower_int = july_growth - interval,
+         upper_int = july_growth + interval)
+wue_july_growth <- expand.grid(wue = plant_traits$wue,
+                               vpd = c(quantile(july_height_spring_all$vpd, 0.1),
+                                               quantile(july_height_spring_all$vpd, 0.5),
+                                               quantile(july_height_spring_all$vpd, 0.9))) %>%
+  mutate(vpd = round(vpd, digits = 2)) %>% 
+  left_join(plant_traits, by = "wue") %>% 
+  filter(Plant != "HEWH")%>% 
+  mutate(PC2 = mean(july_height_spring_all$PC2),
+         height = mean(july_height_spring_all$height),
+         wood_density = mean(july_height_spring_all$wood_density),
+         PC1 = mean(july_height_spring_all$PC1),
+         soil_moisture = mean(july_height_spring_all$soil_moisture),
+         temperature = mean(july_height_spring_all$temperature)) %>% 
+  mutate(july_growth = predict(july_growth_model, newdata = ., se.fit = T, interval = "confidence")[[1]],
+         interval = predict(july_growth_model, newdata = ., se.fit = T, interval = "confidence")[[2]],
+         lower_int = july_growth - interval,
+         upper_int = july_growth + interval)
+
+pc1_growth_graph <- ggplot(pc1_july_growth, aes(x = PC1, y = july_growth, col = as.factor(temperature)))+
+  geom_line()+
+  #geom_text(aes(label = Plant))+
+  #geom_point(data = july_height_spring_all, aes(x = PC1, y = july_height), alpha = 0.25)+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int), alpha = 0.25)+
+  theme_classic()+
+  scale_color_viridis(discrete=TRUE, option="viridis")+
+  labs(x = "LES PC1",
+       y = "Growth Rate (cm/day)",
+       color = "Temperature (F)")
+
+wood_growth_graph <- ggplot(wood_july_growth, aes(x = wood_density, y = july_growth, col = as.factor(height)))+
+  geom_line()+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int), alpha = 0.25)+
+  theme_classic()+
+  scale_color_viridis(discrete=TRUE, option="viridis")+
+  labs(x = "Wood Density (g/cm3",
+       y = "Growth Rate (cm/day)",
+       color = "Planting Height (cm)")
+
+wue_growth_graph <- ggplot(wue_july_growth, aes(x = wue, y = july_growth, col = as.factor(vpd)))+
+  geom_line()+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int), alpha = 0.25)+
+  theme_classic()+
+  scale_color_viridis(discrete=TRUE, option="viridis")+
+  labs(x = "Water Use Efficiency",
+       y = "Growth Rate (cm/day)",
+       color = "VPD (kPa)")
+
+
+
+figure8 <- (pc1_growth_graph + wood_growth_graph)/(wue_growth_graph) + plot_annotation(tag_levels = "A")
+
+ggsave("figure8.png", 
+       plot = figure8,
+       path = here("figures"),
+       width = 8, 
+       height = 11,
+       units = "in",
+       dpi = 325)
+```
+
+
+```{r}
+soil_july_growth <- expand.grid(Plant = plant_traits$Plant, 
+                                soil_moisture = seq(from = -2, to = 2, by = 0.1)) %>%
+  left_join(plant_traits, by = "Plant") %>% 
+  dplyr::select(!X & !crown_height & !crown_width) %>% 
+  filter(Plant != "HEWH") %>% 
+  mutate(temperature = mean(july_height_spring_all$temperature),
+         height = mean(july_height_spring_all$height),
+         vpd = mean(july_height_spring_all$vpd)) %>% 
+  mutate(growth = predict(july_height_model, newdata = ., se.fit = T, interval = "confidence")[[1]],
+         interval = predict(july_height_model, newdata = ., se.fit = T, interval = "confidence")[[2]],
+         lower_int = growth - interval,
+         upper_int = growth + interval) 
+
+ggplot(soil_july_growth, aes(x = soil_moisture, y = growth, colour = Plant)) +
+  geom_line()+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int), alpha = 0.25)+
+  #geom_point(data = july_height_spring_all, aes(x = soil_moisture, y = july_height), alpha = 0.25)+
+  theme_classic()+
+  geom_hline(yintercept = 0, linetype = "dashed")+
+  facet_wrap(~Plant)
+```
+
+```{r}
+growth <- read.csv(here("data", "fall_growth.csv")) %>% 
+  mutate(date_measured = ymd(date_measured),
+         date_measured_2 = ymd(date_measured_2))
+
+fall_height_summer <- growth %>% 
+  dplyr::select(plot_number, Plant, july_height, fall_height, date_measured, date_measured_2) %>%
+  mutate(growth = (fall_height - july_height)/(as.numeric(date_measured_2 - date_measured))) %>% 
+  inner_join(trait_summer_all, by = c("plot_number", "Plant")) %>% 
+  dplyr::select(july_height, growth, temperature, soil_moisture, vpd, PC1, PC2, wue, wood_density) %>% 
+  rename(height = july_height)
+
+
+```
+
+```{r}
+AIC(glm(growth~PC1 + PC2 + wue + wood_density + temperature + soil_moisture + vpd + height, data = fall_height_summer))
+AIC(glm(growth~PC1 * temperature + PC2 + wue + wood_density + soil_moisture + vpd + height, data = fall_height_summer))
+AIC(glm(growth~PC1 + PC2 * temperature + wue + wood_density + soil_moisture + vpd + height, data = fall_height_summer))
+AIC(glm(growth~PC1 + PC2 + wue * temperature + wood_density + soil_moisture + vpd + height, data = fall_height_summer))
+AIC(glm(growth~PC1 + PC2 + wue + wood_density * temperature + soil_moisture + vpd + height, data = fall_height_summer))
+AIC(glm(growth~PC1 + PC2 + wue + wood_density + soil_moisture * temperature + vpd + height, data = fall_height_summer))
+AIC(glm(growth~PC1 + PC2 + wue + wood_density + soil_moisture + vpd * temperature + height, data = fall_height_summer))
+AIC(glm(growth~PC1 + PC2 + wue + wood_density + soil_moisture + vpd + height * temperature, data = fall_height_summer))
+
+AIC(glm(growth~PC1 * soil_moisture + PC2 + wue + wood_density + temperature + vpd + height, data = fall_height_summer))
+AIC(glm(growth~PC1 + PC2 * soil_moisture + wue + wood_density + temperature + vpd + height, data = fall_height_summer))
+AIC(glm(growth~PC1 + PC2 + wue * soil_moisture + wood_density + temperature + vpd + height, data = fall_height_summer))
+AIC(glm(growth~PC1 + PC2 + wue + wood_density * soil_moisture + temperature + vpd + height, data = fall_height_summer))
+AIC(glm(growth~PC1 + PC2 + wue + wood_density + soil_moisture * temperature + vpd + height, data = fall_height_summer))
+AIC(glm(growth~PC1 + PC2 + wue + wood_density + temperature + vpd * soil_moisture + height, data = fall_height_summer))
+AIC(glm(growth~PC1 + PC2 + wue + wood_density + temperature + vpd + height * soil_moisture, data = fall_height_summer))
+
+AIC(glm(growth~PC1 * vpd + PC2 + wue + wood_density + soil_moisture + temperature + height, data = fall_height_summer))
+AIC(glm(growth~PC1 + PC2 * vpd + wue + wood_density + soil_moisture + temperature + height, data = fall_height_summer))
+AIC(glm(growth~PC1 + PC2 + wue * vpd + wood_density + soil_moisture + temperature + height, data = fall_height_summer))
+AIC(glm(growth~PC1 + PC2 + wue + wood_density * vpd + soil_moisture + temperature + height, data = fall_height_summer))
+AIC(glm(growth~PC1 + PC2 + wue + wood_density + soil_moisture * vpd + temperature + height, data = fall_height_summer))
+AIC(glm(growth~PC1 + PC2 + wue + wood_density + soil_moisture + vpd * temperature + height, data = fall_height_summer))
+AIC(glm(growth~PC1 + PC2 + wue + wood_density + soil_moisture + temperature + height * vpd, data = fall_height_summer))
+
+AIC(glm(growth~PC1 * height + PC2 + wue + wood_density + soil_moisture + vpd + temperature, data = fall_height_summer))
+AIC(glm(growth~PC1 + PC2 * height + wue + wood_density + soil_moisture + vpd + temperature, data = fall_height_summer))
+AIC(glm(growth~PC1 + PC2 + wue * height + wood_density + soil_moisture + vpd + temperature, data = fall_height_summer))
+AIC(glm(growth~PC1 + PC2 + wue + wood_density * height + soil_moisture + vpd + temperature, data = fall_height_summer))
+AIC(glm(growth~PC1 + PC2 + wue + wood_density + soil_moisture * height + vpd + temperature, data = fall_height_summer))
+AIC(glm(growth~PC1 + PC2 + wue + wood_density + soil_moisture + vpd * height + temperature, data = fall_height_summer))
+AIC(glm(growth~PC1 + PC2 + wue + wood_density + soil_moisture + vpd + height * temperature, data = fall_height_summer))
+
+AIC(glm(growth~PC1 * temperature + PC2 + wue + wood_density + soil_moisture + vpd + height, data = fall_height_summer))
+AIC(glm(growth~PC1 * temperature + PC2 + wue*vpd + wood_density + soil_moisture + vpd + height, data = fall_height_summer))
+AIC(glm(growth~PC1 * temperature + PC2 + wue + wood_density*temperature + soil_moisture + vpd + height, data = fall_height_summer))
+
+AIC(glm(growth~PC1 * temperature + PC2 + wue + wood_density + soil_moisture + vpd + height, data = fall_height_summer))
+AIC(glm(growth~temperature + PC2 + wue + wood_density + soil_moisture + vpd + height, data = fall_height_summer))
+AIC(glm(growth~PC1 + PC2 + wue + wood_density + soil_moisture + vpd + height, data = fall_height_summer))
+AIC(glm(growth~PC1 * temperature + wue + wood_density + soil_moisture + vpd + height, data = fall_height_summer))
+AIC(glm(growth~PC1 * temperature + PC2 + wood_density + soil_moisture + vpd + height, data = fall_height_summer))
+AIC(glm(growth~PC1 * temperature + PC2 + wue + soil_moisture + vpd + height, data = fall_height_summer))
+AIC(glm(growth~PC1 * temperature + PC2 + wue + wood_density + vpd + height, data = fall_height_summer))
+AIC(glm(growth~PC1 * temperature + PC2 + wue + wood_density + soil_moisture + height, data = fall_height_summer))
+AIC(glm(growth~PC1 * temperature + PC2 + wue + wood_density + soil_moisture + vpd, data = fall_height_summer))
+
+AIC(glm(growth~PC1 * temperature + PC2 + wue + wood_density + soil_moisture + height, data = fall_height_summer))
+AIC(glm(growth~temperature + PC2 + wue + wood_density + soil_moisture + height, data = fall_height_summer))
+AIC(glm(growth~PC1 + PC2 + wue + wood_density + soil_moisture + height, data = fall_height_summer))
+AIC(glm(growth~PC1 * temperature + wue + wood_density + soil_moisture + height, data = fall_height_summer))
+AIC(glm(growth~PC1 * temperature + PC2 + wood_density + soil_moisture + height, data = fall_height_summer))
+AIC(glm(growth~PC1 * temperature + PC2 + wue + soil_moisture + height, data = fall_height_summer))
+AIC(glm(growth~PC1 * temperature + PC2 + wue + wood_density + height, data = fall_height_summer))
+AIC(glm(growth~PC1 * temperature + PC2 + wue + wood_density + soil_moisture, data = fall_height_summer))
+
+AIC(glm(growth~PC1 * temperature + PC2 + wue + soil_moisture + height, data = fall_height_summer))
+AIC(glm(growth~temperature + PC2 + wue + soil_moisture + height, data = fall_height_summer))
+AIC(glm(growth~PC1 + PC2 + wue + soil_moisture + height, data = fall_height_summer))
+AIC(glm(growth~PC1 * temperature + wue + soil_moisture + height, data = fall_height_summer))
+AIC(glm(growth~PC1 * temperature + PC2 + soil_moisture + height, data = fall_height_summer))
+AIC(glm(growth~PC1 * temperature + PC2 + wue + height, data = fall_height_summer))
+AIC(glm(growth~PC1 * temperature + PC2 + wue + soil_moisture, data = fall_height_summer))
+
+AIC(glm(growth~PC1 * temperature + PC2 + wue + soil_moisture, data = fall_height_summer))
+AIC(glm(growth~temperature + PC2 + wue + soil_moisture, data = fall_height_summer))
+AIC(glm(growth~PC1 + PC2 + wue + soil_moisture, data = fall_height_summer))
+AIC(glm(growth~PC1 * temperature + wue + soil_moisture, data = fall_height_summer))
+AIC(glm(growth~PC1 * temperature + PC2 + soil_moisture, data = fall_height_summer))
+AIC(glm(growth~PC1 * temperature + PC2 + wue, data = fall_height_summer))
+
+AIC(glm(growth~PC1 * temperature + PC2 + wue + soil_moisture, data = fall_height_summer))
+```
+-489.6737
+
+```{r}
+fall_height_model <- glm(growth~PC1 * temperature + PC2 + wue + soil_moisture, data = fall_height_summer)
+summary(fall_height_model)
+
+pc2_fall_growth <- plant_traits %>% 
+  filter(Plant != "HEWH") %>% 
+  dplyr::select(PC2, Plant) %>% 
+  mutate(PC1 = mean(fall_height_summer$PC1),
+         wue = mean(fall_height_summer$wue),
+         wood_density = mean(fall_height_summer$wood_density),
+         temperature = mean(fall_height_summer$temperature),
+         soil_moisture = mean(fall_height_summer$soil_moisture),
+         vpd = mean(fall_height_summer$vpd),
+         height = mean(fall_height_summer$height)) %>% 
+  mutate(growth = predict(fall_height_model, newdata = ., se.fit = T, interval = "confidence")[[1]],
+         interval = predict(fall_height_model, newdata = ., se.fit = T, interval = "confidence")[[2]],
+         lower_int = growth -interval,
+         upper_int = growth + interval)
+
+pc1_fall_growth <- expand.grid(PC1 = plant_traits$PC1, 
+                                        temperature = c(quantile(fall_height_summer$temperature, 0.1),
+                                                        quantile(fall_height_summer$temperature, 0.5),
+                                                        quantile(fall_height_summer$temperature, 0.9))) %>% 
+  mutate(temperature = round(temperature, digits = 0)) %>% 
+  left_join(plant_traits, by = "PC1") %>% 
+  filter(Plant != "HEWH") %>% 
+  mutate(wue = mean(fall_height_summer$wue),
+         PC2 = mean(fall_height_summer$PC2),
+         wood_density = mean(fall_height_summer$wood_density),
+         soil_moisture = mean(fall_height_summer$soil_moisture),
+         vpd = mean(fall_height_summer$vpd),
+         height = mean(fall_height_summer$height)) %>% 
+  mutate(growth = predict(fall_height_model, newdata = ., se.fit = T, interval = "confidence")[[1]],
+         interval = predict(fall_height_model, newdata = ., se.fit = T, interval = "confidence")[[2]],
+         lower_int = growth -interval,
+         upper_int = growth + interval)
+
+pc2_fall_growth_graph <- ggplot(pc2_fall_growth, aes(x = PC2, y = growth))+
+  geom_line()+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int), alpha = 0.25)+
+  geom_text(aes(label = Plant))+
+  theme_classic()+
+  scale_color_viridis(discrete=TRUE, option="viridis")+
+  labs(x = "LES PC2",
+       y = "Growth Rate (cm/day)")
+
+pc1_fall_growth_graph <- ggplot(pc1_fall_growth, aes(x = PC1, y = growth, col = as.factor(temperature)))+
+  geom_line()+
+  geom_ribbon(aes(ymin = lower_int, ymax = upper_int), alpha = 0.25)+
+  theme_classic()+
+  scale_color_viridis(discrete=TRUE, option="viridis")+
+  labs(x = "LES PC1", 
+       y = "Growth Rate (cm/day)",
+       color = "Temperature (F)")
+
+figure9 <- pc1_fall_growth_graph/pc2_fall_growth_graph + plot_annotation(tag_levels = "A")
+
+ggsave("figure9.png", 
+       plot = figure9,
+       path = here("figures"),
+       width = 8, 
+       height = 11,
+       units = "in",
+       dpi = 325)
+```
+
+```{r}
+ceol_height <- height %>% 
+  filter(start_time == 0 & Plant == "CEOL")
+rhov_height <- height %>% 
+  filter(start_time == 0 & Plant == "RHOV")
+hear_height <- height %>% 
+  filter(start_time == 0 & Plant == "HEAR")
+adfa_height <- height %>% 
+  filter(start_time == 0 & Plant == "ADFA")
+mala_height <- height %>% 
+  filter(start_time == 0 & Plant == "MALA")
+sani_height <- height %>% 
+  filter(start_time == 0 & Plant == "SANI")
+saap_height <- height %>% 
+  filter(start_time == 0 & Plant == "SAAP")
+same_height <- height %>% 
+  filter(start_time == 0 & Plant == "SAME")
+enca_height <- height %>% 
+  filter(start_time == 0 & Plant == "ENCA")
+
+ceol_height_fall<- trait_fall %>% 
+  filter(Plant == "CEOL")
+rhov_height_fall <- trait_fall %>% 
+  filter(Plant == "RHOV")
+hear_height_fall <- trait_fall %>% 
+  filter(Plant == "HEAR")
+adfa_height_fall <- trait_fall %>% 
+  filter(Plant == "ADFA")
+mala_height_fall <- trait_fall %>% 
+  filter(Plant == "MALA")
+sani_height_fall <- trait_fall %>% 
+  filter(Plant == "SANI")
+saap_height_fall <- trait_fall %>% 
+  filter(Plant == "SAAP")
+same_height_fall <- trait_fall %>% 
+  filter(Plant == "SAME")
+enca_height_fall <- trait_fall %>% 
+  filter(Plant == "ENCA")
+
+early_summer_ceol <- environmental %>% 
+  filter(date >= "2020-06-01" & date < "2020-07-01") %>% 
+  group_by(plot_number) %>% 
+  reframe(temperature = mean(temperature),
+          soil_moisture = mean(soil_moisture),
+          vpd = mean(vpd)) %>% 
+  mutate(Plant = "CEOL") %>% 
+  left_join(plant_traits, by = "Plant") %>% 
+  dplyr::select(plot_number, PC1, PC2, wue, wood_density, temperature, soil_moisture, vpd) %>% 
+  mutate(height = mean(ceol_height$height),
+         start_time = 0,
+         end_time = 140, 
+         dead = 0) %>%        
+  mutate(july_survival_prob = predict(early_summer_trait_model, newdata = ., type = "survival"))
+
+fall_summer_ceol <- environmental %>% 
+  filter(date >= "2020-10-01" & date < "2020-12-01") %>% 
+  group_by(plot_number) %>% 
+  reframe(temperature = mean(temperature),
+          soil_moisture = mean(soil_moisture),
+          vpd = mean(vpd)) %>% 
+  mutate(Plant = "CEOL") %>% 
+  left_join(plant_traits, by = "Plant") %>% 
+  dplyr::select(plot_number, PC1, PC2, wue, wood_density, temperature, soil_moisture, vpd) %>% 
+  mutate(height = mean(ceol_height_fall$height)) %>% 
+  #mutate(july_height = predict(july_height_model, newdata = .)) %>% 
+  #dplyr::select(!height) %>% 
+  #rename(height = july_height) %>% 
+  mutate(start_time = 0,
+         end_time = 284,
+         dead = 0)%>%        
+  mutate(december_survival_prob = predict(fall_trait_model, newdata = ., type = "survival"))
+
+ceol_survival_prediction <- early_summer_ceol %>% 
+  full_join(fall_summer_ceol, by = "plot_number") %>% 
+  dplyr::select(plot_number, july_survival_prob, december_survival_prob) %>% 
+  mutate(survival_prob = july_survival_prob * december_survival_prob) %>% 
+  dplyr::select(plot_number, survival_prob)
+
+
+early_summer_rhov <- environmental %>% 
+  filter(date >= "2020-06-01" & date < "2020-07-01") %>% 
+  group_by(plot_number) %>% 
+  reframe(temperature = mean(temperature),
+          soil_moisture = mean(soil_moisture),
+          vpd = mean(vpd)) %>% 
+  mutate(Plant = "RHOV") %>% 
+  left_join(plant_traits, by = "Plant") %>% 
+  dplyr::select(plot_number, PC1, PC2, wue, wood_density, temperature, soil_moisture, vpd) %>% 
+  mutate(height = mean(rhov_height$height),
+         start_time = 0,
+         end_time = 140, 
+         dead = 0) %>%        
+  mutate(july_survival_prob = predict(early_summer_trait_model, newdata = ., type = "survival"))
+
+fall_summer_rhov <- environmental %>% 
+  filter(date >= "2020-10-01" & date < "2020-12-01") %>% 
+  group_by(plot_number) %>% 
+  reframe(temperature = mean(temperature),
+          soil_moisture = mean(soil_moisture),
+          vpd = mean(vpd)) %>% 
+  mutate(Plant = "RHOV") %>% 
+  left_join(plant_traits, by = "Plant") %>% 
+  dplyr::select(plot_number, PC1, PC2, wue, wood_density, temperature, soil_moisture, vpd) %>% 
+  mutate(height = mean(rhov_height_fall$height)) %>% 
+  #mutate(july_height = predict(july_height_model, newdata = .)) %>% 
+  #dplyr::select(!height) %>% 
+  #rename(height = july_height) %>% 
+  mutate(start_time = 0,
+         end_time = 284,
+         dead = 0)%>%        
+  mutate(december_survival_prob = predict(fall_trait_model, newdata = ., type = "survival"))
+
+rhov_survival_prediction <- early_summer_rhov %>% 
+  full_join(fall_summer_rhov, by = "plot_number") %>% 
+  dplyr::select(plot_number, july_survival_prob, december_survival_prob) %>% 
+  mutate(survival_prob = july_survival_prob * december_survival_prob) %>% 
+  dplyr::select(plot_number, survival_prob)
+
+early_summer_adfa <- environmental %>% 
+  filter(date >= "2020-06-01" & date < "2020-07-01") %>% 
+  group_by(plot_number) %>% 
+  reframe(temperature = mean(temperature),
+          soil_moisture = mean(soil_moisture),
+          vpd = mean(vpd)) %>% 
+  mutate(Plant = "ADFA") %>% 
+  left_join(plant_traits, by = "Plant") %>% 
+  dplyr::select(plot_number, PC1, PC2, wue, wood_density, temperature, soil_moisture, vpd) %>% 
+  mutate(height = mean(adfa_height$height),
+         start_time = 0,
+         end_time = 140, 
+         dead = 0) %>%        
+  mutate(july_survival_prob = predict(early_summer_trait_model, newdata = ., type = "survival"))
+
+fall_summer_adfa <- environmental %>% 
+  filter(date >= "2020-10-01" & date < "2020-12-01") %>% 
+  group_by(plot_number) %>% 
+  reframe(temperature = mean(temperature),
+          soil_moisture = mean(soil_moisture),
+          vpd = mean(vpd)) %>% 
+  mutate(Plant = "ADFA") %>% 
+  left_join(plant_traits, by = "Plant") %>% 
+  dplyr::select(plot_number, PC1, PC2, wue, wood_density, temperature, soil_moisture, vpd) %>% 
+  mutate(height = mean(adfa_height_fall$height)) %>% 
+  #mutate(july_height = predict(july_height_model, newdata = .)) %>% 
+  #dplyr::select(!height) %>% 
+  #rename(height = july_height) %>% 
+  mutate(start_time = 0,
+         end_time = 284,
+         dead = 0)%>%        
+  mutate(december_survival_prob = predict(fall_trait_model, newdata = ., type = "survival"))
+
+adfa_survival_prediction <- early_summer_adfa %>% 
+  full_join(fall_summer_adfa, by = "plot_number") %>% 
+  dplyr::select(plot_number, july_survival_prob, december_survival_prob) %>% 
+  mutate(survival_prob = july_survival_prob * december_survival_prob) %>% 
+  dplyr::select(plot_number, survival_prob)
+
+early_summer_mala <- environmental %>% 
+  filter(date >= "2020-06-01" & date < "2020-07-01") %>% 
+  group_by(plot_number) %>% 
+  reframe(temperature = mean(temperature),
+          soil_moisture = mean(soil_moisture),
+          vpd = mean(vpd)) %>% 
+  mutate(Plant = "MALA") %>% 
+  left_join(plant_traits, by = "Plant") %>% 
+  dplyr::select(plot_number, PC1, PC2, wue, wood_density, temperature, soil_moisture, vpd) %>% 
+  mutate(height = mean(mala_height$height),
+         start_time = 0,
+         end_time = 140, 
+         dead = 0) %>%        
+  mutate(july_survival_prob = predict(early_summer_trait_model, newdata = ., type = "survival"))
+
+fall_summer_mala <- environmental %>% 
+  filter(date >= "2020-10-01" & date < "2020-12-01") %>% 
+  group_by(plot_number) %>% 
+  reframe(temperature = mean(temperature),
+          soil_moisture = mean(soil_moisture),
+          vpd = mean(vpd)) %>% 
+  mutate(Plant = "MALA") %>% 
+  left_join(plant_traits, by = "Plant") %>% 
+  dplyr::select(plot_number, PC1, PC2, wue, wood_density, temperature, soil_moisture, vpd) %>% 
+  mutate(height = mean(mala_height_fall$height)) %>% 
+  #mutate(july_height = predict(july_height_model, newdata = .)) %>% 
+  #dplyr::select(!height) %>% 
+  #rename(height = july_height) %>% 
+  mutate(start_time = 0,
+         end_time = 284,
+         dead = 0)%>%        
+  mutate(december_survival_prob = predict(fall_trait_model, newdata = ., type = "survival"))
+
+mala_survival_prediction <- early_summer_mala %>% 
+  full_join(fall_summer_mala, by = "plot_number") %>% 
+  dplyr::select(plot_number, july_survival_prob, december_survival_prob) %>% 
+  mutate(survival_prob = july_survival_prob * december_survival_prob) %>% 
+  dplyr::select(plot_number, survival_prob)
+
+early_summer_hear <- environmental %>% 
+  filter(date >= "2020-06-01" & date < "2020-07-01") %>% 
+  group_by(plot_number) %>% 
+  reframe(temperature = mean(temperature),
+          soil_moisture = mean(soil_moisture),
+          vpd = mean(vpd)) %>% 
+  mutate(Plant = "HEAR") %>% 
+  left_join(plant_traits, by = "Plant") %>% 
+  dplyr::select(plot_number, PC1, PC2, wue, wood_density, temperature, soil_moisture, vpd) %>% 
+  mutate(height = mean(hear_height$height),
+         start_time = 0,
+         end_time = 140, 
+         dead = 0) %>%        
+  mutate(july_survival_prob = predict(early_summer_trait_model, newdata = ., type = "survival"))
+
+fall_summer_hear <- environmental %>% 
+  filter(date >= "2020-10-01" & date < "2020-12-01") %>% 
+  group_by(plot_number) %>% 
+  reframe(temperature = mean(temperature),
+          soil_moisture = mean(soil_moisture),
+          vpd = mean(vpd)) %>% 
+  mutate(Plant = "HEAR") %>% 
+  left_join(plant_traits, by = "Plant") %>% 
+  dplyr::select(plot_number, PC1, PC2, wue, wood_density, temperature, soil_moisture, vpd) %>% 
+  mutate(height = mean(hear_height_fall$height)) %>% 
+  #mutate(july_height = predict(july_height_model, newdata = .)) %>% 
+  #dplyr::select(!height) %>% 
+  #rename(height = july_height) %>% 
+  mutate(start_time = 0,
+         end_time = 284,
+         dead = 0)%>%        
+  mutate(december_survival_prob = predict(fall_trait_model, newdata = ., type = "survival"))
+
+hear_survival_prediction <- early_summer_hear %>% 
+  full_join(fall_summer_hear, by = "plot_number") %>% 
+  dplyr::select(plot_number, july_survival_prob, december_survival_prob) %>% 
+  mutate(survival_prob = july_survival_prob * december_survival_prob) %>% 
+  dplyr::select(plot_number, survival_prob)
+
+early_summer_sani <- environmental %>% 
+  filter(date >= "2020-06-01" & date < "2020-07-01") %>% 
+  group_by(plot_number) %>% 
+  reframe(temperature = mean(temperature),
+          soil_moisture = mean(soil_moisture),
+          vpd = mean(vpd)) %>% 
+  mutate(Plant = "SANI") %>% 
+  left_join(plant_traits, by = "Plant") %>% 
+  dplyr::select(plot_number, PC1, PC2, wue, wood_density, temperature, soil_moisture, vpd) %>% 
+  mutate(height = mean(sani_height$height),
+         start_time = 0,
+         end_time = 140, 
+         dead = 0) %>%        
+  mutate(july_survival_prob = predict(early_summer_trait_model, newdata = ., type = "survival"))
+
+fall_summer_sani <- environmental %>% 
+  filter(date >= "2020-10-01" & date < "2020-12-01") %>% 
+  group_by(plot_number) %>% 
+  reframe(temperature = mean(temperature),
+          soil_moisture = mean(soil_moisture),
+          vpd = mean(vpd)) %>% 
+  mutate(Plant = "SANI") %>% 
+  left_join(plant_traits, by = "Plant") %>% 
+  dplyr::select(plot_number, PC1, PC2, wue, wood_density, temperature, soil_moisture, vpd) %>% 
+  mutate(height = mean(sani_height_fall$height)) %>% 
+  #mutate(july_height = predict(july_height_model, newdata = .)) %>% 
+  #dplyr::select(!height) %>% 
+  #rename(height = july_height) %>% 
+  mutate(start_time = 0,
+         end_time = 284,
+         dead = 0)%>%        
+  mutate(december_survival_prob = predict(fall_trait_model, newdata = ., type = "survival"))
+
+sani_survival_prediction <- early_summer_sani %>% 
+  full_join(fall_summer_sani, by = "plot_number") %>% 
+  dplyr::select(plot_number, july_survival_prob, december_survival_prob) %>% 
+  mutate(survival_prob = july_survival_prob * december_survival_prob) %>% 
+  dplyr::select(plot_number, survival_prob)
+
+early_summer_saap <- environmental %>% 
+  filter(date >= "2020-06-01" & date < "2020-07-01") %>% 
+  group_by(plot_number) %>% 
+  reframe(temperature = mean(temperature),
+          soil_moisture = mean(soil_moisture),
+          vpd = mean(vpd)) %>% 
+  mutate(Plant = "SAAP") %>% 
+  left_join(plant_traits, by = "Plant") %>% 
+  dplyr::select(plot_number, PC1, PC2, wue, wood_density, temperature, soil_moisture, vpd) %>% 
+  mutate(height = mean(saap_height$height),
+         start_time = 0,
+         end_time = 140, 
+         dead = 0) %>%        
+  mutate(july_survival_prob = predict(early_summer_trait_model, newdata = ., type = "survival"))
+
+fall_summer_saap <- environmental %>% 
+  filter(date >= "2020-10-01" & date < "2020-12-01") %>% 
+  group_by(plot_number) %>% 
+  reframe(temperature = mean(temperature),
+          soil_moisture = mean(soil_moisture),
+          vpd = mean(vpd)) %>% 
+  mutate(Plant = "SAAP") %>% 
+  left_join(plant_traits, by = "Plant") %>% 
+  dplyr::select(plot_number, PC1, PC2, wue, wood_density, temperature, soil_moisture, vpd) %>% 
+  mutate(height = mean(saap_height_fall$height)) %>% 
+  #mutate(july_height = predict(july_height_model, newdata = .)) %>% 
+  #dplyr::select(!height) %>% 
+  #rename(height = july_height) %>% 
+  mutate(start_time = 0,
+         end_time = 284,
+         dead = 0)%>%        
+  mutate(december_survival_prob = predict(fall_trait_model, newdata = ., type = "survival"))
+
+saap_survival_prediction <- early_summer_saap %>% 
+  full_join(fall_summer_saap, by = "plot_number") %>% 
+  dplyr::select(plot_number, july_survival_prob, december_survival_prob) %>% 
+  mutate(survival_prob = july_survival_prob * december_survival_prob) %>% 
+  dplyr::select(plot_number, survival_prob)
+
+early_summer_same <- environmental %>% 
+  filter(date >= "2020-06-01" & date < "2020-07-01") %>% 
+  group_by(plot_number) %>% 
+  reframe(temperature = mean(temperature),
+          soil_moisture = mean(soil_moisture),
+          vpd = mean(vpd)) %>% 
+  mutate(Plant = "SAME") %>% 
+  left_join(plant_traits, by = "Plant") %>% 
+  dplyr::select(plot_number, PC1, PC2, wue, wood_density, temperature, soil_moisture, vpd) %>% 
+  mutate(height = mean(same_height$height),
+         start_time = 0,
+         end_time = 140, 
+         dead = 0) %>%        
+  mutate(july_survival_prob = predict(early_summer_trait_model, newdata = ., type = "survival"))
+
+fall_summer_same <- environmental %>% 
+  filter(date >= "2020-10-01" & date < "2020-12-01") %>% 
+  group_by(plot_number) %>% 
+  reframe(temperature = mean(temperature),
+          soil_moisture = mean(soil_moisture),
+          vpd = mean(vpd)) %>% 
+  mutate(Plant = "SAME") %>% 
+  left_join(plant_traits, by = "Plant") %>% 
+  dplyr::select(plot_number, PC1, PC2, wue, wood_density, temperature, soil_moisture, vpd) %>% 
+  mutate(height = mean(same_height_fall$height)) %>% 
+  #mutate(july_height = predict(july_height_model, newdata = .)) %>% 
+  #dplyr::select(!height) %>% 
+  #rename(height = july_height) %>% 
+  mutate(start_time = 0,
+         end_time = 284,
+         dead = 0)%>%        
+  mutate(december_survival_prob = predict(fall_trait_model, newdata = ., type = "survival"))
+
+same_survival_prediction <- early_summer_same %>% 
+  full_join(fall_summer_same, by = "plot_number") %>% 
+  dplyr::select(plot_number, july_survival_prob, december_survival_prob) %>% 
+  mutate(survival_prob = july_survival_prob * december_survival_prob) %>% 
+  dplyr::select(plot_number, survival_prob)
+
+early_summer_enca <- environmental %>% 
+  filter(date >= "2020-06-01" & date < "2020-07-01") %>% 
+  group_by(plot_number) %>% 
+  reframe(temperature = mean(temperature),
+          soil_moisture = mean(soil_moisture),
+          vpd = mean(vpd)) %>% 
+  mutate(Plant = "ENCA") %>% 
+  left_join(plant_traits, by = "Plant") %>% 
+  dplyr::select(plot_number, PC1, PC2, wue, wood_density, temperature, soil_moisture, vpd) %>% 
+  mutate(height = mean(enca_height$height),
+         start_time = 0,
+         end_time = 140, 
+         dead = 0) %>%        
+  mutate(july_survival_prob = predict(early_summer_trait_model, newdata = ., type = "survival"))
+
+fall_summer_enca <- environmental %>% 
+  filter(date >= "2020-10-01" & date < "2020-12-01") %>% 
+  group_by(plot_number) %>% 
+  reframe(temperature = mean(temperature),
+          soil_moisture = mean(soil_moisture),
+          vpd = mean(vpd)) %>% 
+  mutate(Plant = "ENCA") %>% 
+  left_join(plant_traits, by = "Plant") %>% 
+  dplyr::select(plot_number, PC1, PC2, wue, wood_density, temperature, soil_moisture, vpd) %>% 
+  mutate(height = mean(enca_height_fall$height)) %>% 
+  #mutate(july_height = predict(july_height_model, newdata = .)) %>% 
+  #dplyr::select(!height) %>% 
+  #rename(height = july_height) %>% 
+  mutate(start_time = 0,
+         end_time = 284,
+         dead = 0)%>%        
+  mutate(december_survival_prob = predict(fall_trait_model, newdata = ., type = "survival"))
+
+enca_survival_prediction <- early_summer_enca %>% 
+  full_join(fall_summer_enca, by = "plot_number") %>% 
+  dplyr::select(plot_number, july_survival_prob, december_survival_prob) %>% 
+  mutate(survival_prob = july_survival_prob * december_survival_prob) %>% 
+  dplyr::select(plot_number, survival_prob)
+```
+
+```{r}
+adfa_planted <- adfa_survival_prediction %>% 
+  filter(plot_number %in% adfa_height$plot_number)
+ceol_planted <- ceol_survival_prediction %>% 
+  filter(plot_number %in% ceol_height$plot_number)
+rhov_planted <- rhov_survival_prediction %>% 
+  filter(plot_number %in% rhov_height$plot_number)
+mala_planted <- mala_survival_prediction %>% 
+  filter(plot_number %in% mala_height$plot_number)
+hear_planted <- hear_survival_prediction %>% 
+  filter(plot_number %in% hear_height$plot_number)
+sani_planted <- sani_survival_prediction %>% 
+  filter(plot_number %in% sani_height$plot_number)
+saap_planted <- saap_survival_prediction %>% 
+  filter(plot_number %in% saap_height$plot_number)
+same_planted <- same_survival_prediction %>% 
+  filter(plot_number %in% same_height$plot_number)
+enca_planted <- enca_survival_prediction %>% 
+  filter(plot_number %in% enca_height$plot_number)
+
+
+prediction_table <- plant_traits %>% 
+  dplyr::select(Plant) %>% 
+  filter(Plant != "HEWH") %>% 
+  mutate(planted = case_when(Plant == "ADFA" ~ mean(adfa_planted$survival_prob),
+                             Plant == "CEOL" ~ mean(ceol_planted$survival_prob),
+                             Plant == "HEAR" ~ mean(hear_planted$survival_prob),
+                             Plant == "MALA" ~ mean(mala_planted$survival_prob),
+                             Plant == "RHOV" ~ mean(rhov_planted$survival_prob),
+                             Plant == "SANI" ~ mean(sani_planted$survival_prob),
+                             Plant == "SAAP" ~ mean(saap_planted$survival_prob),
+                             Plant == "SAME" ~ mean(same_planted$survival_prob),
+                             Plant == "ENCA" ~ mean(enca_planted$survival_prob)),
+         all = case_when(Plant == "ADFA" ~ mean(adfa_survival_prediction$survival_prob),
+                             Plant == "CEOL" ~ mean(ceol_survival_prediction$survival_prob),
+                             Plant == "HEAR" ~ mean(hear_survival_prediction$survival_prob),
+                             Plant == "MALA" ~ mean(mala_survival_prediction$survival_prob),
+                             Plant == "RHOV" ~ mean(rhov_survival_prediction$survival_prob),
+                             Plant == "SANI" ~ mean(sani_survival_prediction$survival_prob),
+                             Plant == "SAAP" ~ mean(saap_survival_prediction$survival_prob),
+                             Plant == "SAME" ~ mean(same_survival_prediction$survival_prob),
+                             Plant == "ENCA" ~ mean(enca_survival_prediction$survival_prob)),
+         pvalue = case_when(Plant == "ADFA" ~ t.test(adfa_planted$survival_prob, adfa_survival_prediction$survival_prob)$p.value,
+                            Plant == "CEOL" ~ t.test(ceol_planted$survival_prob, ceol_survival_prediction$survival_prob)$p.value,
+                            Plant == "HEAR" ~ t.test(hear_planted$survival_prob, hear_survival_prediction$survival_prob)$p.value,
+                            Plant == "MALA" ~ t.test(mala_planted$survival_prob, mala_survival_prediction$survival_prob)$p.value,
+                            Plant == "RHOV" ~ t.test(rhov_planted$survival_prob, rhov_survival_prediction$survival_prob)$p.value,
+                            Plant == "SANI" ~ t.test(sani_planted$survival_prob, sani_survival_prediction$survival_prob)$p.value,
+                            Plant == "SAAP" ~ t.test(saap_planted$survival_prob, saap_survival_prediction$survival_prob)$p.value,
+                            Plant == "SAME" ~ t.test(same_planted$survival_prob, same_survival_prediction$survival_prob)$p.value,
+                            Plant == "ENCA" ~ t.test(enca_planted$survival_prob, enca_survival_prediction$survival_prob)$p.value))
+```
+
+```{r}
+site_early_summer <- st_read(here("data", "study_points_early_summer.shp")) %>% 
+  rename(soil_moisture = sl_mstr,
+         temperature = temprtr)
+site_fall <- st_read(here("data", "study_points_fall.shp"))%>% 
+  rename(soil_moisture = sl_mstr,
+         temperature = temprtr)
+rhil_traits <- read.csv(here("data", "all_traits.csv")) %>% 
+  filter(Species == "Rhamnus ilicifolia") %>% 
+  rename(sla = "Specific.Leaf.Area..mm.2.g..1.",
+         ldmc = "Leaf.Dry.Matter.Content..LDMC...g.g.",
+         leaf_thickness = "Leaf.Thickness..mm.",
+         leaf_c_n = "Leaf.C.N..kg.kg.",
+         leaf_n_area = "Leaf.N.Area..g.m2.",
+         leaf_c_area = "Leaf.Carbon.Content.Per.Area..kg.C.per.m2.",
+         petiole_length = "Petiole.Length..cm.",
+         leaf_lamina_length = "Leaf.Lamina.Length..cm.",
+         leaf_width = "Leaf.Width..cm.",
+         wue = "Integrated.Water.Use.Efficiency..13C.in.ppm.",
+         crown_height = "Crown.Height..m.",
+         crown_width = "Crown.Width..m.",
+         wood_density = "Wood.Density.Specific.Gravity..g.cm.3.") %>% 
+  dplyr::select(sla,
+                ldmc,
+                leaf_thickness,
+                leaf_c_n,
+                leaf_n_area,
+                leaf_c_area,
+                petiole_length,
+                leaf_lamina_length,
+                leaf_width,
+                wue,
+                crown_height,
+                crown_width,
+                wood_density) %>% 
+  mutate(PC1 = predict(leaf_traits_pca)[1],
+         PC2 = predict(leaf_traits_pca)[2]) %>% 
+  dplyr::select(PC1, PC2, wue, crown_height, crown_width, wood_density)
+
+site_early_summer_all <- site_early_summer %>% 
+  mutate(PC1 = rhil_traits$PC1,
+         PC2 = rhil_traits$PC2,
+         wue = rhil_traits$wue,
+         crown_height = rhil_traits$crown_height,
+         crown_width = rhil_traits$crown_width,
+         wood_density = rhil_traits$wood_density,
+         height = mean(trait_early_summer$height),
+         start_time = 0,
+         end_time =140, 
+         dead = 0) %>% 
+  mutate(surv_prob_july = predict(early_summer_trait_model, newdata = ., type = "survival")) %>% 
+  dplyr::select(surv_prob_july, geometry)
+
+site_fall_all <- site_fall %>% 
+  mutate(PC1 = rhil_traits$PC1,
+         PC2 = rhil_traits$PC2,
+         wue = rhil_traits$wue,
+         crown_height = rhil_traits$crown_height,
+         crown_width = rhil_traits$crown_width,
+         wood_density = rhil_traits$wood_density,
+         height = mean(trait_early_summer$height),
+         start_time = 0,
+         end_time = 284, 
+         dead = 0) %>% 
+  mutate(july_height = predict(july_height_model, newdata = .)) %>% 
+  dplyr::select(!height) %>% 
+  rename(height = july_height) %>% 
+  mutate(surv_prob_fall = predict(fall_trait_model, newdata = ., type = "survival")) %>% 
+  dplyr::select(surv_prob_fall, geometry)
+
+rhil_prediction_map <- site_fall_all %>% 
+ st_join(site_early_summer_all) %>% 
+  mutate(survival = surv_prob_fall * surv_prob_july) %>% 
+  dplyr::select(survival, geometry) %>% 
+  st_as_sf() %>% 
+  stars::st_rasterize()
+
+
+plot(rhil_prediction_map,
+     col = rainbow(20),
+     main="Survival Prediction for Rhamnus ilicifolia",
+     axes = T)
+
+ggplot() +
+  stars::geom_stars(data = rhil_prediction_map)+
+  theme_classic()+
+  scale_fill_gradientn(colours = c("#C77CFF", "white", "#00BFC4"),
+                       values = scales::rescale(c(0.2, 0.35,0.6)))
+  
+```
+
+
+
+## Add individual for species?
+
+```{r}
+#ceol_spring_all_model <- coxph(Surv(start_time, end_time, dead) ~ temperature + soil_moisture + vpd + height,
+#      data = chap_spring_all %>% filter(Plant == "CEOL"))
+ceol_spring_model <- coxph(Surv(start_time, end_time, dead) ~ temperature + soil_moisture + vpd + height,
+      data = chap_spring %>% filter(Plant == "CEOL"))
+ceol_early_summer_model <- coxph(Surv(start_time, end_time, dead) ~ temperature + height + soil_moisture + vpd,
+      data = chap_early_summer %>% filter(Plant == "CEOL"))
+#ceol_summer_all_model <- coxph(Surv(start_time, end_time, dead) ~ temperature + soil_moisture + vpd + height,
+#      data = chap_summer_all %>% filter(Plant == "CEOL"))
+ceol_late_summer_model <- coxph(Surv(start_time, end_time, dead) ~ temperature + soil_moisture + vpd + height,
+      data = chap_late_summer %>% filter(Plant == "CEOL"))
+ceol_fall_model <- coxph(Surv(start_time, end_time, dead) ~ temperature + soil_moisture + vpd + height,
+      data = chap_fall %>% filter(Plant == "CEOL"))
+#ceol_spring_all_model
+ceol_spring_model
+ceol_early_summer_model
+#ceol_summer_all_model
+ceol_late_summer_model
+ceol_fall_model
+
+#visreg(ceol_spring_all_model,"vpd", by = "height", gg = T, data = chap_spring_all %>% filter(Plant == "CEOL") ) +
+#  theme_classic() +
+#  geom_hline(yintercept = 0, linetype = "dashed", )
+visreg(ceol_spring_model, "vpd", gg = T, data = chap_spring %>% filter(Plant == "CEOL")) +
+  theme_classic() +
+  geom_hline(yintercept = 0, linetype = "dashed")
+visreg(ceol_spring_model, "height", gg = T, data = chap_spring %>% filter(Plant == "CEOL")) +
+  theme_classic() +
+  geom_hline(yintercept = 0, linetype = "dashed")
+visreg(ceol_early_summer_model, "temperature", by = "height", gg = T, data = chap_early_summer %>% filter(Plant == "CEOL")) +
+  theme_classic() +
+  geom_hline(yintercept = 0, linetype = "dashed")
+visreg(ceol_early_summer_model, "height", gg = T, data = chap_early_summer %>% filter(Plant == "CEOL")) +
+  theme_classic() +
+  geom_hline(yintercept = 0, linetype = "dashed")
+#visreg(ceol_summer_all_model, "temperature", gg = T, data = chap_summer_all %>% filter(Plant == "CEOL")) +
+#  theme_classic() +
+#  geom_hline(yintercept = 0, linetype = "dashed")
+visreg(ceol_late_summer_model, "soil_moisture", gg = T, data = chap_late_summer %>% filter(Plant == "CEOL")) +
+  theme_classic() +
+  geom_hline(yintercept = 0, linetype = "dashed")
+visreg(ceol_fall_model, "temperature", gg = T, data = chap_fall %>% filter(Plant == "CEOL")) +
+  theme_classic() +
+  geom_hline(yintercept = 0, linetype = "dashed")
+```
+
+```{r}
+#rhov_spring_all_model <- coxph(Surv(start_time, end_time, dead) ~ temperature + soil_moisture + vpd + height,
+#      data = chap_spring_all %>% filter(Plant == "RHOV"))
+rhov_spring_model <- coxph(Surv(start_time, end_time, dead) ~ temperature + soil_moisture + vpd + height,
+      data = chap_spring %>% filter(Plant == "RHOV"))
+rhov_early_summer_model <- coxph(Surv(start_time, end_time, dead) ~ temperature + soil_moisture + vpd + height,
+      data = chap_early_summer %>% filter(Plant == "RHOV"))
+#rhov_summer_all_model <- coxph(Surv(start_time, end_time, dead) ~ temperature + soil_moisture + vpd + height,
+#      data = chap_summer_all %>% filter(Plant == "RHOV"))
+rhov_late_summer_model <- coxph(Surv(start_time, end_time, dead) ~ temperature + soil_moisture + vpd + height,
+      data = chap_late_summer %>% filter(Plant == "RHOV"))
+rhov_fall_model <- coxph(Surv(start_time, end_time, dead) ~ temperature + soil_moisture + vpd + height,
+      data = chap_fall %>% filter(Plant == "RHOV"))
+#rhov_spring_all_model
+rhov_spring_model
+rhov_early_summer_model
+#rhov_summer_all_model
+rhov_late_summer_model
+rhov_fall_model
+
+
+#visreg(rhov_summer_all_model, "temperature", gg = T, data = chap_summer_all %>% filter(Plant == "RHOV")) +
+#  theme_classic() +
+#  geom_hline(yintercept = 0, linetype = "dashed")
+
+visreg(rhov_fall_model, "temperature", gg = T, data = chap_fall %>% filter(Plant == "RHOV")) +
+  theme_classic() +
+  geom_hline(yintercept = 0, linetype = "dashed")
+```
+
+```{r}
+#mala_spring_all_model <- coxph(Surv(start_time, end_time, dead) ~ temperature + soil_moisture + vpd + height,
+#      data = chap_spring_all %>% filter(Plant == "MALA"))
+mala_spring_model <- coxph(Surv(start_time, end_time, dead) ~ temperature + soil_moisture + vpd + height,
+      data = chap_spring %>% filter(Plant == "MALA"))
+mala_early_summer_model <- coxph(Surv(start_time, end_time, dead) ~ temperature + soil_moisture + vpd + height,
+      data = chap_early_summer %>% filter(Plant == "MALA"))
+#mala_summer_all_model <- coxph(Surv(start_time, end_time, dead) ~ temperature + soil_moisture + vpd + height,
+#      data = chap_summer_all %>% filter(Plant == "MALA"))
+mala_late_summer_model <- coxph(Surv(start_time, end_time, dead) ~ temperature + soil_moisture + vpd + height,
+      data = chap_late_summer %>% filter(Plant == "MALA"))
+mala_fall_model <- coxph(Surv(start_time, end_time, dead) ~ temperature + soil_moisture + vpd + height,
+      data = chap_fall %>% filter(Plant == "MALA"))
+#mala_spring_all_model
+mala_spring_model
+mala_early_summer_model
+#mala_summer_all_model
+mala_late_summer_model
+mala_fall_model
+
+#visreg(mala_spring_all_model, "temperature", gg = T, data = chap_spring_all %>% filter(Plant == "MALA") ) +
+#  theme_classic() +
+#  geom_hline(yintercept = 0, linetype = "dashed", )
+visreg(mala_spring_model, "temperature", gg = T, data = chap_spring %>% filter(Plant == "MALA")) +
+  theme_classic() +
+  geom_hline(yintercept = 0, linetype = "dashed")
+
+visreg(mala_early_summer_model, "temperature", gg = T, data = chap_early_summer %>% filter(Plant == "MALA")) +
+  theme_classic() +
+  geom_hline(yintercept = 0, linetype = "dashed")
+
+#visreg(mala_summer_all_model, "temperature", gg = T, data = chap_summer_all %>% filter(Plant == "MALA")) +
+#  theme_classic() +
+#  geom_hline(yintercept = 0, linetype = "dashed")
+#visreg(mala_summer_all_model, "height", gg = T, data = chap_late_summer %>% filter(Plant == "MALA")) +
+#  theme_classic() +
+#  geom_hline(yintercept = 0, linetype = "dashed")
+visreg(mala_late_summer_model, "height", gg = T, data = chap_late_summer %>% filter(Plant == "MALA")) +
+  theme_classic() +
+  geom_hline(yintercept = 0, linetype = "dashed")
+
+visreg(mala_fall_model, "temperature", gg = T, data = chap_fall %>% filter(Plant == "MALA")) +
+  theme_classic() +
+  geom_hline(yintercept = 0, linetype = "dashed")
+visreg(mala_fall_model, "height", gg = T, data = chap_fall %>% filter(Plant == "MALA")) +
+  theme_classic() +
+  geom_hline(yintercept = 0, linetype = "dashed")
+
+```
+
+```{r}
+#adfa_spring_all_model <- coxph(Surv(start_time, end_time, dead) ~ temperature + soil_moisture + vpd + height,
+#      data = chap_spring_all %>% filter(Plant == "ADFA"))
+adfa_spring_model <- coxph(Surv(start_time, end_time, dead) ~ temperature + soil_moisture + vpd + height,
+      data = chap_spring %>% filter(Plant == "ADFA"))
+adfa_early_summer_model <- coxph(Surv(start_time, end_time, dead) ~ temperature + soil_moisture + vpd + height,
+      data = chap_early_summer %>% filter(Plant == "ADFA"))
+#adfa_summer_all_model <- coxph(Surv(start_time, end_time, dead) ~ temperature + soil_moisture + vpd + height,
+#      data = chap_summer_all %>% filter(Plant == "ADFA"))
+adfa_late_summer_model <- coxph(Surv(start_time, end_time, dead) ~ temperature + soil_moisture + vpd + height,
+      data = chap_late_summer %>% filter(Plant == "ADFA"))
+adfa_fall_model <- coxph(Surv(start_time, end_time, dead) ~ temperature + soil_moisture + vpd + height,
+      data = chap_fall %>% filter(Plant == "ADFA"))
+#adfa_spring_all_model
+adfa_spring_model
+adfa_early_summer_model
+#adfa_summer_all_model
+adfa_late_summer_model
+adfa_fall_model
+```
+
+```{r}
+hear_spring_model <- coxph(Surv(start_time, end_time, dead) ~ temperature + soil_moisture + vpd + height,
+      data = chap_spring %>% filter(Plant == "HEAR"))
+hear_early_summer_model <- coxph(Surv(start_time, end_time, dead) ~ temperature + soil_moisture + vpd + height,
+      data = chap_early_summer %>% filter(Plant == "HEAR"))
+hear_late_summer_model <- coxph(Surv(start_time, end_time, dead) ~ temperature + soil_moisture + vpd + height,
+      data = chap_late_summer %>% filter(Plant == "HEAR"))
+hear_fall_model <- coxph(Surv(start_time, end_time, dead) ~ temperature + soil_moisture + vpd + height,
+      data = chap_fall %>% filter(Plant == "HEAR"))
+hear_spring_model
+hear_early_summer_model
+hear_late_summer_model
+hear_fall_model
+
+
+visreg(hear_spring_model, "height", gg = T, data = chap_spring %>% filter(Plant == "HEAR")) +
+  theme_classic() +
+  geom_hline(yintercept = 0, linetype = "dashed")
+
+visreg(hear_early_summer_model, "temperature", gg = T, data = chap_early_summer %>% filter(Plant == "HEAR")) +
+  theme_classic() +
+  geom_hline(yintercept = 0, linetype = "dashed")
+visreg(hear_early_summer_model, "height", gg = T, data = chap_early_summer %>% filter(Plant == "HEAR")) +
+  theme_classic() +
+  geom_hline(yintercept = 0, linetype = "dashed")
+
+visreg(hear_fall_model, "temperature", gg = T, data = chap_fall %>% filter(Plant == "HEAR")) +
+  theme_classic() +
+  geom_hline(yintercept = 0, linetype = "dashed")
+
+```
+
+```{r}
+enca_spring_model <- coxph(Surv(start_time, end_time, dead) ~ temperature + soil_moisture + vpd + height,
+      data = sage_spring %>% filter(Plant == "ENCA"))
+enca_early_summer_model <- coxph(Surv(start_time, end_time, dead) ~ temperature + soil_moisture + vpd + height,
+      data = sage_early_summer %>% filter(Plant == "ENCA"))
+enca_late_summer_model <- coxph(Surv(start_time, end_time, dead) ~ temperature + soil_moisture + vpd + height,
+      data = sage_late_summer %>% filter(Plant == "ENCA"))
+enca_fall_model <- coxph(Surv(start_time, end_time, dead) ~ temperature + soil_moisture + vpd + height,
+      data = sage_fall %>% filter(Plant == "ENCA"))
+enca_spring_model
+enca_early_summer_model
+enca_late_summer_model
+enca_fall_model
+
+
+visreg(enca_spring_model, "soil_moisture", gg = T, data = sage_spring %>% filter(Plant == "ENCA")) +
+  theme_classic() +
+  geom_hline(yintercept = 0, linetype = "dashed")
+
+visreg(enca_early_summer_model, "temperature", gg = T, data = sage_early_summer %>% filter(Plant == "ENCA")) +
+  theme_classic() +
+  geom_hline(yintercept = 0, linetype = "dashed")
+
+visreg(enca_late_summer_model, "soil_moisture", gg = T, data = sage_late_summer %>% filter(Plant == "ENCA")) +
+  theme_classic() +
+  geom_hline(yintercept = 0, linetype = "dashed")
+visreg(enca_late_summer_model, "height", gg = T, data = sage_late_summer %>% filter(Plant == "ENCA")) +
+  theme_classic() +
+  geom_hline(yintercept = 0, linetype = "dashed")
+
+visreg(enca_fall_model, "soil_moisture", gg = T, data = sage_fall %>% filter(Plant == "ENCA")) +
+  theme_classic() +
+  geom_hline(yintercept = 0, linetype = "dashed")
+
+```
+
+```{r}
+same_spring_model <- coxph(Surv(start_time, end_time, dead) ~ temperature + soil_moisture + vpd + height,
+      data = sage_spring %>% filter(Plant == "SAME"))
+same_early_summer_model <- coxph(Surv(start_time, end_time, dead) ~ temperature + soil_moisture + vpd + height,
+      data = sage_early_summer %>% filter(Plant == "SAME"))
+same_late_summer_model <- coxph(Surv(start_time, end_time, dead) ~ temperature + soil_moisture + vpd + height,
+      data = sage_late_summer %>% filter(Plant == "SAME"))
+same_fall_model <- coxph(Surv(start_time, end_time, dead) ~ temperature + soil_moisture + vpd + height,
+      data = sage_fall %>% filter(Plant == "SAME"))
+same_spring_model
+same_early_summer_model
+same_late_summer_model
+same_fall_model
+
+
+
+visreg(same_early_summer_model, "temperature", gg = T, data = sage_early_summer %>% filter(Plant == "SAME")) +
+  theme_classic() +
+  geom_hline(yintercept = 0, linetype = "dashed")
+
+visreg(same_fall_model, "temperature", gg = T, data = sage_fall %>% filter(Plant == "SAME")) +
+  theme_classic() +
+  geom_hline(yintercept = 0, linetype = "dashed")
+
+```
+
+```{r}
+saap_spring_model <- coxph(Surv(start_time, end_time, dead) ~ temperature + soil_moisture + vpd + height,
+      data = sage_spring %>% filter(Plant == "SAAP"))
+saap_early_summer_model <- coxph(Surv(start_time, end_time, dead) ~ temperature + soil_moisture + vpd + height,
+      data = sage_early_summer %>% filter(Plant == "SAAP"))
+saap_late_summer_model <- coxph(Surv(start_time, end_time, dead) ~ temperature + soil_moisture + vpd + height,
+      data = sage_late_summer %>% filter(Plant == "SAAP"))
+saap_fall_model <- coxph(Surv(start_time, end_time, dead) ~ temperature + soil_moisture + vpd + height,
+      data = sage_fall %>% filter(Plant == "SAAP"))
+saap_spring_model
+saap_early_summer_model
+saap_late_summer_model
+saap_fall_model
+
+
+
+visreg(saap_spring_model, "height", gg = T, data = sage_spring %>% filter(Plant == "SAAP")) +
+  theme_classic() +
+  geom_hline(yintercept = 0, linetype = "dashed")
+
+visreg(saap_early_summer_model, "temperature", gg = T, data = sage_early_summer %>% filter(Plant == "SAAP")) +
+  theme_classic() +
+  geom_hline(yintercept = 0, linetype = "dashed")
+visreg(saap_early_summer_model, "height", gg = T, data = sage_early_summer %>% filter(Plant == "SAAP")) +
+  theme_classic()+
+  geom_hline(yintercept = 0, linetype = "dashed")
+
+visreg(saap_late_summer_model, "temperature", gg = T, data = sage_late_summer %>% filter(Plant == "SAAP")) +
+  theme_classic() +
+  geom_hline(yintercept = 0, linetype = "dashed")
+visreg(saap_late_summer_model, "soil_moisture", gg = T, data = sage_late_summer %>% filter(Plant == "SAAP")) +
+  theme_classic() +
+  geom_hline(yintercept = 0, linetype = "dashed")
+visreg(saap_late_summer_model, "vpd", gg = T, data = sage_late_summer %>% filter(Plant == "SAAP")) +
+  theme_classic() +
+  geom_hline(yintercept = 0, linetype = "dashed")
+visreg(saap_late_summer_model, "height", gg = T, data = sage_late_summer %>% filter(Plant == "SAAP")) +
+  theme_classic() +
+  geom_hline(yintercept = 0, linetype = "dashed")
+
+
+visreg(saap_fall_model, "height", gg = T, data = sage_fall %>% filter(Plant == "SAAP")) +
+  theme_classic() +
+  geom_hline(yintercept = 0, linetype = "dashed")
+
+```
+
+```{r}
+sani_spring_model <- coxph(Surv(start_time, end_time, dead) ~ temperature + soil_moisture + vpd + height,
+      data = sage_spring %>% filter(Plant == "SANI"))
+sani_early_summer_model <- coxph(Surv(start_time, end_time, dead) ~ temperature + soil_moisture + vpd + height,
+      data = sage_early_summer %>% filter(Plant == "SANI"))
+sani_late_summer_model <- coxph(Surv(start_time, end_time, dead) ~ temperature + soil_moisture + vpd + height,
+      data = sage_late_summer %>% filter(Plant == "SANI"))
+sani_fall_model <- coxph(Surv(start_time, end_time, dead) ~ temperature + soil_moisture + vpd + height,
+      data = sage_fall %>% filter(Plant == "SANI"))
+sani_spring_model
+sani_early_summer_model
+sani_late_summer_model
+sani_fall_model
+
+
+visreg(sani_early_summer_model, "temperature", gg = T, data = sage_early_summer %>% filter(Plant == "SANI")) +
+  theme_classic() +
+  geom_hline(yintercept = 0, linetype = "dashed")
+
+visreg(sani_fall_model, "vpd", gg = T, data = sage_fall %>% filter(Plant == "SANI")) +
+  theme_classic() +
+  geom_hline(yintercept = 0, linetype = "dashed")
+
+visreg(sani_fall_model, "height", gg = T, data = sage_fall %>% filter(Plant == "SANI")) +
+  theme_classic() +
+  geom_hline(yintercept = 0, linetype = "dashed")
+
+```

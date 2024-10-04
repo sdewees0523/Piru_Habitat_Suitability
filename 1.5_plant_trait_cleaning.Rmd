@@ -1,0 +1,56 @@
+---
+title: "Untitled"
+output: html_document
+date: "2024-06-11"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(here)
+library(tidyverse)
+```
+
+```{r}
+leaf_other <- read.csv(here("data", "raw_data", "traits_raw", "leaf_other.csv"))
+
+leaf_area <- read.csv(here("data", "raw_data", "traits_raw", "landscape_leaf_areas.csv")) %>% 
+  pivot_longer(cols = 3:13,
+               names_to = "leaf_number", 
+               values_to = "area") %>% 
+  group_by(species, specimen) %>% 
+  reframe(leaf_area = mean(area, na.rm = T))
+
+leaf_mass <- read.csv(here("data", "raw_data", "traits_raw", "landscape_mass_data.csv")) %>% 
+  mutate(wet_weight_perleaf = wet_weight_g/leaves,
+         dry_weight_perleaf = dry_weight_g/leaves) %>% 
+  select(species, specimen, wet_weight_perleaf, dry_weight_perleaf)
+
+leaf_traits <- inner_join(leaf_area, leaf_mass, by = c("species", "specimen")) %>% 
+  mutate(sla = leaf_area/dry_weight_perleaf,
+         ldmc = dry_weight_perleaf/wet_weight_perleaf,
+         leaf_thickness = 1/(sla*ldmc)) %>% 
+  group_by(species) %>% 
+  reframe(sla = mean(sla),
+          ldmc = mean(ldmc),
+          leaf_thickness = mean(leaf_thickness))
+
+leaf_isotopes <- read.csv(here("data", "raw_data", "traits_raw", "landscape_isotopes.csv")) %>% 
+  mutate(wue = (-8-d13c)/(1 + (d13c/1000))) %>% 
+  group_by(species) %>% 
+  reframe(percent_n = mean(percent_n), 
+          percent_c = mean(percent_c), 
+          c_n = mean(c_n), 
+          wue = mean(wue)) %>% 
+  mutate(species = case_when(species == "YUCCA" ~ "HEWH",
+                             T ~ species))
+wood_density <- read.csv(here("data", "raw_data", "traits_raw", "landscape_wood_density.csv")) %>% 
+  group_by(species) %>% 
+  reframe(wood_density = mean(wood_density_gcm3))
+
+plant_traits <- inner_join(leaf_traits, leaf_isotopes, by = "species") %>% 
+  left_join(wood_density, by = "species") %>% 
+  left_join(leaf_other, by = "species")
+
+write.csv(plant_traits, here("data", "clean_data", "plant_traits_clean.csv"), row.names = F)
+```
+

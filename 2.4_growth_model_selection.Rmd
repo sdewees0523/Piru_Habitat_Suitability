@@ -1,0 +1,224 @@
+---
+title: "Untitled"
+output: html_document
+date: "2024-04-11"
+---
+
+```{r setup, include=FALSE}
+library(here)
+library(tidyverse)
+library(lubridate)
+library(parallel)
+library(snow)
+```
+
+```{r}
+spring_height <- read.csv(here("data", "clean_data", "height_gopher_kapplin.csv")) %>% 
+  mutate(height_date = case_when(start_time == 0 ~ "planting_height",
+                                 start_time != 0 ~ "spring_height")) %>% 
+  select(plot_number, Plant, height, height_date, end_time) %>% 
+  group_by(plot_number) %>% 
+  mutate(end_time = min(end_time)) %>% 
+  ungroup() %>% 
+  pivot_wider(id_cols = c(plot_number, Plant, end_time), names_from = height_date, values_from = height) %>% 
+  drop_na() %>%
+  mutate(growth = (spring_height - planting_height)/end_time) %>% 
+  rename(species = Plant) %>% 
+  mutate(planting_height = scale(planting_height)[,1])
+
+fall_height <- read.csv(here("data", "clean_data", "fall_growth.csv")) %>% 
+  mutate(date_measured = ymd(date_measured),
+         date_measured_2 = ymd(date_measured_2)) %>% 
+  select(plot_number, Plant, july_height, fall_height, date_measured, date_measured_2) %>% 
+  mutate(growth = (fall_height - july_height)/(as.numeric(date_measured_2 - date_measured))) %>%
+  rename(species = Plant) %>% 
+  select(plot_number, species, july_height, growth) %>% 
+  mutate(july_height = scale(july_height)[,1])
+
+plant_traits <- read.csv(here("data", "clean_data", "cox_plant_traits.csv")) %>% 
+  mutate(les_1 = scale(les_1)[,1],
+         les_2 = scale(les_2)[,1],
+         wood_density = scale(wood_density)[,1],
+         wue = scale(wue)[,1],
+         wue = wue*-1)
+
+environmental <- read.csv(here("data", "clean_data", "predicted_environmental.csv")) %>% 
+  select(!X) %>% 
+  mutate(date = ymd(date)) %>% 
+  group_by(date) %>% 
+  mutate(temperature = scale(temperature)[,1],
+         vpd = scale(vpd)[,1]) %>% 
+  ungroup() 
+
+environmental_spring <- environmental %>% 
+  filter(date <= "2020-06-26") %>% 
+  group_by(plot_number) %>% 
+  reframe(soil_moisture = mean(soil_moisture),
+          temperature = mean(temperature),
+          vpd = mean(temperature))
+
+environmental_earlyspring <- environmental %>% 
+  filter(date <= "2020-05-30") %>% 
+  group_by(plot_number) %>% 
+  reframe(soil_moisture = mean(soil_moisture),
+          temperature = mean(temperature),
+          vpd = mean(temperature))
+
+environmental_latespring <- environmental %>% 
+  filter(date > "2020-05-30" & date <= "2020-06-26") %>% 
+  group_by(plot_number) %>% 
+  reframe(soil_moisture = mean(soil_moisture),
+          temperature = mean(temperature),
+          vpd = mean(temperature))
+
+environmental_summer <- environmental %>% 
+  filter(date > "2020-06-26") %>% 
+  group_by(plot_number) %>% 
+  reframe(soil_moisture = mean(soil_moisture),
+          temperature = mean(temperature),
+          vpd = mean(temperature))
+
+environmental_latesummer <- environmental %>% 
+  filter(date > "2020-06-26" & date <= "2020-09-30") %>% 
+  group_by(plot_number) %>% 
+  reframe(soil_moisture = mean(soil_moisture),
+          temperature = mean(temperature),
+          vpd = mean(temperature))
+
+environmental_fall <- environmental %>% 
+  filter(date > "2020-09-30") %>% 
+  group_by(plot_number) %>% 
+  reframe(soil_moisture = mean(soil_moisture),
+          temperature = mean(temperature),
+          vpd = mean(temperature))
+
+
+growth_spring_data <- spring_height %>% 
+  inner_join(plant_traits, by = "species") %>% 
+  inner_join(environmental_spring, by = "plot_number") %>% 
+  select(growth, les_1, les_2, wood_density, wue, temperature, soil_moisture, vpd, planting_height)
+
+growth_earlyspring_data <- spring_height %>% 
+  inner_join(plant_traits, by = "species") %>% 
+  inner_join(environmental_earlyspring, by = "plot_number") %>% 
+  select(growth, les_1, les_2, wood_density, wue, temperature, soil_moisture, vpd, planting_height)
+
+growth_latespring_data <- spring_height %>% 
+  inner_join(plant_traits, by = "species") %>% 
+  inner_join(environmental_latespring, by = "plot_number") %>% 
+  select(growth, les_1, les_2, wood_density, wue, temperature, soil_moisture, vpd, planting_height)
+
+growth_summer_data <- fall_height %>% 
+  inner_join(plant_traits, by = "species") %>% 
+  inner_join(environmental_summer, by = "plot_number") %>% 
+  select(growth, les_1, les_2, wood_density, wue, temperature, soil_moisture, vpd, july_height)
+
+growth_latesummer_data <- fall_height %>% 
+  inner_join(plant_traits, by = "species") %>% 
+  inner_join(environmental_latesummer, by = "plot_number") %>% 
+  select(growth, les_1, les_2, wood_density, wue, temperature, soil_moisture, vpd, july_height)
+
+growth_fall_data <- fall_height %>% 
+  inner_join(plant_traits, by = "species") %>% 
+  inner_join(environmental_fall, by = "plot_number") %>% 
+  select(growth, les_1, les_2, wood_density, wue, temperature, soil_moisture, vpd, july_height)
+```
+
+```{r}
+options(na.action = "na.fail")
+nCores <- detectCores() - 1
+clu <- makeCluster(nCores, type = "SOCK")
+spring_all_dredge_input <- stats::glm(growth ~ les_1* temperature + les_1*soil_moisture + les_1* vpd + les_2 * temperature + les_2*soil_moisture + les_2* vpd + wue*temperature + wue* soil_moisture + wue*vpd + wood_density*temperature + wood_density*soil_moisture + wood_density*vpd + temperature*soil_moisture + temperature*vpd + soil_moisture*vpd + planting_height*les_1 + planting_height*les_2 + planting_height*wood_density + planting_height*wue, 
+      data = growth_spring_data)
+# Export all objects to be used to all the cores in the cluster
+clusterExport(clu, list("growth_spring_data","spring_all_dredge_input"))
+# Load packages to be used
+clusterEvalQ(clu,library(MuMIn, stats,logical.return =T))
+
+spring_all_dredge <- MuMIn::dredge(spring_all_dredge_input, trace=2, cluster=clu)
+spring_all_dredge_filter <- spring_all_dredge %>% 
+  filter(delta < 2) %>% 
+  filter(df == min(df)) %>% 
+  distinct()
+
+options(na.action = "na.fail")
+early_spring_dredge_input <- stats::glm(growth ~ les_1* temperature + les_1*soil_moisture + les_1* vpd + les_2 * temperature + les_2*soil_moisture + les_2* vpd + wue*temperature + wue* soil_moisture + wue*vpd + wood_density*temperature + wood_density*soil_moisture + wood_density*vpd + temperature*soil_moisture + temperature*vpd + soil_moisture*vpd + planting_height*les_1 + planting_height*les_2 + planting_height*wood_density + planting_height*wue, 
+      data = growth_earlyspring_data)
+clusterExport(clu, list("growth_earlyspring_data","early_spring_dredge_input"))
+early_spring_dredge <- MuMIn::dredge(early_spring_dredge_input, trace=2, cluster=clu)
+
+early_spring_dredge_filter <- early_spring_dredge %>% 
+  filter(delta < 2) %>% 
+  filter(df == min(df)) %>% 
+  distinct() %>% 
+  filter(delta == min(delta))
+
+
+options(na.action = "na.fail")
+late_spring_dredge_input <- stats::glm(growth ~ les_1* temperature + les_1*soil_moisture + les_1* vpd + les_2 * temperature + les_2*soil_moisture + les_2* vpd + wue*temperature + wue* soil_moisture + wue*vpd + wood_density*temperature + wood_density*soil_moisture + wood_density*vpd + temperature*soil_moisture + temperature*vpd + soil_moisture*vpd + planting_height*les_1 + planting_height*les_2 + planting_height*wood_density + planting_height*wue, 
+      data = growth_latespring_data)
+clusterExport(clu, list("growth_latespring_data","late_spring_dredge_input"))
+late_spring_dredge <- MuMIn::dredge(late_spring_dredge_input, trace=2, cluster=clu)
+
+late_spring_dredge_filter <- late_spring_dredge %>% 
+  filter(delta < 2) %>% 
+  filter(df == min(df)) %>% 
+  distinct()
+```
+
+```{r}
+spring_growth_model <- glm(growth~les_1 + les_2 + planting_height + soil_moisture + temperature + les_1*planting_height + les_1*temperature, data = growth_earlyspring_data)
+plot(spring_growth_model)
+summary(spring_growth_model)
+save(spring_growth_model, file = here("data", "models", "spring_growth_model.rda"))
+```
+
+```{r}
+options(na.action = "na.fail")
+nCores <- detectCores() - 1
+clu <- makeCluster(nCores, type = "SOCK")
+summer_all_dredge_input <- stats::glm(growth ~ les_1* temperature + les_1*soil_moisture + les_1* vpd + les_2 * temperature + les_2*soil_moisture + les_2* vpd + wue*temperature + wue* soil_moisture + wue*vpd + wood_density*temperature + wood_density*soil_moisture + wood_density*vpd + temperature*soil_moisture + temperature*vpd + soil_moisture*vpd + july_height*les_1 + july_height*les_2 + july_height*wood_density + july_height*wue, 
+      data = growth_summer_data)
+# Export all objects to be used to all the cores in the cluster
+clusterExport(clu, list("growth_summer_data","summer_all_dredge_input"))
+# Load packages to be used
+clusterEvalQ(clu,library(MuMIn, stats,logical.return =T))
+
+summer_all_dredge <- MuMIn::dredge(summer_all_dredge_input, trace=2, cluster=clu)
+summer_all_dredge_filter <- summer_all_dredge %>% 
+  filter(delta < 2) %>% 
+  filter(df == min(df)) %>% 
+  distinct()
+
+options(na.action = "na.fail")
+late_summer_dredge_input <- stats::glm(growth ~ les_1* temperature + les_1*soil_moisture + les_1* vpd + les_2 * temperature + les_2*soil_moisture + les_2* vpd + wue*temperature + wue* soil_moisture + wue*vpd + wood_density*temperature + wood_density*soil_moisture + wood_density*vpd + temperature*soil_moisture + temperature*vpd + soil_moisture*vpd + july_height*les_1 + july_height*les_2 + july_height*wood_density + july_height*wue, 
+      data = growth_latesummer_data)
+clusterExport(clu, list("growth_latesummer_data","late_summer_dredge_input"))
+late_summer_dredge <- MuMIn::dredge(late_summer_dredge_input, trace=2, cluster=clu)
+
+late_summer_dredge_filter <- late_summer_dredge %>% 
+  filter(delta < 2) %>% 
+  filter(df == min(df)) %>% 
+  distinct()
+
+
+options(na.action = "na.fail")
+fall_dredge_input <- stats::glm(growth ~ les_1* temperature + les_1*soil_moisture + les_1* vpd + les_2 * temperature + les_2*soil_moisture + les_2* vpd + wue*temperature + wue* soil_moisture + wue*vpd + wood_density*temperature + wood_density*soil_moisture + wood_density*vpd + temperature*soil_moisture + temperature*vpd + soil_moisture*vpd + july_height*les_1 + july_height*les_2 + july_height*wood_density + july_height*wue, 
+      data = growth_fall_data)
+clusterExport(clu, list("growth_fall_data","fall_dredge_input"))
+fall_dredge <- MuMIn::dredge(fall_dredge_input, trace=2, cluster=clu)
+
+fall_dredge_filter <- fall_dredge %>% 
+  filter(delta < 2) %>% 
+  filter(df == min(df)) %>% 
+  distinct()
+```
+
+```{r}
+fall_growth_model <- glm(growth ~ les_2 + soil_moisture + temperature + wood_density + wue + les_2*temperature + soil_moisture*temperature, data = growth_fall_data)
+plot(fall_growth_model)
+summary(fall_growth_model)
+
+save(fall_growth_model, file = here("data", "models", "fall_growth_model.rda"))
+```
+
