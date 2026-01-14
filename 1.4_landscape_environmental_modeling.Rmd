@@ -68,7 +68,8 @@ plots_topography <- st_read(here("data", "raw_data", "plot_gps_points.shp")) %>%
   diurnal_heat = aspect.1,
   topo_position = elevation.1,
   sol_rad_aspect = lyr.1.1,
-  terrain_ruggedness = elevation.2)
+  terrain_ruggedness = elevation.2) |> 
+    filter(elevation != 0)
 ```
 
 ```{r}
