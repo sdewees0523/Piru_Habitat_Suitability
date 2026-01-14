@@ -15,7 +15,7 @@ library(terra)
 ```
 
 ```{r}
-elevation <- raster(here("data", "raw_data",  "elevation.tif"))
+elevation <- rast(here("data", "raw_data",  "elevation.tif"))
 heat_load_index <- hli(elevation)
 hierarchical_slope_position <- hsp(elevation)
 diurnal_heat_index <- dahi(elevation)

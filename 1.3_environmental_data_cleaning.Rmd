@@ -207,7 +207,7 @@ my_files_11 <- list.files(here("data", "raw_data", "Ibutton_Data", "ibutton_2", 
 my_files_12 <- list.files(here("data", "raw_data", "Ibutton_Data", "ibutton_2", "temperature", "skip_19"),
                          pattern = ".csv$", recursive = TRUE, full.names = TRUE)
 ibutton_1 <- read_csv(my_files_1, id = "plot") %>% 
-  mutate(plot = str_remove(plot, "C:/Users/tenni/Desktop/Piru2020/piru_landscape/data/raw_data/Ibutton_Data/test/"),
+  mutate(plot = str_remove(plot, paste0(here(), "/data/raw_data/Ibutton_Data/test/")),
          plot = str_remove(plot, ".csv"),
          plot = as.numeric(plot),
          date_time = mdy_hm(`Date/Time`),
@@ -218,8 +218,7 @@ ibutton_1 <- read_csv(my_files_1, id = "plot") %>%
          time = hms(time))
 
 ibutton_2 <- read_csv(my_files_2, id = "plot", skip= 14) %>%
-  mutate(plot = str_remove(plot, 
-                           "C:/Users/tenni/Desktop/Piru2020/piru_landscape/data/raw_data/Ibutton_Data/2_16_21/temperature/skip_14/"),
+  mutate(plot = str_remove(plot, paste0(here(), "/data/raw_data/Ibutton_Data/2_16_21/temperature/skip_14/")),
          plot = str_remove(plot, ".csv"),
          Value = str_remove(Value, "F,"),
          plot = as.numeric(plot),
@@ -229,8 +228,7 @@ ibutton_2 <- read_csv(my_files_2, id = "plot", skip= 14) %>%
   dplyr::select(plot, date, time, temperature)
 
 ibutton_3 <- read_csv(my_files_3, id = "plot", skip= 19) %>%
-  mutate(plot = str_remove(plot, 
-                           "C:/Users/tenni/Desktop/Piru2020/piru_landscape/data/raw_data/Ibutton_Data/2_16_21/temperature/skip_19/"),
+  mutate(plot = str_remove(plot, paste0(here(), "/data/raw_data/Ibutton_Data/2_16_21/temperature/skip_19/")),
          plot = str_remove(plot, ".csv"),
          Value = str_remove(Value, "F,"),
          plot = as.numeric(plot),
@@ -247,8 +245,7 @@ ibutton_misc <- read.csv(here("data", "raw_data", "Ibutton_Data", "2_16_21", "te
   dplyr::select(plot, date, time, temperature)
 
 ibutton_4 <- read_csv(my_files_4, id = "plot") %>% 
-  mutate(plot = str_remove(plot, 
-                           "C:/Users/tenni/Desktop/Piru2020/piru_landscape/data/raw_data/Ibutton_Data/4_10_20/For_R/Temperature/"),
+  mutate(plot = str_remove(plot, paste0(here(), "/data/raw_data/Ibutton_Data/4_10_20/For_R/Temperature/")),
          plot = str_remove(plot, ".csv"),
          plot = str_remove(plot, "Plot_"),
          plot = str_remove(plot, "T"),
@@ -261,8 +258,7 @@ ibutton_4 <- read_csv(my_files_4, id = "plot") %>%
          time = hms(time))
 
 ibutton_5 <- read_csv(my_files_5, id = "plot", skip = 14) %>% 
-  mutate(plot = str_remove(plot, 
-                           "C:/Users/tenni/Desktop/Piru2020/piru_landscape/data/raw_data/Ibutton_Data/4_23_20/Raw_Data/Temperature/skip_14/"),
+  mutate(plot = str_remove(plot, paste0(here(), "/data/raw_data/Ibutton_Data/4_23_20/Raw_Data/Temperature/skip_14/")),
          plot = str_remove(plot, ".csv"),
          plot = str_remove(plot, "Plot_"),
          plot = str_remove(plot, "T"),
@@ -275,8 +271,7 @@ ibutton_5 <- read_csv(my_files_5, id = "plot", skip = 14) %>%
          time = hms(time))
 
 ibutton_6 <- read_csv(my_files_6, id = "plot", skip = 19) %>% 
-  mutate(plot = str_remove(plot, 
-                           "C:/Users/tenni/Desktop/Piru2020/piru_landscape/data/raw_data/Ibutton_Data/4_23_20/Raw_Data/Temperature/skip_19/"),
+  mutate(plot = str_remove(plot, paste0(here(), "/data/raw_data/Ibutton_Data/4_23_20/Raw_Data/Temperature/skip_19/")),
          plot = str_remove(plot, ".csv"),
          plot = str_remove(plot, "Plot_"),
          plot = str_remove(plot, "T"),
@@ -291,8 +286,7 @@ ibutton_6 <- read_csv(my_files_6, id = "plot", skip = 19) %>%
          time = hms(time))
 
 ibutton_7 <- read_csv(my_files_7, id = "plot", skip = 14) %>% 
-  mutate(plot = str_remove(plot, 
-                           "C:/Users/tenni/Desktop/Piru2020/piru_landscape/data/raw_data/Ibutton_Data/10_22_20/temperature/skip_14/"),
+  mutate(plot = str_remove(plot, paste0(here(), "/data/raw_data/Ibutton_Data/10_22_20/temperature/skip_14/")),
          plot = str_remove(plot, ".csv"),
          plot = str_remove(plot, "Plot_"),
          plot = str_remove(plot, "T"),
@@ -305,8 +299,7 @@ ibutton_7 <- read_csv(my_files_7, id = "plot", skip = 14) %>%
          time = hms(time))
 
 ibutton_8 <- read_csv(my_files_8, id = "plot", skip = 19) %>% 
-  mutate(plot = str_remove(plot, 
-                           "C:/Users/tenni/Desktop/Piru2020/piru_landscape/data/raw_data/Ibutton_Data/10_22_20/temperature/skip_19/"),
+  mutate(plot = str_remove(plot, paste0(here(), "/data/raw_data/Ibutton_Data/10_22_20/temperature/skip_19/")),
          plot = str_remove(plot, ".csv"),
          plot = str_remove(plot, "Plot_"),
          plot = str_remove(plot, "T"),
@@ -319,8 +312,7 @@ ibutton_8 <- read_csv(my_files_8, id = "plot", skip = 19) %>%
          time = hms(time))
 
 ibutton_9 <- read_csv(my_files_9, id = "plot", skip = 14) %>% 
-  mutate(plot = str_remove(plot, 
-                           "C:/Users/tenni/Desktop/Piru2020/piru_landscape/data/raw_data/Ibutton_Data/ibutton/temperature/skip_14/"),
+  mutate(plot = str_remove(plot, paste0(here(), "/data/raw_data/Ibutton_Data/ibutton/temperature/skip_14/")),
          plot = str_remove(plot, ".csv"),
          plot = str_remove(plot, "Plot_"),
          plot = str_remove(plot, "T"),
@@ -332,8 +324,7 @@ ibutton_9 <- read_csv(my_files_9, id = "plot", skip = 14) %>%
   dplyr::select(plot, date, time, temperature)
 
 ibutton_10 <- read_csv(my_files_10, id = "plot", skip = 19) %>%
-  mutate(plot = str_remove(plot, 
-                           "C:/Users/tenni/Desktop/Piru2020/piru_landscape/data/raw_data/Ibutton_Data/ibutton/temperature/skip_19/"),
+  mutate(plot = str_remove(plot, paste0(here(), "/data/raw_data/Ibutton_Data/ibutton/temperature/skip_19/")),
          plot = str_remove(plot, ".csv"),
          plot = str_remove(plot, "Plot_"),
          plot = str_remove(plot, "T"),
@@ -346,8 +337,7 @@ ibutton_10 <- read_csv(my_files_10, id = "plot", skip = 19) %>%
   dplyr::select(plot, date, time, temperature)
 
 ibutton_11 <- read_csv(my_files_11, id = "plot", skip = 14) %>% 
-  mutate(plot = str_remove(plot, 
-                           "C:/Users/tenni/Desktop/Piru2020/piru_landscape/data/raw_data/Ibutton_Data/ibutton_2/temperature/skip_14/"),
+  mutate(plot = str_remove(plot, paste0(here(), "/data/raw_data/Ibutton_Data/ibutton_2/temperature/skip_14/")),
          plot = str_remove(plot, ".csv"),
          plot = str_remove(plot, "Plot_"),
          plot = str_remove(plot, "T"),
@@ -361,8 +351,7 @@ ibutton_11 <- read_csv(my_files_11, id = "plot", skip = 14) %>%
          time = hms(time))
 
 ibutton_12 <- read_csv(my_files_12, id = "plot", skip = 19) %>% 
-  mutate(plot = str_remove(plot, 
-                           "C:/Users/tenni/Desktop/Piru2020/piru_landscape/data/raw_data/Ibutton_Data/ibutton_2/temperature/skip_19/"),
+  mutate(plot = str_remove(plot, paste0(here(), "/data/raw_data/Ibutton_Data/ibutton_2/temperature/skip_19/")),
          plot = str_remove(plot, ".csv"),
          plot = str_remove(plot, "Plot_"),
          plot = str_remove(plot, "T"),
@@ -409,7 +398,7 @@ h_files_6 <- list.files(here("data", "raw_data", "Ibutton_Data", "ibutton_2","hu
                          pattern = ".csv$", recursive = TRUE, full.names = TRUE)
 
 humidity_1 <- read_csv(h_files_1, id = "plot", skip = 18) %>% 
-  mutate(plot = str_remove(plot, "C:/Users/tenni/Desktop/Piru2020/piru_landscape/data/raw_data/Ibutton_Data/2_16_21/humidity/"),
+  mutate(plot = str_remove(plot, paste0(here(), "/data/raw_data/Ibutton_Data/2_16_21/humidity/")),
          plot = str_remove(plot, "H.csv"),
          plot = as.numeric(plot),
          Value = str_remove(Value, "%RH,"),
@@ -419,7 +408,7 @@ humidity_1 <- read_csv(h_files_1, id = "plot", skip = 18) %>%
   dplyr::select(plot, date, time, humidity)
 
 humidity_2 <- read_csv(h_files_2, id = "plot") %>% 
-  mutate(plot = str_remove(plot, "C:/Users/tenni/Desktop/Piru2020/piru_landscape/data/raw_data/Ibutton_Data/4_10_20/For_R/Humidity/"),
+  mutate(plot = str_remove(plot, paste0(here(), "/data/raw_data/Ibutton_Data/4_10_20/For_R/Humidity/")),
          plot = str_remove(plot, "Plot_"),
          plot = str_remove(plot, ".csv"),
          plot = str_remove(plot, "H"),
@@ -431,7 +420,7 @@ humidity_2 <- read_csv(h_files_2, id = "plot") %>%
   dplyr::select(plot, date, time, humidity)
 
 humidity_3 <- read_csv(h_files_3, id = "plot", skip = 18) %>% 
-  mutate(plot = str_remove(plot, "C:/Users/tenni/Desktop/Piru2020/piru_landscape/data/raw_data/Ibutton_Data/4_23_20/Raw_Data/Humidity/"),
+  mutate(plot = str_remove(plot, paste0(here(), "/data/raw_data/Ibutton_Data/4_23_20/Raw_Data/Humidity/")),
          plot = str_remove(plot, "Plot_"),
          plot = str_remove(plot, ".csv"),
          plot = as.numeric(plot),
@@ -448,7 +437,7 @@ humidity_3 <- read_csv(h_files_3, id = "plot", skip = 18) %>%
   dplyr::select(plot, date, time, humidity)
 
 humidity_4 <- read_csv(h_files_4, id = "plot", skip = 18) %>% 
-  mutate(plot = str_remove(plot, "C:/Users/tenni/Desktop/Piru2020/piru_landscape/data/raw_data/Ibutton_Data/10_22_20/humidity/"),
+  mutate(plot = str_remove(plot, paste0(here(), "/data/raw_data/Ibutton_Data/10_22_20/humidity/")),
          plot = str_remove(plot, "H.csv"),
          plot = as.numeric(plot),
          humidity = as.numeric(Value),
@@ -462,7 +451,7 @@ humidity_4 <- read_csv(h_files_4, id = "plot", skip = 18) %>%
   dplyr::select(plot, date, time, humidity)
 
 humidity_5 <- read_csv(h_files_5, id = "plot", skip = 18) %>% 
-  mutate(plot = str_remove(plot, "C:/Users/tenni/Desktop/Piru2020/piru_landscape/data/raw_data/Ibutton_Data/ibutton/humidity/"),
+  mutate(plot = str_remove(plot, paste0(here(), "/data/raw_data/Ibutton_Data/ibutton/humidity/")),
          plot = str_remove(plot, "h.csv"),
          plot = as.numeric(plot),
          Value = str_remove(Value, "%RH,"),
@@ -472,7 +461,7 @@ humidity_5 <- read_csv(h_files_5, id = "plot", skip = 18) %>%
   dplyr::select(plot, date, time, humidity)
 
 humidity_6 <- read_csv(h_files_6, id = "plot", skip = 18) %>% 
-  mutate(plot = str_remove(plot, "C:/Users/tenni/Desktop/Piru2020/piru_landscape/data/raw_data/Ibutton_Data/ibutton_2/humidity/"),
+  mutate(plot = str_remove(plot, paste0(here(), "/data/raw_data/Ibutton_Data/ibutton_2/humidity/")),
          plot = str_remove(plot, "H.csv"),
          plot = str_remove(plot, ".csv"),
          plot = as.numeric(plot),

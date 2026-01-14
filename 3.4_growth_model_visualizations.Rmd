@@ -180,9 +180,9 @@ spring_temp_graph <- ggplot(spring_les_temp, aes(x = temperature, y = growth, co
   ylim(-0.15,0.2)+
   theme(text=element_text(size=21))
 
-figure_8 <- (spring_soil_graph+ spring_les2_graph)/(spring_height_graph + spring_temp_graph)+ plot_annotation(tag_levels = "A")
+figure_8 <- (spring_soil_graph+ spring_les2_graph)/(spring_height_graph + spring_temp_graph)+ plot_annotation(tag_levels = "a")
 
-ggsave(filename = "figure_8.png",
+ggsave(filename = "figure_5.png",
        plot = figure_8,
        path = here("figures"),
        width = 8,
@@ -295,6 +295,9 @@ fall_wood_graph <- ggplot(fall_wood, aes(x = wood_density, y = growth))+
 fall_wue_graph <- ggplot(fall_wue, aes(x = wue, y = growth))+
   geom_line()+
   geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.5)+
+  geom_text(data = plant_traits, aes(x = wue, y = 0.05, label = species),
+            hjust= c(0,0,0.7,0,0.5,0,0,0,0),
+            vjust = c(1,1,2,0,6,0,2.5,5,5))+
   theme_classic()+
   geom_hline(yintercept = 0, linetype = "dashed")+
   ylim(-.2, 0.35)+
@@ -302,9 +305,9 @@ fall_wue_graph <- ggplot(fall_wue, aes(x = wue, y = growth))+
        y = "Growth Rate (cm/day)")+
   theme(text=element_text(size=21))
 
-figure_9 <- (fall_wood_graph + fall_wue_graph)/(fall_les2_graph + fall_soil_graph) + plot_annotation(tag_levels = "A")
+figure_9 <- (fall_wood_graph + fall_wue_graph)/(fall_les2_graph + fall_soil_graph) + plot_annotation(tag_levels = "a")
 
-ggsave(filename = "figure_9.png",
+ggsave(filename = "figure_6.png",
        plot = figure_9,
        path = here("figures"),
        width = 8,

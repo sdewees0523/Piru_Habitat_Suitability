@@ -16,8 +16,6 @@ library(patchwork)
 ```{r}
 load(here("data", "models", "early_spring_model.rda"))
 load(here("data", "models", "summer_model.rda"))
-cox_early_spring_model %>% tbl_regression(exp = T)
-cox_summer_model %>% tbl_regression(exp = T)
 plant_traits <- read.csv(here("data", "clean_data", "cox_plant_traits.csv")) %>% 
   mutate(les_1 = scale(les_1),
          les_2 = scale(les_2),
@@ -299,8 +297,8 @@ vpd_spring_plot <- ggplot(vpd_spring, aes(x = vpd, y = hazard)) +
        y = "Survival Probability")+
   theme(text=element_text(size=21))
 
-figure_5 <- (soil_spring_plot + vpd_spring_plot)/(wood_spring_plot + les_1_spring_plot)/(les_2_spring_plot + wue_spring_plot) + plot_annotation(tag_levels = "A")
-ggsave(filename = "figure_5.png",
+figure_5 <- (soil_spring_plot + vpd_spring_plot)/(wood_spring_plot + les_1_spring_plot)/(les_2_spring_plot + wue_spring_plot) + plot_annotation(tag_levels = "a")
+ggsave(filename = "figure_3.png",
        plot = figure_5, 
        path = here("figures"),
        width = 8, 
@@ -463,9 +461,9 @@ wue_summer_plot <- ggplot(wue_summer, aes(x = wue, y = hazard)) +
        y = "Survival Probability")+
   theme(text=element_text(size=21))
 
-figure_6 <- (soil_summer_plot + vpd_summer_plot)/(height_summer_plot + wue_summer_plot)+ plot_annotation(tag_levels = "A")
+figure_6 <- (soil_summer_plot + vpd_summer_plot)/(height_summer_plot + wue_summer_plot)+ plot_annotation(tag_levels = "a")
 
-ggsave(filename = "figure_6.png",
+ggsave(filename = "figure_4.png",
        plot = figure_6, 
        path = here("figures"),
        width = 8, 

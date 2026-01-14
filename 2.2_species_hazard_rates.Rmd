@@ -127,9 +127,9 @@ whole_study_hazard_graph <- ggplot(whole_study_species_survival, aes(x = fct_reo
   labs(x = "Species",
        y = "Hazard Ratio")
 
-figure4 <- community_survival/(first_year_hazard_graph + whole_study_hazard_graph) + plot_annotation(tag_levels = "A")
+figure4 <- community_survival/(first_year_hazard_graph + whole_study_hazard_graph) + plot_annotation(tag_levels = "a")
 
-ggsave(filename = "figure4.png",
+ggsave(filename = "figure_2.png",
        plot = figure4,
        path = here("figures"),
        width = 8,
