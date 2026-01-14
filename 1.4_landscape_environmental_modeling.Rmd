@@ -18,52 +18,57 @@ library(ggfortify)
 library(DHARMa)
 library(MASS)
 library(patchwork)
-library(feasts)
+#library(feasts)
 library(randomForest)
-library(stars)
+library(terra)
 ```
 
 ```{r}
-elevation <- read_stars(here("data", "raw_data", "elevation.tif"))
-aspect <- read_stars(here("data", "raw_data", "aspect.tif"))
+elevation <- rast(here("data", "raw_data", "elevation.tif"))
+aspect <- rast(here("data", "raw_data", "aspect.tif"))
 aspect <- cos((aspect * pi/180) - (225 * pi/180))
-slope <- read_stars(here("data", "raw_data", "slope.tif"))
-solar_radiation <- read_stars(here("data", "raw_data", "sol_rad.tif"))
-heat_load_index <- read_stars(here("data", "clean_data", "heat_load_index.tif"))
-diurnal_heat_index <- read_stars(here("data", "clean_data", "diurnal_heat.tif"))
-topographic_position <- read_stars(here("data", "clean_data", "topographic_position.tif"))
-sol_rad_aspect <- read_stars(here("data", "clean_data", "sol_rad_aspect.tif"))
-terrain_ruggedness <- read_stars(here("data", "clean_data", "terrain_ruggedness.tif"))
-saga_wetness <- read_stars(here("data", "raw_data", "saga_wetness.tif"))
-twi <- read_stars(here("data", "raw_data", "twi.tif"))
+slope <- rast(here("data", "raw_data", "slope.tif"))
+solar_radiation <- rast(here("data", "raw_data", "sol_rad.tif"))
+heat_load_index <- rast(here("data", "clean_data", "heat_load_index.tif"))
+diurnal_heat_index <- rast(here("data", "clean_data", "diurnal_heat.tif"))
+topographic_position <- rast(here("data", "clean_data", "topographic_position.tif"))
+sol_rad_aspect <- rast(here("data", "clean_data", "sol_rad_aspect.tif"))
+terrain_ruggedness <- rast(here("data", "clean_data", "terrain_ruggedness.tif"))
+saga_wetness <- rast(here("data", "raw_data", "saga_wetness.tif"))
+twi <- rast(here("data", "raw_data", "twi.tif"))
 
-elevation_points <- elevation %>% 
-  st_as_sf()
-aspect_points <- aspect %>% 
-  st_warp(dest = elevation) %>% 
-  st_as_sf()
+#elevation_points <- elevation %>% 
+#  st_as_sf()
+#aspect_points <- aspect %>% 
+#  st_warp(dest = elevation) %>% 
+#  st_as_sf()
 
-site_topography <- c(elevation, aspect, along = 1)
+#site_topography <- c(elevation, aspect, along = 1)
 
 plots_topography <- st_read(here("data", "raw_data", "plot_gps_points.shp")) %>% 
-  rename("plot_number" = "plt_nmb")
-plots_topography <- plots_topography %>% 
-  mutate(elevation = raster::extract(elevation, plots_topography),
-         aspect = raster::extract(aspect, plots_topography),
-         slope = raster::extract(slope, plots_topography),
-         summer_solar_radiation = raster::extract(solar_radiation[[3]], plots_topography),
-         spring_solar_radiation = raster::extract(solar_radiation[[2]], plots_topography),
-         winter_solar_radiation = raster::extract(solar_radiation[[1]], plots_topography),
-         heat_load = raster::extract(heat_load_index, plots_topography),
-         diurnal_heat = raster::extract(diurnal_heat_index, plots_topography),
-         topo_position = raster::extract(topographic_position, plots_topography),
-         sol_rad_aspect = raster::extract(sol_rad_aspect, plots_topography),
-         terrain_ruggedness = raster::extract(terrain_ruggedness, plots_topography),
-         saga_wetness = raster::extract(saga_wetness, plots_topography),
-         twi = raster::extract(twi, plots_topography)
-         ) %>% 
-  drop_na() %>% 
-  filter(duplicated(plot_number) == FALSE)
+  rename("plot_number" = "plt_nmb") |> 
+  extract(x = elevation, bind = T) |> 
+  extract(x = aspect, bind = T) |> 
+  extract(x = slope, bind = T) |> 
+  extract(x = solar_radiation[[3]], bind = T) |> 
+  extract(x = solar_radiation[[2]], bind = T) |> 
+  extract(x = solar_radiation[[1]], bind = T) |> 
+  extract(x = heat_load_index, bind = T) |> 
+  extract(x = diurnal_heat_index, bind = T) |>
+  extract(x = topographic_position, bind = T) |> 
+  extract(x = sol_rad_aspect, bind = T) |> 
+  extract(x = terrain_ruggedness, bind = T) |> 
+  extract(x = saga_wetness, bind = T) |> 
+  extract(x = twi, bind = T) |> 
+  st_as_sf() |> 
+  rename(summer_solar_radiation = sol_rad_3,
+  spring_solar_radiation = sol_rad_2,
+  winter_solar_radiation = sol_rad_1,
+  heat_load = lyr.1,
+  diurnal_heat = aspect.1,
+  topo_position = elevation.1,
+  sol_rad_aspect = lyr.1.1,
+  terrain_ruggedness = elevation.2)
 ```
 
 ```{r}
@@ -279,25 +284,31 @@ write.csv(predicted_environmental, here("data", "clean_data", "predicted_environ
 ```
 
 ```{r}
-study_points <- rasterToPoints(elevation) %>% 
-  as.data.frame() %>% 
-  st_as_sf(coords = c("x", "y"),
-           crs = crs(elevation)) %>%
-  mutate(id = seq(1, n(), by = 1)) 
-study_points <- study_points %>% 
-  mutate(aspect = raster::extract(aspect, study_points),
-         slope = raster::extract(slope, study_points),
-         summer_solar_radiation = raster::extract(solar_radiation[[3]], study_points),
-         spring_solar_radiation = raster::extract(solar_radiation[[2]], study_points),
-         winter_solar_radiation = raster::extract(solar_radiation[[1]], study_points),
-         heat_load = raster::extract(heat_load_index, study_points),
-         diurnal_heat = raster::extract(diurnal_heat_index, study_points),
-         topo_position = raster::extract(topographic_position, study_points),
-         sol_rad_aspect = raster::extract(sol_rad_aspect, study_points),
-         terrain_ruggedness = raster::extract(terrain_ruggedness, study_points),
-         saga_wetness = raster::extract(saga_wetness, study_points),
-         twi = raster::extract(twi, study_points)) %>% 
-  drop_na()
+study_points <- as.points(elevation) %>% 
+  extract(x = elevation, bind = T) |> 
+  extract(x = aspect, bind = T) |> 
+  extract(x = slope, bind = T) |> 
+  extract(x = solar_radiation[[3]], bind = T) |> 
+  extract(x = solar_radiation[[2]], bind = T) |> 
+  extract(x = solar_radiation[[1]], bind = T) |> 
+  extract(x = heat_load_index, bind = T) |> 
+  extract(x = diurnal_heat_index, bind = T) |>
+  extract(x = topographic_position, bind = T) |> 
+  extract(x = sol_rad_aspect, bind = T) |> 
+  extract(x = terrain_ruggedness, bind = T) |> 
+  extract(x = saga_wetness, bind = T) |> 
+  extract(x = twi, bind = T) |> 
+  st_as_sf() |> 
+  rename(summer_solar_radiation = sol_rad_3,
+  spring_solar_radiation = sol_rad_2,
+  winter_solar_radiation = sol_rad_1,
+  heat_load = lyr.1,
+  diurnal_heat = aspect.1,
+  topo_position = elevation.1,
+  sol_rad_aspect = lyr.1.1,
+  terrain_ruggedness = elevation.2) |> 
+  drop_na() |> 
+  rowid_to_column(var = "id")
 
 study_points_dates <- expand.grid(unique(study_points$id), unique(dates$date)) %>% 
   rename(id = Var1,
@@ -329,8 +340,9 @@ study_points_fall <- study_points_dates %>%
           vpd = mean(vpd, na.rm = T)) %>% 
   st_as_sf()
 
-st_write(study_points_early_summer, here("data", "clean_data", "study_points_early_summer.shp"))
-st_write(study_points_fall, here("data", "clean_data", "study_points_fall.shp"))
+st_write(study_points_early_summer, 
+here("data", "clean_data", "study_points_early_summer.shp"), append = F)
+st_write(study_points_fall, here("data", "clean_data", "study_points_fall.shp"), append = F)
 ```
 
 
