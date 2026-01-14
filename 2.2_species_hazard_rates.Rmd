@@ -10,6 +10,7 @@ library(here)
 library(tidyverse)
 library(survival)
 library(emmeans)
+library(multcomp)
 library(gtsummary)
 library(patchwork)
 library(ggfortify)
@@ -50,28 +51,21 @@ community_survival <- autoplot(survfit(Surv(start_time, end_time, event = dead) 
 survival_gopher_clean$Plant <- factor(survival_gopher_clean$Plant, levels = c("HEWH", "RHOV", "ENCA", "ADFA", "SAME", "CEOL", "SANI", "MALA", "SAAP", "HEAR"))
 
 first_year_hazard_model <- coxph(Surv(start_time, end_time, dead) ~ Plant, data = survival_gopher_clean %>% filter(end_time < 400), id = plot_number)
-first_year_hazard_emmeans <- emmeans(first_year_hazard_model, "Plant")
-first_year_letters <- multcomp::cld(first_year_hazard_emmeans) %>% 
-  mutate(.group = str_replace(.group, "1", "a"),
-         .group = str_replace(.group, "2", "b"),
-         .group = str_replace(.group, "3", "c"),
-         .group = str_replace(.group, "4", "d")) %>% 
-  filter(Plant != "HEWH") %>% 
-  dplyr::select(Plant, .group) %>% 
-  rename(species = Plant)
+first_year_glht <- glht(first_year_hazard_model, linfct = multcomp::mcp(Plant = "Tukey"))
+first_year_letters <- cld(first_year_glht) 
+first_year_letters_table <- as.data.frame(first_year_letters$mcletters$Letters) |> 
+  rownames_to_column(var = "species") |> 
+  rename(letters = "first_year_letters$mcletters$Letters")
 first_year_hazard <- first_year_hazard_model%>%
   tbl_regression(exp = TRUE)
 
 whole_study_hazard_model <- coxph(Surv(start_time, end_time, dead) ~ Plant, data = survival_gopher_clean, id = plot_number)
-whole_study_hazard_emmeans <- emmeans(whole_study_hazard_model, "Plant")
-whole_study_letters <- multcomp::cld(whole_study_hazard_emmeans) %>% 
-  mutate(.group = str_replace(.group, "1", "a"),
-         .group = str_replace(.group, "2", "b"),
-         .group = str_replace(.group, "3", "c"),
-         .group = str_replace(.group, "4", "d")) %>% 
-  filter(Plant != "HEWH") %>% 
-  dplyr::select(Plant, .group) %>% 
-  rename(species = Plant)
+whole_study_glht <- glht(whole_study_hazard_model, linfct = multcomp::mcp(Plant = "Tukey"))
+whole_study_letters <- cld(whole_study_glht) 
+whole_study_letters_table <- as.data.frame(whole_study_letters$mcletters$Letters) |> 
+  rownames_to_column(var = "species") |> 
+  rename(letters = "whole_study_letters$mcletters$Letters")
+
 whole_study_hazard <- coxph(Surv(start_time, end_time, dead) ~ Plant, data = survival_gopher_clean, id = plot_number) %>%
   tbl_regression(exp = TRUE)
 
@@ -85,7 +79,7 @@ first_year_species_survival <- first_year_hazard[["table_body"]]$label %>%
   dplyr::select(!rowname) %>% 
   filter(species != "Plant") %>% 
   filter(species != "HEWH") %>% 
-  left_join(first_year_letters, by = "species")%>%
+  left_join(first_year_letters_table, by = "species")%>%
   mutate(community = case_when(species %in% c("MALA", "RHOV", "ADFA", "HEAR", "CEOL") ~ "Chaparral",
                                species %in% c("HEWH", "SAAP", "SAME", "ENCA", "SANI") ~ "CSS"))
 
@@ -99,13 +93,13 @@ whole_study_species_survival <- whole_study_hazard[["table_body"]]$label %>%
   dplyr::select(!rowname) %>% 
   filter(species != "Plant") %>% 
   filter(species != "HEWH") %>% 
-  left_join(whole_study_letters, by = "species")%>% 
+  left_join(whole_study_letters_table, by = "species")%>% 
   mutate(community = case_when(species %in% c("MALA", "RHOV", "ADFA", "HEAR", "CEOL") ~ "Chaparral",
                                species %in% c("HEWH", "SAAP", "SAME", "ENCA", "SANI") ~ "CSS"))
 
 first_year_hazard_graph <- ggplot(first_year_species_survival, aes(x = fct_reorder(species, hazard), y = hazard, col = community))+
   geom_point()+
-  geom_text(aes(y = upper+0.2, label = .group)) +
+  geom_text(aes(y = upper+0.2, label = letters)) +
   geom_errorbar(aes(ymin = lower, ymax = upper))+
   geom_hline(yintercept = 1, linetype = "dashed")+
   coord_flip()+
@@ -117,7 +111,7 @@ first_year_hazard_graph <- ggplot(first_year_species_survival, aes(x = fct_reord
 
 whole_study_hazard_graph <- ggplot(whole_study_species_survival, aes(x = fct_reorder(species, hazard), y = hazard, col = community))+
   geom_point()+
-  geom_text(aes(y = upper +0.2, label = .group)) +
+  geom_text(aes(y = upper +0.2, label = letters)) +
   geom_errorbar(aes(ymin = lower, ymax = upper))+
   geom_hline(yintercept = 1, linetype = "dashed")+
   coord_flip()+
