@@ -1,0 +1,235 @@
+---
+title: "Untitled"
+format: html
+---
+
+```{r}
+library(here)
+library(tidyverse)
+library(randomForest)
+library(sf)
+```
+
+```{r}
+load(here("data", "models", "soil_rf.rds"))
+load(here("data", "models", "temp_rf.rds"))
+load(here("data", "models", "vpd_rf.rds"))
+
+plots_topography <- st_read(here("data", "clean_data", "plots_topography.shp")) |> 
+    rename(elevation = elevatn,
+    winter_solar_radiation = wntr_s_,
+    spring_solar_radiation = sprng__,
+    summer_solar_radiation = smmr_s_,
+    heat_load = heat_ld,
+    diurnal_heat = drnl_ht,
+    topo_position = tp_pstn,
+    sol_rad_aspect = sl_rd_s,
+    terrain_ruggedness = trrn_rg,
+    saga_wetness = sg_wtns) |> 
+        drop_na()
+
+soil_importance <- importance(soil_rf) |>
+  as.data.frame() |> 
+  rownames_to_column(var = "variable")
+
+ggplot(soil_importance, aes(x = reorder(variable, `%IncMSE`), y = `%IncMSE`)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  theme_classic() +
+  labs(title = "Soil Moisture Variable Importance",
+       x = "Variable",
+       y = "Increase in MSE")
+
+soil_saga_pdp <- tibble("saga_wetness" = seq(from = min(plots_topography$saga_wetness), to = max(plots_topography$saga_wetness), length.out = 100)) %>% 
+    mutate(date = "2020-07-01",
+         elevation = mean(plots_topography$elevation),
+         aspect = mean(plots_topography$aspect),
+         slope = mean(plots_topography$slope),
+         summer_solar_radiation = mean(plots_topography$summer_solar_radiation),
+         spring_solar_radiation = mean(plots_topography$spring_solar_radiation),
+         winter_solar_radiation = mean(plots_topography$winter_solar_radiation),
+         heat_load = mean(plots_topography$heat_load),
+         diurnal_heat = mean(plots_topography$diurnal_heat),
+         topo_position = mean(plots_topography$topo_position),
+         sol_rad_aspect = mean(plots_topography$sol_rad_aspect),
+         terrain_ruggedness = mean(plots_topography$terrain_ruggedness),
+         twi = mean(plots_topography$twi)) %>%
+          mutate(soil_moisture = predict(soil_rf, newdata = .))
+
+ggplot(soil_saga_pdp, aes(x = saga_wetness, y = soil_moisture)) +
+  geom_line() +
+  theme_classic() +
+  labs(title = "Partial Dependence Plot for SAGA Wetness",
+       x = "SAGA Wetness Index",
+       y = "Predicted Soil Moisture")
+
+soil_topo_pdp <- tibble("topo_position" = seq(from = min(plots_topography$topo_position), to = max(plots_topography$topo_position), length.out = 100)) %>% 
+  mutate(date = "2020-07-01",
+         elevation = mean(plots_topography$elevation),
+         aspect = mean(plots_topography$aspect),
+         slope = mean(plots_topography$slope),
+         summer_solar_radiation = mean(plots_topography$summer_solar_radiation),
+         spring_solar_radiation = mean(plots_topography$spring_solar_radiation),
+         winter_solar_radiation = mean(plots_topography$winter_solar_radiation),
+         heat_load = mean(plots_topography$heat_load),
+         diurnal_heat = mean(plots_topography$diurnal_heat),
+         saga_wetness = mean(plots_topography$saga_wetness),
+         sol_rad_aspect = mean(plots_topography$sol_rad_aspect),
+         terrain_ruggedness = mean(plots_topography$terrain_ruggedness),
+         twi = mean(plots_topography$twi)) %>%
+          mutate(soil_moisture = predict(soil_rf, newdata = .))
+
+ggplot(soil_topo_pdp, aes(x = topo_position, y = soil_moisture)) +
+  geom_line() +
+  theme_classic() +
+  labs(title = "Partial Dependence Plot for Topographic Position Index",
+       x = "Topographic Position Index",
+       y = "Predicted Soil Moisture")
+```
+
+```{r}
+station_max <- read.csv(here("data", "raw_data", "weather_station_temp.csv")) %>% 
+  filter(Year == 2020) %>% 
+  mutate(Month = case_when(Month == "January" ~ 01, 
+                           Month == "Febuary" ~ 02,
+                           Month == "March" ~ 03,
+                           Month == "April" ~ 04,
+                           Month == "May" ~ 05,
+                           Month == "June" ~ 06,
+                           Month == "July" ~ 07,
+                           Month == "August" ~ 08,
+                           Month == "September" ~ 09,
+                           Month == "October" ~ 10,
+                           Month == "November" ~ 11,
+                           Month == "December" ~ 12),
+         date = paste(Year, Month, Date, sep = "-"),
+         date = ymd(date)) %>% 
+  dplyr::select(date, Temp) %>% 
+  rename(max_temp = Temp)
+
+pdp_max_temp <- station_max |> filter(date == mdy("07-01-2020"))
+
+temp_importance <- importance(temp_rf) |>
+  as.data.frame() |> 
+  rownames_to_column(var = "variable")
+
+ggplot(temp_importance, aes(x = reorder(variable, `%IncMSE`), y = `%IncMSE`)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  theme_classic() +
+  labs(title = "Temperature Variable Importance",
+       x = "Variable",
+       y = "Increase in MSE")
+
+temp_springsol_pdp <- tibble("spring_solar_radiation" = seq(from = min(plots_topography$spring_solar_radiation),
+to = max(plots_topography$spring_solar_radiation), length.out = 100)) %>% 
+    mutate(date = "2020-07-01",
+         max_temp = pdp_max_temp$max_temp,
+         elevation = mean(plots_topography$elevation),
+         aspect = mean(plots_topography$aspect),
+         slope = mean(plots_topography$slope),
+         summer_solar_radiation = mean(plots_topography$summer_solar_radiation),
+         saga_wetness = mean(plots_topography$saga_wetness),
+         winter_solar_radiation = mean(plots_topography$winter_solar_radiation),
+         heat_load = mean(plots_topography$heat_load),
+         diurnal_heat = mean(plots_topography$diurnal_heat),
+         topo_position = mean(plots_topography$topo_position),
+         sol_rad_aspect = mean(plots_topography$sol_rad_aspect),
+         terrain_ruggedness = mean(plots_topography$terrain_ruggedness),
+         twi = mean(plots_topography$twi)) %>%
+          mutate(temperature = predict(temp_rf, newdata = .))
+
+ggplot(temp_springsol_pdp, aes(x = spring_solar_radiation, y = temperature)) +
+  geom_line() +
+  theme_classic() +
+  labs(title = "Partial Dependence Plot for Spring Solar Radiation",
+       x = "Spring Solar Radiation",
+       y = "Predicted Temperature")
+
+temp_topo_pdp <- tibble("topo_position" = seq(from = min(plots_topography$topo_position),
+to = max(plots_topography$topo_position), length.out = 100)) %>% 
+    mutate(date = "2020-07-01",
+         max_temp = pdp_max_temp$max_temp,
+         elevation = mean(plots_topography$elevation),
+         aspect = mean(plots_topography$aspect),
+         slope = mean(plots_topography$slope),
+         summer_solar_radiation = mean(plots_topography$summer_solar_radiation),
+         saga_wetness = mean(plots_topography$saga_wetness),
+         winter_solar_radiation = mean(plots_topography$winter_solar_radiation),
+         heat_load = mean(plots_topography$heat_load),
+         diurnal_heat = mean(plots_topography$diurnal_heat),
+         spring_solar_radiation = mean(plots_topography$spring_solar_radiation),
+         sol_rad_aspect = mean(plots_topography$sol_rad_aspect),
+         terrain_ruggedness = mean(plots_topography$terrain_ruggedness),
+         twi = mean(plots_topography$twi)) %>%
+          mutate(temperature = predict(temp_rf, newdata = .))
+
+ggplot(temp_topo_pdp, aes(x = topo_position, y = temperature)) +
+  geom_line() +
+  theme_classic() +
+  labs(title = "Partial Dependence Plot for Topographic Position Index",
+       x = "Topograhic Position Index",
+       y = "Predicted Temperature")
+```
+
+```{r}
+vpd_importance <- importance(vpd_rf) |>
+  as.data.frame() |> 
+  rownames_to_column(var = "variable") |> 
+  filter(variable != "date")
+
+ggplot(vpd_importance, aes(x = reorder(variable, `%IncMSE`), y = `%IncMSE`)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  theme_classic() +
+  labs(title = "VPD Variable Importance",
+       x = "Variable",
+       y = "Increase in MSE")
+
+vpd_twi_pdp <- tibble("twi" = seq(from = min(plots_topography$twi), to = max(plots_topography$twi), length.out = 100)) %>% 
+  mutate(date = "2020-07-01",
+         elevation = mean(plots_topography$elevation),
+         aspect = mean(plots_topography$aspect),
+         slope = mean(plots_topography$slope),
+         summer_solar_radiation = mean(plots_topography$summer_solar_radiation),
+         spring_solar_radiation = mean(plots_topography$spring_solar_radiation),
+         winter_solar_radiation = mean(plots_topography$winter_solar_radiation),
+         heat_load = mean(plots_topography$heat_load),
+         diurnal_heat = mean(plots_topography$diurnal_heat),
+         topo_position = mean(plots_topography$topo_position),
+         sol_rad_aspect = mean(plots_topography$sol_rad_aspect),
+         terrain_ruggedness = mean(plots_topography$terrain_ruggedness),
+         saga_wetness = mean(plots_topography$saga_wetness)) %>%
+          mutate(vpd = predict(vpd_rf, newdata = .))
+
+ggplot(vpd_twi_pdp, aes(x = twi, y = vpd)) +
+  geom_line() +
+  theme_classic() +
+  labs(title = "Partial Dependence Plot for Topographic Wetness Index",
+       x = "Topographic Wetness Index",
+       y = "Predicted VPD")
+
+vpd_elevation_pdp <- tibble("elevation" = seq(from = min(plots_topography$elevation), 
+to = max(plots_topography$elevation), length.out = 100)) %>% 
+  mutate(date = "2020-09-01",
+         twi = mean(plots_topography$twi),
+         aspect = mean(plots_topography$aspect),
+         slope = mean(plots_topography$slope),
+         summer_solar_radiation = mean(plots_topography$summer_solar_radiation),
+         spring_solar_radiation = mean(plots_topography$spring_solar_radiation),
+         winter_solar_radiation = mean(plots_topography$winter_solar_radiation),
+         heat_load = mean(plots_topography$heat_load),
+         diurnal_heat = mean(plots_topography$diurnal_heat),
+         topo_position = mean(plots_topography$topo_position),
+         sol_rad_aspect = mean(plots_topography$sol_rad_aspect),
+         terrain_ruggedness = mean(plots_topography$terrain_ruggedness),
+         saga_wetness = mean(plots_topography$saga_wetness)) %>%
+          mutate(vpd = predict(vpd_rf, newdata = .))
+
+ggplot(vpd_elevation_pdp, aes(x = elevation, y = vpd)) +
+  geom_line() +
+  theme_classic() +
+  labs(title = "Partial Dependence Plot for Elevation",
+       x = "Elevation",
+       y = "Predicted VPD")
+```

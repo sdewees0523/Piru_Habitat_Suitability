@@ -1,0 +1,159 @@
+---
+title: "Untitled"
+output: html_document
+date: "2024-07-26"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(here)
+library(tidyverse)
+library(survival)
+library(gtsummary)
+library(patchwork)
+```
+
+```{r}
+load(here("data", "models", "summer_model.rda"))
+plant_traits <- read.csv(here("data", "clean_data", "cox_plant_traits.csv")) %>% 
+  mutate(les_1 = scale(les_1),
+         les_2 = scale(les_2),
+         wood_density = scale(wood_density),
+         wue = scale(wue),
+         wue = wue * -1)
+
+environmental <- read.csv(here("data", "clean_data", "predicted_environmental.csv")) %>% 
+  mutate(date = ymd(date)) %>% 
+  group_by(date) %>% 
+  mutate(temperature = scale(temperature),
+         vpd = scale(vpd)) %>% 
+  ungroup()
+
+summer_environmental <- environmental %>% 
+  filter(date > "2020-06-26" & date <= "2020-09-30") %>% 
+  group_by(plot_number) %>%
+  reframe(soil_moisture = mean(soil_moisture),
+          vpd = mean(vpd))
+
+height <- read.csv(here("data", "clean_data", "height_gopher_kapplin.csv"))%>%
+   mutate(alive = case_when(dead == 1 ~ 0,
+                           dead == 0 ~ 1)) %>% 
+  mutate(start_date = ymd(start_date),
+         end_date = ymd(end_date),
+         height = scale(height))
+
+mean_july_heights <- height %>% 
+  filter(start_date > "2020-06-01") %>% 
+  group_by(Plant) %>% 
+  reframe(height = mean(height)) %>% 
+  rename(species = Plant)
+
+height_environment_trait<- height %>% 
+  left_join(environmental, by = "plot_number", multiple = "all") %>% 
+  rename(species = Plant) %>% 
+  left_join(plant_traits, by = "species")
+```
+
+```{r}
+rhov_test <- summer_environmental %>% 
+  select(plot_number, soil_moisture, vpd) %>% 
+  mutate(species = "RHOV",
+         start_time = 0,
+         end_time = 280, 
+         dead = 0) %>% 
+  left_join(plant_traits, by = "species") %>% 
+  left_join(mean_july_heights, by = "species") %>% 
+  mutate(prob_alive = predict(cox_summer_model, newdata = ., type = "survival")) %>% 
+  filter(prob_alive >= 0.5)
+
+enca_test <- summer_environmental %>% 
+  select(plot_number, soil_moisture, vpd) %>% 
+  mutate(species = "ENCA",
+         start_time = 0,
+         end_time = 280, 
+         dead = 0) %>% 
+  left_join(plant_traits, by = "species") %>% 
+  left_join(mean_july_heights, by = "species") %>% 
+  mutate(prob_alive = predict(cox_summer_model, newdata = ., type = "survival")) %>% 
+  filter(prob_alive >= 0.5)
+
+top_survivors <- rbind(rhov_test, enca_test) %>%
+  select(plot_number, species, prob_alive) |> 
+  pivot_wider(names_from = species, values_from = prob_alive) |> 
+  full_join(summer_environmental, by = "plot_number") |> 
+  mutate(species = case_when(is.na(ENCA) != T & is.na(RHOV) != T ~ "Both",
+                             is.na(ENCA) != T & is.na(RHOV) == T ~ "ENCA \n Acquisitive/low WUE",
+                             is.na(ENCA) == T & is.na(RHOV) != T ~ "RHOV \n Conservative/high WUE",
+                             TRUE ~ "Neither"
+  )) |> 
+  select(plot_number, species, soil_moisture, vpd)
+
+top_survivors$species <- factor(top_survivors$species, levels = c("Neither", "ENCA \n Acquisitive/low WUE", "RHOV \n Conservative/high WUE","Both"))
+
+top_survivors <- top_survivors |> 
+  arrange(species)
+
+figure_10 <- ggplot(top_survivors, aes(x = soil_moisture, y = vpd))+
+  geom_point(aes(col = species))+
+  theme_classic()+
+  geom_hline(yintercept = 0)+
+  geom_vline(xintercept = 0)+
+  ylim(-2,2)+
+  xlim(-2,2)+
+  labs(x = "Soil Moisture",
+       y = "Vapor Pressure Deficit")+
+  annotate(geom = "text", x = -1.5, y = 1.7, label = "Hot and Dry")+
+  annotate(geom = "text", x = 1.5, y = 1.7, label = "Hot and Wet")+
+  annotate(geom = "text", x = -1.5, y = -2, label = "Cool and Dry")+
+  annotate(geom = "text", x = 1.5, y = -2, label = "Cool and Wet")+
+  scale_color_manual(values = c("#D81B60", "#1E88E5", "#FFC107","#004D40" ))+
+  labs(col = "50% Survival Predicted")+
+  theme(
+    legend.key.height = unit(0.75, "cm"), # Adjusts vertical length
+    legend.key.width = unit(0.25, "cm")    # Adjusts horizontal length
+  )
+figure_10
+
+
+ggsave(filename = "figure_10.png",
+       plot = figure_10,
+       path = here("figures"),
+       width = 4, 
+       height = 4, 
+       units = "in", 
+       dpi = 325, 
+       scale = 1.5)
+
+figure_10_big <- ggplot(top_survivors, aes(x = soil_moisture, y = vpd))+
+  geom_point(aes(col = species))+
+  theme_classic()+
+  geom_hline(yintercept = 0)+
+  geom_vline(xintercept = 0)+
+  ylim(-2,2)+
+  xlim(-2,2)+
+  labs(x = "Soil Moisture",
+       y = "Vapor Pressure Deficit")+
+  annotate(geom = "text", x = -1.5, y = 1.7, label = "Hot and Dry")+
+  annotate(geom = "text", x = 1.5, y = 1.7, label = "Hot and Wet")+
+  annotate(geom = "text", x = -1.5, y = -2, label = "Cool and Dry")+
+  annotate(geom = "text", x = 1.5, y = -2, label = "Cool and Wet")+
+  scale_color_manual(values = c("#D81B60", "#1E88E5", "#FFC107","#004D40" ))+
+  labs(col = "50% Survival Predicted")+
+  theme(
+    legend.key.height = unit(0.75, "cm"), # Adjusts vertical length
+    legend.key.width = unit(0.25, "cm")    # Adjusts horizontal length
+  )+
+  theme(text = element_text(size = 20))
+figure_10_big
+
+
+ggsave(filename = "figure_10_big.png",
+       plot = figure_10_big,
+       path = here("figures"),
+       width = 4, 
+       height = 4, 
+       units = "in", 
+       dpi = 325, 
+       scale = 1.5)
+```
+

@@ -1,0 +1,70 @@
+---
+title: "Untitled"
+format: html
+---
+
+```{r}
+library(here)
+library(tidyverse)
+library(terra)
+```
+
+
+```{r}
+saga_wetness <- rast(here("data", "clean_data", "saga_wetness.tif"))
+topographic_position <- rast(here("data", "clean_data", "topographic_position.tif"))
+twi <- rast(here("data", "clean_data", "twi.tif"))
+elevation <- rast(here("data", "clean_data", "elevation.tif"))
+```
+```{r}
+saga_wetness_favorable <- saga_wetness
+saga_wetness_favorable[!is.na(saga_wetness_favorable) & (saga_wetness_favorable < 3.32)] <- NA
+
+topo_position_favorable <- topographic_position
+topo_position_favorable[!is.na(topo_position_favorable) & (topo_position_favorable > -0.19)] <- NA
+
+# 1 where both are non-NA, NA otherwise
+soil_favorable <- ifel(!is.na(saga_wetness_favorable) & !is.na(topo_position_favorable), 1, NA)
+
+names(soil_favorable) <- "soil_favorable"
+
+writeRaster(soil_favorable, here("data", "clean_data", "soil_favorable.tif"), overwrite=TRUE)
+
+twi_favorable <- twi
+twi_favorable[!is.na(twi_favorable) & (twi_favorable > 4.5)] <- NA
+
+elevation_favorable <- elevation
+elevation_favorable[!is.na(elevation) & (elevation_favorable > 455)] <- NA
+
+# 1 where both are non-NA, NA otherwise
+vpd_favorable <- ifel(!is.na(twi_favorable) & !is.na(elevation_favorable), 1, NA)
+
+names(vpd_favorable) <- "vpd_favorable"
+
+writeRaster(vpd_favorable, here("data", "clean_data", "vpd_favorable.tif"), overwrite=TRUE)
+
+landscape_regions <- elevation
+landscape_regions <- mask(landscape_regions, elevation)
+landscape_regions[!is.na(elevation) & is.na(soil_favorable) & is.na(vpd_favorable)] <- 1
+landscape_regions[is.na(soil_favorable) & !is.na(vpd_favorable)] <- 2
+landscape_regions[!is.na(soil_favorable) & is.na(vpd_favorable)] <- 3
+landscape_regions[!is.na(soil_favorable) & !is.na(vpd_favorable)] <- 4
+landscape_regions <- as.factor(landscape_regions)
+
+# assign raster attribute table (ID must match the distinct integer codes)
+levels(landscape_regions)[[1]] <- data.frame(
+  ID = 1:4,
+  category = c("hot and dry", "cool and dry", "hot and wet", "cool and wet")
+)
+
+# inspect and return the categorical raster
+levels(landscape_regions)
+plot(landscape_regions)
+writeRaster(landscape_regions, here("data", "clean_data", "landscape_regions.tif"), overwrite=TRUE)
+```
+
+```{r}
+landscape_regions_coarse <- focal(landscape_regions, w = 5, fun = "modal", na.rm = TRUE)
+plot(landscape_regions_coarse)
+writeRaster(landscape_regions_coarse, here("data", "clean_data", "landscape_regions_coarse.tif"), overwrite=TRUE)
+```

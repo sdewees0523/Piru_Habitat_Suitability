@@ -1,0 +1,43 @@
+Setup Used:              New ESRI Shapefile (1)
+Export Format:           ESRI Shapefile
+Data Type:               Features
+Feature Selection:       Export All Features
+Not In Feature Positions:Not Used
+Export Notes:            No
+Export Velocity Records: No
+Export Sensor Records:   No
+Export Menu Attribute As:Attribute Value
+Generated Attributes:    None
+Position Filter Details: 
+Filter By:               GNSS Criteria
+Maximum PDOP:            Any
+Maximum HDOP:            Any
+Min Number Of SVs:       2D (3 or more measurements)
+Uncorrected:             No
+P(Y) Code:               Yes
+Real-time SBAS:          Yes
+Real-time Code:          Yes
+Postprocessed Code:      Yes
+Real-time Carrier:       Yes
+Postprocessed Carrier Float:Yes
+RTK Fixed:               Yes
+Postprocessed Carrier Fixed:Yes
+Non-GNSS:                Yes
+Coordinate System:       Lat/Long
+Datum:                   WGS 1984
+Altitude Units:          Meters
+Altitude Reference:      MSL
+Geoid Model:             EGM96 (Global)
+Distance Units:          Meters
+Area Units:              Square Meters
+Velocity Units:          Meters Per Second
+Precision Units:         Meters
+                         
+Data Dictionary
+---------------
+Point_generic - Point Feature
+    Comment - String, Length = 32
+Line_generic - Line Feature
+    Comment - String, Length = 32
+Area_generic - Area Feature
+    Comment - String, Length = 32

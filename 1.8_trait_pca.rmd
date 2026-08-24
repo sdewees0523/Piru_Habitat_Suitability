@@ -1,0 +1,51 @@
+---
+title: "Untitled"
+author: "Shane Dewees"
+date: "2022-09-06"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(here)
+library(tidyverse)
+```
+
+```{r}
+plant_traits <- read.csv(here("data", "clean_data", "plant_traits_clean.csv")) 
+```
+
+
+```{r}
+plant_traits_leaf <- plant_traits %>% 
+  dplyr::select(species,
+                sla,
+                ldmc,
+                leaf_thickness,
+                c_n,
+                percent_n,
+                percent_c,
+                petiole_length,
+                leaf_lamina_length,
+                leaf_width)
+
+leaf_traits_pca_input <- plant_traits_leaf %>% 
+  column_to_rownames(var = "species")
+
+leaf_traits_pca <- leaf_traits_pca_input %>% 
+  prcomp(center = TRUE, scale. = TRUE)
+summary(leaf_traits_pca)
+
+plant_traits_pca_leaf <- plant_traits_leaf %>% 
+  mutate(les_1 = predict(leaf_traits_pca, newdata = .)[,1],
+         les_2 = predict(leaf_traits_pca, newdata = .)[,2]) %>% 
+  dplyr::select(species, les_1, les_2)
+
+cox_traits <- plant_traits_pca_leaf %>% 
+  left_join(plant_traits, by = "species") %>% 
+  dplyr::select(species, les_1, les_2, wood_density, wue) %>% 
+  filter(species != "HEWH")
+
+write.csv(cox_traits, here("data", "clean_data", "cox_plant_traits.csv"), row.names = F)
+```
+

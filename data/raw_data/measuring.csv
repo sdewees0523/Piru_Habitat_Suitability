@@ -1,0 +1,1667 @@
+ID,Plant,Height,Width 1,Width 2,Stem Diameter,Date Measured,Notes
+1,ENCA (Pink),42.2,20.9,9.1,0.4,5-Jun,
+2,CEOL (Orange),30.4,9,6.1,0.41,5-Jun,
+3,ENCA (Pink),21.5,33.1,10.3,0.48,5-Jun,
+4,ENCA (Pink),13.6,32.2,6.8,0.45,5-Jun,
+5,CEOL (Orange),10.7,7.6,6.5,0.29,5-Jun,
+6,HEWH (White),,,,,5-Jun,np
+7,SAME (Orange + Pink),33.1,10.4,10.4,0.41,5-Jun,
+8,SANI (Orange + Yellow),,,,,5-Jun,np
+9,SANI (Orange + Yellow),,,,,5-Jun,np
+10,RHOV (White + Pink),13.8,7.7,7.2,0.3,5-Jun,
+11,SANI (Orange + Yellow),,,,,5-Jun,np
+12,CEOL (Orange),,,,,5-Jun,np
+13,HEWH (White),18.1,54.5,17.8,,5-Jun,
+14,HEWH (White),15.2,14.2,6,,5-Jun,
+15,CEOL (Orange),29.5,6.9,4.8,0.3,5-Jun,
+16,SANI (Orange + Yellow),,,,,5-Jun,np
+17,SAAP (White + Green),13,9.1,7.5,0.41,5-Jun,
+18,SAME (Orange + Pink),16.9,4.6,2.6,0.31,5-Jun,
+19,ENCA (Pink),36.8,41.3,7.6,0.42,5-Jun,
+20,MALA (White + Yellow),,,,,5-Jun,np
+21,SAAP (White + Green),14.9,6.9,4,0.4,5-Jun,
+22,CEOL (Orange),,,,,5-Jun,np
+23,ENCA (Pink),43.4,26.2,14.5,0.6,5-Jun,
+24,HEWH (White),7.9,7.9,4.6,,5-Jun,
+25,CEOL (Orange),,,,,5-Jun,dead
+26,ENCA (Pink),66.5,39.5,15.4,0.51,5-Jun,
+27,SAME (Orange + Pink),24.1,3.9,3.7,0.23,5-Jun,
+28,SAME (Orange + Pink),,,,,5-Jun,np
+29,SANI (Orange + Yellow),4.4,3.4,2.7,0.09,5-Jun,
+30,SAME (Orange + Pink),,,,,5-Jun,np
+31,CEOL (Orange),26.4,17.6,9.2,0.3,5-Jun,
+32,SANI (Orange + Yellow),,,,,5-Jun,np
+33,MALA (White + Yellow),,,,,5-Jun,np
+34,ADFA (Orange + Green),28.2,75.9,51.3,1.08,5-Jun,
+35,ADFA (Orange + Green),12.2,35.2,25.2,0.41,5-Jun,
+36,SAME (Orange + Pink),,,,,5-Jun,np
+37,MALA (White + Yellow),36.3,3.9,3,0.41,5-Jun,
+38,HEWH (White),26.7,20.4,12,,5-Jun,
+39,CEOL (Orange),,,,,5-Jun,np
+40,CEOL (Orange),17.8,6.3,4.5,0.3,5-Jun,
+41,CEOL (Orange),40.2,15.2,13,0.35,5-Jun,
+42,HEWH (White),24.7,46.4,23.9,,5-Jun,
+43,ENCA (Pink),19.9,32.9,15.6,0.48,5-Jun,
+44,ENCA (Pink),6.2,19.1,7.8,0.5,5-Jun,
+45,ENCA (Pink),40.5,27.6,11.7,0.5,5-Jun,
+46,HEWH (White),,,,,5-Jun,np
+47,SAME (Orange + Pink),,,,,5-Jun,np
+48,RHOV (White + Pink),15,8.6,6.4,0.42,5-Jun,
+49,HEWH (White),22.7,24.2,17.8,,5-Jun,
+50,RHOV (White + Pink),,,,,5-Jun,np
+51,SAAP (White + Green),47.1,31.3,29.6,1.1,5-Jun,
+52,HEWH (White),17.8,21.2,8.6,,5-Jun,
+53,ADFA (Orange + Green),37.5,80.3,61.4,0.7,5-Jun,
+54,CEOL (Orange),39.6,5,5,0.38,5-Jun,
+55,HEWH (White),,,,,5-Jun,np
+56,HEWH (White),,,,,5-Jun,np
+57,ENCA (Pink),38,26.2,13.2,0.42,5-Jun,
+58,CEOL (Orange),26.6,14.6,11.1,0.37,5-Jun,
+59,MALA (White + Yellow),24.5,14.4,1.9,0.4,5-Jun,
+60,SAAP (White + Green),,,,,5-Jun,np
+61,ENCA (Pink),31,17.6,10.4,0.31,5-Jun,
+62,HEWH (White),,,,,5-Jun,np
+63,HEWH (White),,,,,5-Jun,np
+64,SANI (Orange + Yellow),,,,,5-Jun,np
+65,CEOL (Orange),,,,,5-Jun,np
+66,ENCA (Pink),,,,,5-Jun,np
+67,CEOL (Orange),18.6,17.5,13.2,0.65,5-Jun,
+68,HEWH (White),46.1,29.7,23.6,,5-Jun,
+69,HEWH (White),25.5,37.6,23.2,,5-Jun,
+70,HEWH (White),,,,,5-Jun,np
+71,SAME (Orange + Pink),,,,,5-Jun,"np, g"
+72,MALA (White + Yellow),26.6,14,2,0.5,5-Jun,
+73,CEOL (Orange),,,,,5-Jun,np
+74,HEWH (White),,,,,5-Jun,np
+75,RHOV (White + Pink),,,,,5-Jun,"np, g"
+76,HEWH (White),12.8,12.1,6.2,,5-Jun,
+77,RHOV (White + Pink),36.6,15.1,12.4,0.5,5-Jun,
+78,ENCA (Pink),19.8,7.1,6.6,0.75,5-Jun,
+79,SAAP (White + Green),16.2,27.3,13.9,0.51,5-Jun,
+80,MALA (White + Yellow),27.5,21.6,11.1,0.4,5-Jun,
+81,SAAP (White + Green),13.2,23.2,9.1,0.51,5-Jun,
+82,CEOL (Orange),31.6,7,6.2,0.31,5-Jun,
+83,SAAP (White + Green),22.8,14.8,9,0.5,5-Jun,
+84,RHOV (White + Pink),20.3,10.5,10.2,0.35,5-Jun,
+85,CEOL (Orange),26.1,13.9,8.9,0.31,5-Jun,
+86,CEOL (Orange),41.3,10.1,9.2,0.31,5-Jun,
+87,ENCA (Pink),25,4.4,3,0.4,5-Jun,
+88,SAAP (White + Green),15.1,23,16.6,0.38,5-Jun,
+89,ENCA (Pink),,,,,5-Jun,np
+90,ADFA (Orange + Green),36.6,35,30.2,0.55,5-Jun,
+91,RHOV (White + Pink),18.1,14,10.6,0.22,5-Jun,
+92,ENCA (Pink),21.5,13.4,10.1,0.4,5-Jun,
+93,HEWH (White),,,,,5-Jun,np
+94,SAME (Orange + Pink),,,,,5-Jun,np
+95,HEWH (White),,,,,5-Jun,np
+96,SANI (Orange + Yellow),,,,,5-Jun,np
+97,SAAP (White + Green),23.4,16.8,14.3,0.51,5-Jun,
+98,SANI (Orange + Yellow),,,,,5-Jun,np
+99,CEOL (Orange),28.1,12.4,10.5,0.4,5-Jun,
+100,SAAP (White + Green),8.4,31.5,13.6,0.55,5-Jun,
+101,ENCA (Pink),,,,,5-Jun,np
+102,SAME (Orange + Pink),,,,,5-Jun,np
+103,ENCA (Pink),27.9,16.3,10.7,0.4,5-Jun,
+104,ADFA (Orange + Green),29.6,57.6,39.6,0.7,5-Jun,
+105,MALA (White + Yellow),42.7,14.9,14,0.42,5-Jun,
+106,RHOV (White + Pink),27.4,14.6,9.9,0.45,5-Jun,
+107,MALA (White + Yellow),9,20.4,5,0.22,5-Jun,
+108,ENCA (Pink),,,,,5-Jun,np
+109,RHOV (White + Pink),14.3,11.2,6.6,0.4,5-Jun,
+110,RHOV (White + Pink),15.3,10.9,8.1,0.48,5-Jun,
+111,SAAP (White + Green),25,15,14.8,0.9,5-Jun,
+112,HEWH (White),28.5,32.6,11.8,,5-Jun,
+113,ADFA (Orange + Green),23.1,64.4,54.9,0.55,5-Jun,
+114,CEOL (Orange),,,,,5-Jun,dead
+115,CEOL (Orange),29.5,10.9,6.7,0.3,5-Jun,
+116,ENCA (Pink),,,,,5-Jun,np
+117,SAME (Orange + Pink),23.7,12.5,11.1,0.4,5-Jun,
+118,SAAP (White + Green),15.6,13.1,6.6,0.4,5-Jun,
+119,HEWH (White),,,,,5-Jun,np
+120,ENCA (Pink),,,,,5-Jun,np
+121,SAME (Orange + Pink),,,,,5-Jun,np
+122,CEOL (Orange),39.5,10.4,8.4,0.35,5-Jun,
+123,SAME (Orange + Pink),,,,,5-Jun,np
+124,RHOV (White + Pink),17,9.1,8.4,0.5,5-Jun,
+125,CEOL (Orange),24.8,8,6.8,0.39,5-Jun,
+126,SANI (Orange + Yellow),,,,,5-Jun,np
+127,CEOL (Orange),13.9,8.9,5.2,0.25,5-Jun,
+128,ENCA (Pink),,,,,5-Jun,np
+129,ENCA (Pink),56.1,28.5,11.2,0.58,5-Jun,
+130,RHOV (White + Pink),22.5,14.1,11.9,0.6,5-Jun,
+131,MALA (White + Yellow),,,,,5-Jun,
+132,RHOV (White + Pink),3.9,2.9,2,0.37,5-Jun,
+133,HEWH (White),13.1,17.6,15.4,,5-Jun,
+134,ENCA (Pink),25.9,11.1,5.4,0.49,5-Jun,
+135,SAAP (White + Green),41.9,23.8,23.1,0.79,5-Jun,
+136,ENCA (Pink),41.1,17.9,12.4,0.4,5-Jun,
+137,SAAP (White + Green),24.1,16.1,14.6,0.5,5-Jun,
+138,ADFA (Orange + Green),51.6,40.4,35.3,0.59,5-Jun,
+139,ADFA (Orange + Green),50.1,43.3,35.4,0.62,5-Jun,
+140,SANI (Orange + Yellow),5.9,3.5,2.4,0.5,5-Jun,
+141,HEWH (White),29.4,30.6,17.1,,5-Jun,
+142,RHOV (White + Pink),23.4,10.6,9.6,0.41,5-Jun,
+143,ENCA (Pink),,,,,5-Jun,np
+144,HEWH (White),,,,,5-Jun,np
+145,CEOL (Orange),,,,,5-Jun,np
+146,CEOL (Orange),,,,,5-Jun,"np, g"
+147,RHOV (White + Pink),18.1,10.1,9.8,0.5,5-Jun,
+148,MALA (White + Yellow),,,,,5-Jun,np
+149,ENCA (Pink),,,,,5-Jun,dead
+150,MALA (White + Yellow),,,,,5-Jun,np
+151,ENCA (Pink),30.5,9.1,4.4,0.3,5-Jun,
+152,CEOL (Orange),16.9,11.7,3.8,0.3,5-Jun,
+153,ENCA (Pink),,,,,5-Jun,dead
+154,SANI (Orange + Yellow),,,,,5-Jun,"np, g"
+155,SAAP (White + Green),23.4,21.6,13.9,0.45,5-Jun,
+156,HEAR,9.7,15,11.3,0.45,5-Jun,
+157,CEOL (Orange),,,,,5-Jun,np
+158,SAAP (White + Green),,,,,5-Jun,np
+159,ENCA (Pink),,,,,5-Jun,np
+160,HEWH (White),24.6,50.8,31.6,,5-Jun,
+161,MALA (White + Yellow),,,,,5-Jun,np
+162,HEWH (White),21.5,12.5,10.4,,24-Jun,
+163,ADFA (Orange + Green),57.5,75.6,52.9,0.8,5-Jun,
+164,HEWH (White),24.3,17.6,8.9,,5-Jun,
+165,SANI (Orange + Yellow),,,,,5-Jun,np
+166,SAME (Orange + Pink),35.6,18.3,13.8,1,24-Jun,
+167,HEWH (White),27.7,20.4,13.9,,24-Jun,
+168,RHOV (White + Pink),19.6,13.7,13.1,0.62,24-Jun,
+169,HEWH (White),29.5,20.3,19.3,,24-Jun,
+170,CEOL (Orange),15.4,7.2,3.9,0.2,24-Jun,
+171,RHOV (White + Pink),18.2,9,8.1,0.35,24-Jun,
+172,HEWH (White),,,,,24-Jun,np
+173,SAME (Orange + Pink),,,,,24-Jun,np
+174,ADFA (Orange + Green),53.6,41.2,32.3,1.2,24-Jun,
+175,HEWH (White),,,,,24-Jun,dead
+176,HEWH (White),5.8,8.9,2.9,,24-Jun,sad
+177,HEWH (White),29.6,47.5,41.4,,24-Jun,
+178,CEOL (Orange),,,,,24-Jun,"np, g"
+179,SANI (Orange + Yellow),,,,,24-Jun,np
+180,RHOV (White + Pink),,,,,24-Jun,"np, g"
+181,HEWH (White),9.7,17.1,4.8,,24-Jun,sad
+182,HEWH (White),30.3,36.2,29.6,,24-Jun,
+183,ADFA (Orange + Green),,,,,24-Jun,dead
+184,RHOV (White + Pink),,,,,24-Jun,"np, g"
+185,ENCA (Pink),33.5,16.1,14.2,0.61,24-Jun,
+186,HEWH (White),,,,,24-Jun,np
+187,HEWH (White),21.1,26.2,20.6,,24-Jun,
+188,HEWH (White),7.3,18.4,0.5,,24-Jun,sad
+189,CEOL (Orange),,,,,24-Jun,np
+190,CEOL (Orange),25.9,13.6,11.4,0.33,24-Jun,
+191,ADFA (Orange + Green),,,,,24-Jun,`
+192,SANI (Orange + Yellow),,,,,24-Jun,dead
+193,ENCA (Pink),,,,,24-Jun,np
+194,SANI (Orange + Yellow),18.2,17.6,13.2,0.8,24-Jun,
+195,HEWH (White),,,,,24-Jun,np
+196,HEWH (White),,,,,24-Jun,np
+197,HEWH (White),,,,,24-Jun,"np, buried"
+198,ENCA (Pink),,,,,24-Jun,np
+199,HEWH (White),9.7,17.1,10.3,,24-Jun,
+200,HEWH (White),9.9,9.6,3,,24-Jun,
+201,SAAP (White + Green),,,,,24-Jun,"np, g"
+202,ENCA (Pink),,,,,24-Jun,dead
+203,ADFA (Orange + Green),,,,,24-Jun,dead
+204,HEWH (White),,,,,24-Jun,np
+205,CEOL (Orange),27.3,12.9,8.7,0.44,24-Jun,
+206,SAAP (White + Green),14.3,6.6,4.5,0.22,24-Jun,
+207,ENCA (Pink),,,,,24-Jun,np
+208,SAAP (White + Green),11.3,10,7.6,0.55,24-Jun,g.a.
+209,HEWH (White),20.4,32,12.5,,24-Jun,
+210,ADFA (Orange + Green),41.4,51.2,30,0.61,24-Jun,
+211,HEWH (White),14.4,20.9,13.2,,24-Jun,sad
+212,CEOL (Orange),,,,,24-Jun,dead
+213,SANI (Orange + Yellow),,,,,24-Jun,np
+214,RHOV (White + Pink),,,,,24-Jun,np
+215,CEOL (Orange),26,10.1,7.7,0.33,24-Jun,
+216,RHOV (White + Pink),,,,,24-Jun,np
+217,CEOL (Orange),,,,,24-Jun,np
+218,HEWH (White),26.1,29.7,23.6,,24-Jun,
+219,RHOV (White + Pink),23.8,12,9.8,0.49,24-Jun,
+220,ENCA (Pink),13.1,6.5,5.3,0.35,24-Jun,
+221,RHOV (White + Pink),,,,,24-Jun,"np, g"
+222,SAAP (White + Green),,,,,24-Jun,dead
+223,SAME (Orange + Pink),,,,,24-Jun,dead
+224,CEOL (Orange),,,,,24-Jun,np
+225,HEWH (White),,,,,24-Jun,np
+226,ENCA (Pink),,,,,24-Jun,np
+227,SAAP (White + Green),16.2,6.9,4.8,0.26,24-Jun,g.a.
+228,CEOL (Orange),37.5,27.8,24.8,0.4,24-Jun,
+229,SAME (Orange + Pink),,,,,24-Jun,"np, buried"
+230,ADFA (Orange + Green),,,,,24-Jun,dead
+231,SAME (Orange + Pink),,,,,24-Jun,np
+232,RHOV (White + Pink),,,,,24-Jun,np
+233,HEAR,,,,,24-Jun,"np, g"
+234,MALA (White + Yellow),,,,,24-Jun,np
+235,SAME (Orange + Pink),,,,,24-Jun,"np, g"
+236,HEWH (White),,,,,24-Jun,dead
+237,CEOL (Orange),,,,,24-Jun,"np, g"
+238,MALA (White + Yellow),,,,,24-Jun,np
+239,HEWH (White),,,,,24-Jun,np
+240,ENCA (Pink),,,,,24-Jun,np
+241,RHOV (White + Pink),35.9,19.9,11.1,0.55,24-Jun,
+242,RHOV (White + Pink),12.2,8.7,7.8,0.31,24-Jun,
+243,RHOV (White + Pink),,,,,24-Jun,"np, g"
+244,RHOV (White + Pink),15.9,9.1,8.2,0.49,24-Jun,
+245,CEOL (Orange),,,,,24-Jun,np
+246,HEWH (White),28.2,26.8,16.9,,24-Jun,
+247,CEOL (Orange),,,,,24-Jun,np
+248,SAME (Orange + Pink),,,,,24-Jun,np
+249,MALA (White + Yellow),,,,,24-Jun,np
+250,ENCA (Pink),29.4,57.8,23.5,0.55,24-Jun,
+251,ENCA (Pink),61.1,21,14.7,0.5,24-Jun,
+252,CEOL (Orange),39.9,20,13.8,0.41,24-Jun,
+253,RHOV (White + Pink),,,,,24-Jun,np
+254,SAME (Orange + Pink),,,,,24-Jun,np
+255,HEWH (White),18.6,17.1,7.8,,24-Jun,
+256,SAME (Orange + Pink),42.5,17.8,17.3,0.9,24-Jun,
+257,ADFA (Orange + Green),37,51.2,34.2,0.68,24-Jun,sad
+258,ENCA (Pink),,,,,24-Jun,np
+259,HEWH (White),15.9,16.2,9.3,,24-Jun,sad
+260,ADFA (Orange + Green),,,,,24-Jun,dead
+261,CEOL (Orange),,,,,24-Jun,dead
+262,HEWH (White),,,,,24-Jun,np
+263,SAME (Orange + Pink),20.5,10.9,10.5,0.36,24-Jun,
+264,CEOL (Orange),,,,,24-Jun,np
+265,ENCA (Pink),,,,,24-Jun,np
+266,HEWH (White),,,,,24-Jun,np
+267,SAAP (White + Green),,,,,24-Jun,np
+268,CEOL (Orange),,,,,24-Jun,dead
+269,HEWH (White),,,,,24-Jun,np
+270,HEWH (White),,,,,24-Jun,np
+271,CEOL (Orange),42.4,14.4,11.8,0.37,24-Jun,
+272,RHOV (White + Pink),,,,,24-Jun,np
+273,SAAP (White + Green),29.1,19,14.8,0.63,24-Jun,
+274,SAAP (White + Green),24.2,31.2,15.8,1.1,24-Jun,
+275,ENCA (Pink),,,,,24-Jun,"np, g"
+276,CEOL (Orange),,,,,24-Jun,np
+277,ENCA (Pink),27.1,18.8,17.6,0.58,24-Jun,
+278,ENCA (Pink),,,,,24-Jun,np
+279,SANI (Orange + Yellow),13,6.4,4.6,0.71,24-Jun,
+280,RHOV (White + Pink),12,6.9,6.8,0.27,24-Jun,
+281,SANI (Orange + Yellow),,,,,24-Jun,np
+282,HEWH (White),30,49.7,40.6,,24-Jun,
+283,SAAP (White + Green),26.2,18.8,10.2,0.54,24-Jun,
+284,SANI (Orange + Yellow),22.4,8.9,6.9,0.5,24-Jun,
+285,ENCA (Pink),52.7,42.3,14.9,0.8,24-Jun,
+286,HEWH (White),27.5,39,14,,24-Jun,
+287,MALA (White + Yellow),17.3,10.1,6.4,0.46,24-Jun,
+288,CEOL (Orange),35.9,6.8,5.7,0.38,24-Jun,
+289,RHOV (White + Pink),,,,,24-Jun,np
+290,CEOL (Orange),23,8.2,6.3,0.39,24-Jun,
+291,SAME (Orange + Pink),15.9,10.6,9.2,0.4,24-Jun,
+292,RHOV (White + Pink),23.4,13,7.6,0.6,24-Jun,
+293,SAME (Orange + Pink),40.9,14.9,10.9,0.4,24-Jun,
+294,SAAP (White + Green),,,,,24-Jun,np
+295,ENCA (Pink),28.8,27.1,8.2,0.42,24-Jun,
+296,HEWH (White),,,,,24-Jun,np
+297,MALA (White + Yellow),17.6,14.9,9.7,0.5,24-Jun,
+298,SAME (Orange + Pink),26.6,13.8,11.8,0.52,24-Jun,
+299,RHOV (White + Pink),19.8,11.5,7.6,0.49,24-Jun,
+300,SAAP (White + Green),,,,,24-Jun,np
+301,HEWH (White),29.4,42.3,28.2,,24-Jun,g.a.
+302,SANI (Orange + Yellow),,,,,24-Jun,np
+303,ENCA (Pink),33.8,25.9,14.2,0.53,24-Jun,
+304,ENCA (Pink),,,,,24-Jun,np
+305,SAAP (White + Green),,,,,24-Jun,np
+306,HEWH (White),,,,,24-Jun,np
+307,ENCA (Pink),45.7,17,8.6,0.45,24-Jun,
+308,SAAP (White + Green),,,,,24-Jun,"np, buried"
+309,CEOL (Orange),39.2,11.8,11.4,0.4,24-Jun,
+310,CEOL (Orange),,,,,24-Jun,"np, g"
+311,ENCA (Pink),,,,,24-Jun,"np, g"
+312,CEOL (Orange),,,,,24-Jun,np
+313,CEOL (Orange),25.6,10.8,5.9,0.32,24-Jun,
+314,SANI (Orange + Yellow),15.1,12.4,8.9,0.51,24-Jun,
+315,RHOV (White + Pink),,,,,24-Jun,np
+316,HEWH (White),29.7,33.7,19.2,,24-Jun,
+317,SANI (Orange + Yellow),,,,,24-Jun,"dead, g.a."
+318,SAME (Orange + Pink),,,,,24-Jun,"np, g"
+319,ENCA (Pink),5.6,3.7,2.6,0.47,24-Jun,
+320,ADFA (Orange + Green),60,45.8,31.8,0.95,24-Jun,
+321,HEWH (White),,,,,24-Jun,"np, g"
+322,ADFA (Orange + Green),,,,,24-Jun,np
+323,HEWH (White),35,22.8,21.7,,24-Jun,
+324,CEOL (Orange),,,,,24-Jun,np
+325,HEWH (White),,,,,24-Jun,dead
+326,ADFA (Orange + Green),63.6,63.4,35.5,0.85,24-Jun,
+327,ENCA (Pink),27.6,32.9,12.2,0.6,24-Jun,
+328,RHOV (White + Pink),,,,,24-Jun,np
+329,ENCA (Pink),,,,,24-Jun,np
+330,ENCA (Pink),,,,,24-Jun,"np, g"
+331,CEOL (Orange),,,,,24-Jun,"np, g"
+332,RHOV (White + Pink),,,,,24-Jun,"np, g"
+333,CEOL (Orange),,,,,24-Jun,np
+334,CEOL (Orange),64.1,21.6,18.5,0.63,24-Jun,
+335,SAAP (White + Green),,,,,24-Jun,np
+336,ENCA (Pink),,,,,24-Jun,np
+337,ENCA (Pink),,,,,24-Jun,"np, g.a."
+338,CEOL (Orange),,,,,24-Jun,"np, g"
+339,ENCA (Pink),35.8,16.5,7.6,0.38,24-Jun,
+340,ADFA (Orange + Green),,,,,24-Jun,np
+341,SAAP (White + Green),,,,,25-Jun,dead
+342,ENCA (Pink),,,,,25-Jun,"np, g"
+343,SAAP (White + Green),16.2,33.1,13.1,0.6,25-Jun,
+344,CEOL (Orange),,,,,24-Jun,"np, buried"
+345,ADFA (Orange + Green),51.5,56.8,25.7,0.51,25-Jun,
+346,SAAP (White + Green),,,,,24-Jun,np
+347,SANI (Orange + Yellow),,,,,24-Jun,"np, g"
+348,ADFA (Orange + Green),,,,,25-Jun,dead
+349,SANI (Orange + Yellow),,,,,25-Jun,np
+350,SAME (Orange + Pink),,,,,25-Jun,"np, g"
+351,ADFA (Orange + Green),56.1,31.1,25.5,1.17,25-Jun,
+352,ENCA (Pink),,,,,25-Jun,np
+353,ENCA (Pink),48.1,44.9,18.1,0.91,25-Jun,
+354,SAME (Orange + Pink),55.6,26.2,18.4,0.62,24-Jun,
+355,RHOV (White + Pink),,,,,25-Jun,"np, g"
+356,CEOL (Orange),,,,,25-Jun,"np, g"
+357,SAAP (White + Green),,,,,25-Jun,"np, g"
+358,HEWH (White),,,,,25-Jun,"np, g.a."
+359,HEWH (White),,,,,25-Jun,"np, g"
+360,RHOV (White + Pink),,,,,25-Jun,"np, g"
+361,CEOL (Orange),43.1,16.8,12.2,0.39,25-Jun,
+362,MALA (White + Yellow),17.4,8,7.1,0.27,24-Jun,
+363,RHOV (White + Pink),37.8,12.9,11.8,0.59,25-Jun,
+364,MALA (White + Yellow),58.5,22.3,18.4,0.63,25-Jun,
+365,HEWH (White),,,,,25-Jun,"np, g"
+366,CEOL (Orange),,,,,25-Jun,"np, g"
+367,RHOV (White + Pink),,,,,25-Jun,"np, g"
+368,HEWH (White),24.9,23,13.2,,25-Jun,
+369,RHOV (White + Pink),,,,,25-Jun,np
+370,CEOL (Orange),,,,,25-Jun,np
+371,SANI (Orange + Yellow),,,,,25-Jun,"np, g"
+372,RHOV (White + Pink),,,,,25-Jun,"np, g"
+373,HEWH (White),,,,,25-Jun,"np, g"
+374,HEWH (White),25.9,34.5,18.5,,25-Jun,
+375,RHOV (White + Pink),22.2,10.7,8.3,0.5,25-Jun,
+376,HEWH (White),,,,,25-Jun,np
+377,HEWH (White),22.5,13.2,7,,25-Jun,
+378,CEOL (Orange),,,,,25-Jun,np
+379,HEWH (White),26.8,29,19.2,,25-Jun,
+380,MALA (White + Yellow),,,,,25-Jun,dead
+381,SANI (Orange + Yellow),41.6,18.7,16.8,0.62,25-Jun,
+382,SAME (Orange + Pink),,,,,25-Jun,np
+383,ENCA (Pink),24.9,26.8,13.7,0.4,25-Jun,
+384,CEOL (Orange),42.2,15,7.7,0.39,25-Jun,
+385,HEWH (White),27.9,29.5,20.8,,24-Jun,
+386,ADFA (Orange + Green),42,47.6,24,0.63,25-Jun,
+387,ENCA (Pink),29.3,28.5,6.4,0.4,25-Jun,
+388,MALA (White + Yellow),,,,,25-Jun,dead
+389,SAAP (White + Green),,,,,25-Jun,dead
+390,ADFA (Orange + Green),58.7,38.5,28.9,0.78,25-Jun,
+391,SAME (Orange + Pink),,,,,25-Jun,np
+392,CEOL (Orange),,,,,25-Jun,"np, g"
+393,ENCA (Pink),61.2,41.9,14.5,0.57,25-Jun,
+394,HEWH (White),37.4,40,19.5,,25-Jun,
+395,ENCA (Pink),40.9,22.3,16.5,0.49,25-Jun,
+396,SANI (Orange + Yellow),,,,,25-Jun,"np, g"
+397,MALA (White + Yellow),,,,,25-Jun,dead
+398,ENCA (Pink),13.3,8,7.3,0.35,25-Jun,
+399,RHOV (White + Pink),29,16.7,14.9,0.66,25-Jun,g.a.
+400,RHOV (White + Pink),18.1,11,7.8,0.58,25-Jun,
+401,SANI (Orange + Yellow),36.6,10.4,9.3,0.53,24-Jun,herbivorized
+402,HEAR,,,,,,
+403,RHOV (White + Pink),,,,,25-Jun,np
+404,CEOL (Orange),,,,,25-Jun,dead
+405,ADFA (Orange + Green),,,,,25-Jun,dead
+406,RHOV (White + Pink),20,11.1,9.8,0.4,25-Jun,
+407,MALA (White + Yellow),,,,,25-Jun,np
+408,HEWH (White),25.2,18.4,12.7,,25-Jun,
+409,CEOL (Orange),,,,,25-Jun,"np, g"
+410,CEOL (Orange),,,,,25-Jun,np
+411,SAME (Orange + Pink),,,,,25-Jun,"np, g"
+412,RHOV (White + Pink),,,,,25-Jun,np
+413,RHOV (White + Pink),,,,,25-Jun,np
+414,HEAR,,,,,25-Jun,dead
+415,ENCA (Pink),60.2,9.2,8.2,0.58,24-Jun,
+416,MALA (White + Yellow),31.2,30.5,9.8,0.58,25-Jun,
+417,RHOV (White + Pink),17.7,17.5,12.2,0.68,25-Jun,
+418,ADFA (Orange + Green),45.8,56.1,40.8,0.7,25-Jun,
+419,ENCA (Pink),72.2,22.3,22.1,0.88,25-Jun,
+420,MALA (White + Yellow),30.4,15.5,9.2,0.47,25-Jun,
+421,CEOL (Orange),33.6,4,3.5,0.31,25-Jun,
+422,ENCA (Pink),,,,,25-Jun,dead
+423,SANI (Orange + Yellow),27.9,25.2,20,0.7,25-Jun,
+424,CEOL (Orange),,,,,25-Jun,dead
+425,HEWH (White),19.8,12.8,12.3,,25-Jun,
+426,HEWH (White),,,,,25-Jun,np
+427,CEOL (Orange),24.2,6,5.7,0.34,25-Jun,
+428,ENCA (Pink),16.5,29.2,22.1,0.65,24-Jun,
+429,RHOV (White + Pink),25.1,14.1,11.9,0.4,25-Jun,
+430,ADFA (Orange + Green),,,,,25-Jun,dead
+431,CEOL (Orange),,,,,25-Jun,np
+432,HEWH (White),,,,,25-Jun,"np, g"
+433,CEOL (Orange),,,,,25-Jun,np
+434,CEOL (Orange),,,,,25-Jun,np
+435,HEAR,,,,,25-Jun,dead
+436,MALA (White + Yellow),6,8.2,4.3,0.3,25-Jun,herbivorized
+437,MALA (White + Yellow),,,,,25-Jun,dead
+438,HEWH (White),,,,,24-Jun,dead
+439,RHOV (White + Pink),27.7,11.3,12.5,0.6,24-Jun,
+440,HEWH (White),,,,,25-Jun,"np, g"
+441,SAAP (White + Green),21.5,25.1,12.3,1.7,25-Jun,
+442,HEWH (White),26.8,16.6,17.7,,25-Jun,
+443,ENCA (Pink),28.6,9.7,8.6,0.4,25-Jun,
+444,HEWH (White),,,,,25-Jun,np
+445,HEWH (White),,,,,25-Jun,np
+446,RHOV (White + Pink),25.2,9.9,10.1,0.4,25-Jun,
+447,ADFA (Orange + Green),61.8,53.1,45.7,1.4,25-Jun,
+448,HEWH (White),,,,,25-Jun,np
+449,MALA (White + Yellow),,,,,25-Jun,np
+450,SAME (Orange + Pink),20,11.1,5.7,0.3,25-Jun,
+451,ENCA (Pink),11.8,5.5,4.6,0.4,25-Jun,
+452,RHOV (White + Pink),,,,,25-Jun,"np, g"
+453,CEOL (Orange),,,,,25-Jun,dead
+454,ENCA (Pink),,,,,24-Jun,np
+455,ENCA (Pink),,,,,25-Jun,np
+456,RHOV (White + Pink),,,,,25-Jun,dead
+457,SAAP (White + Green),42.9,22.1,15.7,1.4,25-Jun,
+458,CEOL (Orange),34.3,12.3,9.7,0.4,25-Jun,
+459,HEWH (White),21.1,11.1,5,,25-Jun,
+460,RHOV (White + Pink),12.8,7.5,5.9,0.3,24-Jun,
+461,ENCA (Pink),43.4,22.3,13.4,0.8,25-Jun,
+462,CEOL (Orange),,,,,24-Jun,np
+463,CEOL (Orange),,,,,24-Jun,np
+464,ENCA (Pink),53.6,15.8,11.1,0.4,24-Jun,
+465,MALA (White + Yellow),,,,,24-Jun,dead
+466,SAAP (White + Green),17.1,18.4,6.5,0.5,24-Jun,
+467,RHOV (White + Pink),,,,,25-Jun,dead
+468,CEOL (Orange),41.5,12.1,11.9,0.4,24-Jun,
+469,ENCA (Pink),44.2,25.1,20,2,24-Jun,
+470,ENCA (Pink),,,,,24-Jun,np
+471,RHOV (White + Pink),14.2,11.7,10.1,0.6,24-Jun,
+472,ENCA (Pink),,,,,24-Jun,dead
+473,RHOV (White + Pink),,,,,24-Jun,np
+474,CEOL (Orange),,,,,24-Jun,np
+475,HEWH (White),,,,,25-Jun,"np, g"
+476,ENCA (Pink),,,,,25-Jun,"np, g"
+477,SAME (Orange + Pink),,,,,25-Jun,"np, g"
+478,CEOL (Orange),,,,,25-Jun,dead
+479,SAAP (White + Green),,,,,25-Jun,np
+480,RHOV (White + Pink),32.4,15.4,11.3,0.7,24-Jun,
+481,SANI (Orange + Yellow),27.1,10.6,10.4,0.9,24-Jun,
+482,RHOV (White + Pink),,,,,24-Jun,np
+483,CEOL (Orange),,,,,24-Jun,np
+484,SAME (Orange + Pink),,,,,24-Jun,dead
+485,HEWH (White),,,,,24-Jun,np
+486,ENCA (Pink),33.4,10.4,6.9,0.3,24-Jun,
+487,HEWH (White),22.5,55,26.8,,24-Jun,
+488,ADFA (Orange + Green),,,,,24-Jun,dead
+489,SAAP (White + Green),4.9,13.6,3.7,0.2,24-Jun,
+490,SAAP (White + Green),,,,,24-Jun,dead
+491,MALA (White + Yellow),,,,,24-Jun,dead
+492,CEOL (Orange),,,,,24-Jun,np
+493,ENCA (Pink),31.4,19.4,16.1,1.2,24-Jun,
+494,HEWH (White),,,,,24-Jun,"np, g"
+495,SAAP (White + Green),,,,,24-Jun,dead
+496,HEWH (White),,,,,24-Jun,np
+497,CEOL (Orange),,,,,24-Jun,dead
+498,MALA (White + Yellow),,,,,24-Jun,dead
+499,SAME (Orange + Pink),,,,,24-Jun,"np, g"
+500,CEOL (Orange),,,,,24-Jun,dead
+501,CEOL (Orange),,,,,25-Jun,np
+502,SANI (Orange + Yellow),,,,,25-Jun,"np, g"
+503,RHOV (White + Pink),25.5,16.5,10.8,0.53,25-Jun,
+504,SAME (Orange + Pink),12.1,8.2,4.4,0.32,25-Jun,
+505,SAAP (White + Green),22.7,23,14.8,0.81,25-Jun,
+506,CEOL (Orange),,,,,25-Jun,np
+507,RHOV (White + Pink),,,,,25-Jun,"np, g"
+508,CEOL (Orange),35.9,7.8,4.3,0.49,25-Jun,herbivorized
+509,HEAR,,,,,25-Jun,dead
+510,ENCA (Pink),35.7,28.2,16.1,0.67,25-Jun,
+511,HEWH (White),27.8,15.8,7.9,,25-Jun,
+512,ENCA (Pink),,,,,,
+513,SANI (Orange + Yellow),,,,,25-Jun,dead
+514,SAAP (White + Green),30.8,12.9,11.4,1.2,25-Jun,
+515,HEWH (White),29.8,27.5,5.1,,25-Jun,
+516,SAAP (White + Green),15,4.9,4.8,0.34,25-Jun,
+517,RHOV (White + Pink),30,11.6,11.4,0.5,25-Jun,
+518,HEWH (White),,,,,25-Jun,"np, g"
+519,CEOL (Orange),,,,,25-Jun,"np, g"
+520,SAME (Orange + Pink),33.2,28.2,11.4,0.38,25-Jun,
+521,ENCA (Pink),34.5,13,11.8,0.39,25-Jun,
+522,RHOV (White + Pink),26.6,12.6,6.5,0.48,25-Jun,
+523,ENCA (Pink),,,,,25-Jun,dead
+524,CEOL (Orange),,,,,25-Jun,dead
+525,HEWH (White),,,,,25-Jun,"np, g"
+526,CEOL (Orange),,,,,25-Jun,"np, g"
+527,RHOV (White + Pink),17.8,13.4,6.9,0.7,25-Jun,
+528,CEOL (Orange),,,,,25-Jun,dead
+529,CEOL (Orange),,,,,25-Jun,dead
+530,SANI (Orange + Yellow),,,,,25-Jun,dead
+531,MALA (White + Yellow),,,,,25-Jun,np
+532,CEOL (Orange),43,12.6,11.6,0.4,25-Jun,
+533,RHOV (White + Pink),,,,,25-Jun,dead
+534,RHOV (White + Pink),22.6,13.8,13.6,0.7,25-Jun,
+535,SAME (Orange + Pink),,,,,25-Jun,np
+536,RHOV (White + Pink),,,,,25-Jun,"np, g"
+537,SAME (Orange + Pink),,,,,25-Jun,np
+538,CEOL (Orange),,,,,25-Jun,"np, g"
+539,RHOV (White + Pink),,,,,25-Jun,np
+540,MALA (White + Yellow),,,,,25-Jun,np
+541,CEOL (Orange),,,,,25-Jun,np
+542,CEOL (Orange),,,,,25-Jun,"np, g"
+543,RHOV (White + Pink),,,,,25-Jun,np
+544,HEWH (White),28.1,15.4,9.2,,25-Jun,
+545,SAAP (White + Green),26.9,19.6,10.9,0.3,25-Jun,
+546,RHOV (White + Pink),23.9,12.3,10.2,0.6,25-Jun,
+547,ENCA (Pink),,,,,25-Jun,"np, g"
+548,ADFA (Orange + Green),43.9,33.5,31,2.1,25-Jun,
+549,CEOL (Orange),,,,,25-Jun,"np, g"
+550,ENCA (Pink),,,,,25-Jun,dead
+551,SANI (Orange + Yellow),28,17.3,17.1,0.5,25-Jun,
+552,HEWH (White),,,,,25-Jun,dead
+553,CEOL (Orange),8.7,3.2,1,0.2,25-Jun,
+554,HEWH (White),31.2,24.6,16.6,,25-Jun,
+555,ENCA (Pink),43.8,33.6,32.8,1.1,25-Jun,
+556,MALA (White + Yellow),39.4,15.7,7.9,0.4,25-Jun,
+557,HEWH (White),20.8,7.7,4.1,,24-Jun,
+558,ADFA (Orange + Green),41.2,39,28.9,0.9,25-Jun,
+559,MALA (White + Yellow),,,,,25-Jun,np
+560,CEOL (Orange),,,,,25-Jun,"np, g"
+561,CEOL (Orange),,,,,25-Jun,"np, g"
+562,ENCA (Pink),,,,,25-Jun,dead
+563,HEWH (White),39.2,23.7,19.8,,25-Jun,
+564,HEWH (White),,,,,25-Jun,np
+565,HEWH (White),,,,,25-Jun,"dead, herbivorized"
+566,CEOL (Orange),7.6,4.3,3.7,0.3,25-Jun,
+567,ENCA (Pink),,,,,25-Jun,np
+568,ADFA (Orange + Green),,,,,25-Jun,dead
+569,HEWH (White),,,,,25-Jun,"np, g"
+570,ENCA (Pink),,,,,25-Jun,np
+571,ADFA (Orange + Green),,,,,25-Jun,dead
+572,HEWH (White),,,,,24-Jun,np
+573,ADFA (Orange + Green),62.1,82.6,57.5,2.6,24-Jun,
+574,SAAP (White + Green),37.5,31.9,27.8,2.1,24-Jun,
+575,HEWH (White),,,,,24-Jun,np
+576,SANI (Orange + Yellow),21,13.4,11.1,0.6,24-Jun,
+577,HEWH (White),,,,,25-Jun,np
+578,CEOL (Orange),,,,,25-Jun,dead
+579,CEOL (Orange),,,,,24-Jun,np
+580,ENCA (Pink),,,,,25-Jun,np
+581,SANI (Orange + Yellow),,,,,24-Jun,dead
+582,RHOV (White + Pink),,,,,24-Jun,np
+583,RHOV (White + Pink),,,,,25-Jun,"np, g"
+584,SANI (Orange + Yellow),28.8,23.1,22,0.9,24-Jun,
+585,RHOV (White + Pink),18.1,15.1,14,0.8,24-Jun,
+586,HEWH (White),,,,,24-Jun,dead
+587,CEOL (Orange),29.4,13.6,9.9,0.8,24-Jun,
+588,SAME (Orange + Pink),,,,,24-Jun,"np, g"
+589,SAME (Orange + Pink),,,,,24-Jun,dead
+590,ENCA (Pink),60.3,38,34.9,1.8,24-Jun,
+591,CEOL (Orange),,,,,24-Jun,"np, g"
+592,ADFA (Orange + Green),52.1,23.5,23.1,3.1,24-Jun,
+593,CEOL (Orange),,,,,24-Jun,"np, g"
+594,CEOL (Orange),,,,,24-Jun,np
+595,ENCA (Pink),,,,,25-Jun,np
+596,ADFA (Orange + Green),,,,,25-Jun,dead
+597,HEWH (White),33.1,21,18.5,,24-Jun,
+598,RHOV (White + Pink),,,,,24-Jun,"np, g"
+599,SAME (Orange + Pink),,,,,25-Jun,np
+600,CEOL (Orange),,,,,25-Jun,np
+601,HEWH (White),30.8,33.4,24,,24-Jun,
+602,SAAP (White + Green),,,,,25-Jun,np
+603,CEOL (Orange),,,,,24-Jun,np
+604,SAME (Orange + Pink),17.5,8.6,8.1,1.3,24-Jun,
+605,RHOV (White + Pink),,,,,25-Jun,"np, g"
+606,SAAP (White + Green),35.8,30.5,20.5,0.9,24-Jun,
+607,RHOV (White + Pink),30.1,13,12.1,0.5,24-Jun,
+608,ADFA (Orange + Green),45.2,44.5,35.6,0.5,24-Jun,
+609,CEOL (Orange),,,,,25-Jun,dead
+610,MALA (White + Yellow),,,,,25-Jun,"np, g"
+611,CEOL (Orange),,,,,24-Jun,dead
+612,RHOV (White + Pink),,,,,24-Jun,"dead, buried"
+613,RHOV (White + Pink),,,,,25-Jun,dead
+614,CEOL (Orange),,,,,24-Jun,"np, g"
+615,HEWH (White),,,,,24-Jun,"np, g"
+616,SANI (Orange + Yellow),,,,,24-Jun,dead
+617,SAAP (White + Green),,,,,24-Jun,"np, g"
+618,RHOV (White + Pink),,,,,24-Jun,"np, g"
+619,ENCA (Pink),,,,,24-Jun,dead
+620,HEWH (White),,,,,24-Jun,dead
+621,ENCA (Pink),52.1,20.4,11.7,0.6,24-Jun,
+622,SANI (Orange + Yellow),26.3,16.1,8.7,0.4,24-Jun,
+623,RHOV (White + Pink),24.1,13.3,11,0.5,24-Jun,
+624,HEWH (White),27.1,43.5,47,,24-Jun,
+625,CEOL (Orange),,,,,24-Jun,np
+626,ADFA (Orange + Green),,,,,24-Jun,dead
+627,MALA (White + Yellow),,,,,24-Jun,dead
+628,SANI (Orange + Yellow),,,,,24-Jun,"np, g"
+629,HEWH (White),31.3,48.6,29.1,,24-Jun,
+630,SAME (Orange + Pink),,,,,24-Jun,dead
+631,RHOV (White + Pink),,,,,24-Jun,np
+632,ENCA (Pink),,,,,24-Jun,"np, g"
+633,CEOL (Orange),11.9,6,4.9,0.4,24-Jun,
+634,CEOL (Orange),,,,,24-Jun,"np, g"
+635,ENCA (Pink),42.2,15.2,12.7,0.6,24-Jun,dead
+636,ENCA (Pink),21,10.8,7.2,0.4,24-Jun,
+637,ENCA (Pink),,,,,24-Jun,dead
+638,CEOL (Orange),,,,,24-Jun,np
+639,SAAP (White + Green),,,,,24-Jun,np
+640,CEOL (Orange),,,,,24-Jun,np
+641,CEOL (Orange),,,,,24-Jun,np
+642,ENCA (Pink),,,,,24-Jun,np
+643,RHOV (White + Pink),,,,,24-Jun,dead
+644,CEOL (Orange),,,,,24-Jun,"np, g"
+645,HEWH (White),,,,,24-Jun,np
+646,RHOV (White + Pink),,,,,24-Jun,dead
+647,MALA (White + Yellow),,,,,24-Jun,"np, g"
+648,RHOV (White + Pink),,,,,24-Jun,np
+649,CEOL (Orange),,,,,24-Jun,"np, g"
+650,RHOV (White + Pink),,,,,24-Jun,np
+651,HEWH (White),,,,,24-Jun,"np, g"
+652,HEWH (White),,,,,24-Jun,np
+653,CEOL (Orange),,,,,24-Jun,np
+654,SAME (Orange + Pink),,,,,24-Jun,"np, g"
+655,HEWH (White),20.8,33.9,16.3,,24-Jun,
+656,SANI (Orange + Yellow),27.5,17.8,14.8,1.1,24-Jun,
+657,RHOV (White + Pink),,,,,24-Jun,np
+658,ENCA (Pink),,,,,24-Jun,np
+659,ADFA (Orange + Green),,,,,24-Jun,"dead, g"
+660,CEOL (Orange),,,,,24-Jun,np
+661,CEOL (Orange),11.4,5.9,4.2,0.3,24-Jun,
+662,ADFA (Orange + Green),50.4,34.3,32.2,0.7,24-Jun,
+663,MALA (White + Yellow),7.6,6.2,5.6,0.2,24-Jun,
+664,ENCA (Pink),,,,,24-Jun,"np, g"
+665,ENCA (Pink),4.2,5,2.4,inaccessible,24-Jun,buried
+666,SANI (Orange + Yellow),23.5,10.6,9,0.8,24-Jun,sad
+667,CEOL (Orange),7.3,4.1,2.8,0.3,24-Jun,herbivorized
+668,RHOV (White + Pink),10.1,8.4,6.6,0.5,24-Jun,
+669,ADFA (Orange + Green),57.1,53.4,29.1,1.1,24-Jun,
+670,SAME (Orange + Pink),6,3.8,4.4,0.3,24-Jun,herbivorized
+671,CEOL (Orange),,,,,24-Jun,np
+672,MALA (White + Yellow),,,,,24-Jun,dead
+673,ADFA (Orange + Green),52.1,28.7,23.7,1.6,24-Jun,
+674,RHOV (White + Pink),23.2,14.1,10,0.6,24-Jun,
+675,SANI (Orange + Yellow),,,,,25-Jun,dead
+676,RHOV (White + Pink),18.6,11.8,6.9,0.4,24-Jun,dead
+677,SANI (Orange + Yellow),,,,,24-Jun,np
+678,ADFA (Orange + Green),51.3,33.6,26.8,2.6,24-Jun,
+679,HEWH (White),,,,,24-Jun,np
+680,CEOL (Orange),,,,,24-Jun,np
+681,SANI (Orange + Yellow),33.4,26.3,15.9,1.3,24-Jun,
+682,HEWH (White),,,,,24-Jun,"np, g"
+683,HEWH (White),24.7,29.7,13.1,,24-Jun,
+684,HEWH (White),,,,,24-Jun,np
+685,HEWH (White),,,,,24-Jun,"np, g"
+686,ENCA (Pink),44.8,33.2,38.9,0.8,24-Jun,
+687,CEOL (Orange),,,,,24-Jun,np
+688,ENCA (Pink),,,,,25-Jun,"np, g (no coin catch#2)"
+689,ENCA (Pink),,,,,24-Jun,"np, g"
+690,HEWH (White),,,,,24-Jun,"np, g"
+691,SANI (Orange + Yellow),,,,,24-Jun,np
+692,CEOL (Orange),,,,,24-Jun,np
+693,RHOV (White + Pink),,,,,24-Jun,"np, g"
+694,HEAR,,,,,24-Jun,dead
+695,CEOL (Orange),,,,,24-Jun,np
+696,CEOL (Orange),,,,,24-Jun,dead
+697,HEWH (White),,,,,24-Jun,"np, g"
+698,ENCA CEOL (Pink),,,,,24-Jun,dead
+699,RHOV (White + Pink),,,,,24-Jun,"np, g"
+700,RHOV (White + Pink),,,,,24-Jun,dead
+701,CEOL (Orange),,,,,24-Jun,"np, g"
+702,SANI (Orange + Yellow),29.9,19.1,21.6,0.8,24-Jun,
+703,ENCA (Pink),,,,,24-Jun,"np, g"
+704,RHOV (White + Pink),,,,,24-Jun,"np, g"
+705,HEWH (White),,,,,24-Jun,"np, g"
+706,RHOV (White + Pink),,,,,24-Jun,np
+707,SAAP (White + Green),,,,,24-Jun,np
+708,SAAP (White + Green),,,,,24-Jun,dead
+709,ENCA (Pink),,,,,24-Jun,"dead, buried"
+710,CEOL (Orange),,,,,24-Jun,np
+711,MALA (White + Yellow),,,,,24-Jun,np
+712,HEWH (White),,,,,24-Jun,"np, g"
+713,ENCA (Pink),,,,,24-Jun,"np, g"
+714,RHOV (White + Pink),,,,,24-Jun,"np, g"
+715,ENCA (Pink),,,,,24-Jun,dead
+716,SAME (Orange + Pink),,,,,24-Jun,np
+717,CEOL (Orange),20.6,6.1,7,0.3,24-Jun,
+718,SAAP (White + Green),23.8,18.1,14.1,0.6,24-Jun,
+719,RHOV (White + Pink),16.5,21.9,14.6,0.8,24-Jun,
+720,CEOL (Orange),,,,,24-Jun,dead
+721,RHOV (White + Pink),,,,,24-Jun,"np, g"
+722,CEOL (Orange),,,,,24-Jun,dead
+723,RHOV (White + Pink),,,,,24-Jun,"dead, buried"
+724,ENCA (Pink),,,,,24-Jun,"np, g"
+725,CEOL (Orange),,,,,24-Jun,"np, g"
+726,CEOL (Orange),,,,,24-Jun,"np, g"
+727,RHOV (White + Pink),,,,,24-Jun,dead
+728,CEOL (Orange),,,,,24-Jun,"np, g"
+729,HEWH (White),8.2,2.6,0.9,,24-Jun,
+730,ENCA (Pink),,,,,24-Jun,"np, g"
+731,HEWH (White),28.6,32.6,23.9,,24-Jun,
+732,CEOL (Orange),,,,,24-Jun,np
+733,RHOV (White + Pink),,,,,24-Jun,"np, g"
+734,RHOV (White + Pink),,,,,24-Jun,dead
+735,SANI (Orange + Yellow),,,,,24-Jun,np
+736,ENCA (Pink),47.6,33.6,26.5,1.7,24-Jun,
+737,RHOV (White + Pink),,,,,24-Jun,dead
+738,CEOL (Orange),34.1,10.1,8,0.4,24-Jun,
+739,RHOV (White + Pink),13.9,6.8,7.1,0.5,24-Jun,
+740,RHOV (White + Pink),30.2,17.8,14.1,0.6,24-Jun,
+741,ENCA (Pink),,,,,24-Jun,np
+742,HEWH (White),,,,,24-Jun,dead
+743,RHOV (White + Pink),17.1,13.8,8.9,0.4,24-Jun,
+744,CEOL (Orange),20.7,12.1,6.1,0.3,24-Jun,
+745,CEOL (Orange),,,,,24-Jun,dead
+746,MALA (White + Yellow),,,,,24-Jun,"dead, g.a."
+747,CEOL (Orange),,,,,24-Jun,np
+748,SAAP (White + Green),,,,,24-Jun,np
+749,RHOV (White + Pink),,,,,24-Jun,np
+750,SANI (Orange + Yellow),,,,,24-Jun,np
+751,ENCA (Pink),,,,,24-Jun,"np, g"
+752,RHOV (White + Pink),,,,,24-Jun,np
+753,CEOL (Orange),18,6.2,4.3,0.4,24-Jun,herbivorized
+754,ENCA (Pink),,,,,24-Jun,np
+755,SAAP (White + Green),,,,,24-Jun,np
+756,SAAP (White + Green),,,,,24-Jun,np
+757,CEOL (Orange),,,,,24-Jun,np
+758,HEWH (White),,,,,26-Jun,"np, g"
+759,SAAP (White + Green),,,,,24-Jun,dead
+760,ENCA (Pink),59.3,43.1,34.3,1.1,24-Jun,
+761,HEWH (White),,,,,24-Jun,np
+762,HEWH (White),,,,,24-Jun,"np, g"
+763,SANI (Orange + Yellow),24.1,8.8,8.6,0.4,24-Jun,
+764,MALA (White + Yellow),,,,,24-Jun,np
+765,ADFA (Orange + Green),41.1,72.9,36.3,0.7,24-Jun,
+766,CEOL (Orange),,,,,24-Jun,np
+767,HEWH (White),,,,,24-Jun,np
+768,ADFA (Orange + Green),40.1,43.1,42.6,1.1,24-Jun,
+769,CEOL (Orange),,,,,24-Jun,np
+770,CEOL (Orange),,,,,24-Jun,dead
+771,RHOV (White + Pink),27.6,14.5,15.4,1.1,24-Jun,
+772,SAAP (White + Green),16.2,9.4,9,1,24-Jun,
+773,RHOV (White + Pink),26.2,8.4,8.7,0.7,24-Jun,
+774,CEOL (Orange),,,,,24-Jun,dead
+775,HEWH (White),,,,,24-Jun,np
+776,CEOL (Orange),,,,,24-Jun,np
+777,CEOL (Orange),,,,,24-Jun,"np, g"
+778,CEOL (Orange),,,,,24-Jun,np
+779,ADFA (Orange + Green),36.2,49.1,31,0.7,24-Jun,
+780,ADFA (Orange + Green),,,,,24-Jun,"dead, g"
+781,HEWH (White),,,,,24-Jun,np
+782,CEOL (Orange),,,,,24-Jun,np
+783,MALA (White + Yellow),,,,,24-Jun,dead
+784,ENCA (Pink),52.4,39.9,32.4,0.7,24-Jun,sad
+785,SAAP (White + Green),,,,,24-Jun,np
+786,ADFA (Orange + Green),42,49.8,40.5,1.4,24-Jun,
+787,RHOV (White + Pink),,,,,24-Jun,"np, g"
+788,HEWH (White),,,,,24-Jun,np
+789,CEOL (Orange),,,,,24-Jun,np
+790,SAAP (White + Green),,,,,24-Jun,np
+791,CEOL (Orange),,,,,24-Jun,np
+792,CEOL (Orange),,,,,24-Jun,"np, g"
+793,HEWH (White),15.4,34.3,40.8,,24-Jun,sad
+794,ADFA (Orange + Green),54.3,61,48.2,0.9,24-Jun,
+795,ENCA (Pink),28.4,9.4,9.3,0.6,24-Jun,
+796,ENCA (Pink),,,,,24-Jun,dead
+797,CEOL (Orange),3.3,2.2,1.7,0.3,24-Jun,herbivorized
+798,SAME (Orange + Pink),8.3,2.3,5.1,0.4,24-Jun,
+799,MALA (White + Yellow),,,,,24-Jun,dead
+800,ENCA (Pink),35.4,7.6,6,0.5,24-Jun,
+801,HEWH (White),37.2,27.1,20.5,,25-Jun,
+802,HEWH (White),,,,,24-Jun,np
+803,ENCA (Pink),,,,,24-Jun,np
+804,MALA (White + Yellow),3.8,2.7,2.1,0.48,25-Jun,"1 tiny bud, no coin, right above tarp"
+805,ADFA (Orange + Green),47.3,28.6,35.3,1.6,24-Jun,
+806,SAAP (White + Green),,,,,24-Jun,np
+807,RHOV (White + Pink),,,,,24-Jun,dead
+808,HEWH (White),,,,,24-Jun,np
+809,CEOL (Orange),,,,,24-Jun,np
+810,ENCA (Pink),49.9,19.8,16,0.4,24-Jun,
+811,SAME (Orange + Pink),7.3,6,6.2,0.3,24-Jun,
+812,HEWH (White),31.4,42.5,29.8,,5-Jun,
+813,SAAP (White + Green),,,,,24-Jun,dead
+814,ADFA (Orange + Green),67.1,31.2,25,2.5,24-Jun,
+815,MALA (White + Yellow),,,,,24-Jun,np
+816,CEOL (Orange),,,,,24-Jun,"np, g"
+817,HEWH (White),,,,,24-Jun,np
+818,HEWH (White),,,,,24-Jun,"np, g"
+819,ADFA (Orange + Green),37.5,54.25,40.5,1.5,5-Jun,
+820,SANI (Orange + Yellow),9.9,5.25,3.25,0.32,5-Jun,
+821,HEWH (White),19.3,29.8,18.75,,5-Jun,
+822,RHOV (White + Pink),17.75,11.2,8.4,0.46,5-Jun,
+823,MALA (White + Yellow),,,,,5-Jun,dead
+824,ENCA (Pink),53,17.3,13.6,0.8,5-Jun,
+825,ENCA (Pink),,,,,24-Jun,dead
+826,ADFA (Orange + Green),47.4,24.6,22.1,0.8,24-Jun,2 stems
+827,ENCA (Pink),14.1,5.1,3.6,0.5,24-Jun,
+828,SANI (Orange + Yellow),,,,,24-Jun,np
+829,HEWH (White),34.9,16.4,9.8,,24-Jun,
+830,SAAP (White + Green),,,,,24-Jun,dead
+831,SAAP (White + Green),,,,,24-Jun,np
+832,ENCA (Pink),17.75,47.7,6.9,0.65,5-Jun,
+833,MALA (White + Yellow),,,,,5-Jun,dead
+834,HEWH (White),20,22.6,13,,5-Jun,
+835,CEOL (Orange),,,,,5-Jun,dead
+836,HEWH (White),17.6,21.5,19.6,,5-Jun,
+837,HEWH (White),20,33.6,18.1,,5-Jun,
+838,SAAP (White + Green),,,,,5-Jun,np
+839,CEOL (Orange),,,,,5-Jun,np
+840,RHOV (White + Pink),,,,,5-Jun,np
+841,MALA (White + Yellow),,,,,5-Jun,"dead, catch2"
+842,ENCA (Pink),35,24.9,5.75,0.55,5-Jun,
+843,RHOV (White + Pink),10.5,6.8,6.3,0.57,5-Jun,
+844,RHOV (White + Pink),10,6.2,5.2,0.34,5-Jun,g.a.
+845,HEWH (White),,,,,5-Jun,np
+846,MALA (White + Yellow),17.25,2.35,26.2,0.41,5-Jun,
+847,CEOL (Orange),,,,,5-Jun,np
+848,CEOL (Orange),,,,,5-Jun,np
+849,HEWH (White),19.9,13.75,6.4,,5-Jun,
+850,SANI (Orange + Yellow),9.5,5.3,3.9,0.41,5-Jun,
+851,HEWH (White),3.9,2,0.7,,5-Jun,
+852,RHOV (White + Pink),13,7.9,3.6,0.3,5-Jun,
+853,SAAP (White + Green),16.8,6.4,6.3,0.39,5-Jun,
+854,SAME (Orange + Pink),,,,,5-Jun,np
+855,CEOL (Orange),,,,,5-Jun,np
+856,ENCA (Pink),,,,,5-Jun,np
+857,ENCA (Pink),21.5,24,8.1,0.4,5-Jun,
+858,SAME (Orange + Pink),21.4,12.25,11.5,0.44,5-Jun,
+859,HEAR,,,,,5-Jun,dead
+860,ENCA (Pink),26.8,20.9,5,0.5,5-Jun,
+861,RHOV (White + Pink),24.9,8.5,10.4,0.55,5-Jun,
+862,SAME (Orange + Pink),19.2,6.3,6.75,0.39,5-Jun,
+863,ENCA (Pink),31.5,41.25,20.75,0.8,5-Jun,
+864,HEWH (White),29,23.25,21.5,,5-Jun,
+865,HEWH (White),12,17.75,1.75,,5-Jun,
+866,SANI (Orange + Yellow),,,,,5-Jun,dead
+867,SAAP (White + Green),,,,,5-Jun,"np, g"
+868,CEOL (Orange),,,,,5-Jun,np
+869,SAME (Orange + Pink),15,8.75,3,0.39,5-Jun,
+870,HEWH (White),17.5,12.5,11,,5-Jun,
+871,HEWH (White),18.25,23.25,13.5,,5-Jun,
+872,SAAP (White + Green),13.9,20.4,7.6,0.45,5-Jun,
+873,ENCA (Pink),44.5,30.5,18,0.45,5-Jun,
+874,ADFA (Orange + Green),52,50,30.5,2,5-Jun,
+875,SAME (Orange + Pink),39.5,21.5,17,0.7,5-Jun,
+876,SAAP (White + Green),20.2,10.7,8.2,0.4,5-Jun,
+877,RHOV (White + Pink),,,,,5-Jun,"np, g"
+878,CEOL (Orange),,,,,5-Jun,dead
+879,HEWH (White),21.9,46.5,19,,5-Jun,
+880,RHOV (White + Pink),,,,,5-Jun,"np, g"
+881,HEWH (White),23.5,37,21.5,,5-Jun,
+882,ENCA (Pink),41.5,25.75,13.5,0.8,5-Jun,
+883,SAAP (White + Green),26.25,29,17,1,5-Jun,
+884,CEOL (Orange),32.4,9,6.4,0.3,5-Jun,
+885,MALA (White + Yellow),28.75,19,7,0.5,5-Jun,
+886,HEWH (White),25.6,54,39,,5-Jun,
+887,CEOL (Orange),,,,,5-Jun,dead
+888,CEOL (Orange),,,,,5-Jun,"np, g"
+889,ENCA (Pink),,,,,5-Jun,"np, buried"
+890,SANI (Orange + Yellow),13,3.8,3.3,0.53,5-Jun,
+891,MALA (White + Yellow),,,,,5-Jun,"np, g"
+892,HEWH (White),21.25,37.5,24,,5-Jun,
+893,CEOL (Orange),,,,,5-Jun,"np, g"
+894,ENCA (Pink),,,,,5-Jun,"np, g"
+895,ENCA (Pink),,,,,5-Jun,"np, g"
+896,SANI (Orange + Yellow),,,,,5-Jun,dead
+897,SANI (Orange + Yellow),,,,,5-Jun,"np, g"
+898,HEWH (White),33.4,36.3,30.2,,5-Jun,
+899,CEOL (Orange),28.4,6.8,4.3,0.26,5-Jun,
+900,NO PLANT,,,,,,
+901,CEOL (Orange),,,,,5-Jun,
+902,ENCA (Pink),,,,,5-Jun,
+903,ENCA (Pink),,,,,5-Jun,
+904,RHOV (White + Pink),,,,,5-Jun,
+905,ADFA (Orange + Green),,,,,5-Jun,
+906,SAME (Orange + Pink),11.4,5.4,4,0.26,25-Jun,
+907,SANI (Orange + Yellow),40.5,18.5,17.3,0.69,25-Jun,
+908,ENCA (Pink),,,,,25-Jun,dead
+909,HEWH (White),,,,,5-Jun,
+910,ENCA (Pink),,,,,5-Jun,
+911,SANI (Orange + Yellow),17.3,6.9,6.5,0.4,24-Jun,sad
+912,ENCA (Pink),,,,,5-Jun,
+913,ENCA (Pink),,,,,5-Jun,
+914,SAME (Orange + Pink),,,,,5-Jun,np
+915,SANI (Orange + Yellow),,,,,5-Jun,dead
+916,CEOL (Orange),,,,,5-Jun,np
+917,HEWH (White),,,,,5-Jun,np
+918,HEWH (White),,,,,5-Jun,np
+919,ADFA (Orange + Green),,,,,5-Jun,
+920,SANI (Orange + Yellow),,,,,5-Jun,np
+921,ENCA (Pink),,,,,5-Jun,
+922,SAAP (White + Green),,,,,5-Jun,np
+923,ENCA (Pink),,,,,5-Jun,dead
+924,RHOV (White + Pink),,,,,5-Jun,
+925,CEOL (Orange),,,,,5-Jun,np
+926,CEOL (Orange),,,,,5-Jun,
+927,RHOV (White + Pink),,,,,5-Jun,
+928,MALA (White + Yellow),,,,,5-Jun,
+929,SANI (Orange + Yellow),,,,,5-Jun,np
+930,RHOV (White + Pink),,,,,5-Jun,np
+931,HEWH (White),,,,,5-Jun,
+932,CEOL (Orange),,,,,5-Jun,np
+933,CEOL (Orange),,,,,5-Jun,dead
+934,HEWH (White),,,,,5-Jun,np
+935,RHOV (White + Pink),13.9,13.9,13.5,0.68,5-Jun,
+936,ADFA (Orange + Green),58,47.5,33,0.8,5-Jun,
+937,SANI (Orange + Yellow),,,,,5-Jun,dead
+938,ENCA (Pink),15,5.4,3.9,0.55,5-Jun,
+939,CEOL (Orange),,,,,5-Jun,np
+940,SANI (Orange + Yellow),19.5,7.3,4.75,0.48,5-Jun,
+941,SAAP (White + Green),12,23.8,14.75,0.47,5-Jun,
+942,SAAP (White + Green),,,,,5-Jun,np
+943,HEWH (White),22,28.75,11.4,,5-Jun,
+944,SANI (Orange + Yellow),11.4,4.9,3.75,0.4,5-Jun,
+945,ADFA (Orange + Green),,,,,5-Jun,dead
+946,RHOV (White + Pink),,,,,5-Jun,"np, g"
+947,MALA (White + Yellow),,,,,5-Jun,"np, g"
+948,HEWH (White),,,,,5-Jun,"np, g"
+949,SANI (Orange + Yellow),,,,,5-Jun,"np, g"
+950,SANI (Orange + Yellow),22.7,13.8,9,0.7,5-Jun,
+951,SANI (Orange + Yellow),12.4,12.2,9.7,0.54,5-Jun,
+952,SAME (Orange + Pink),,,,,5-Jun,"np, g"
+953,ENCA (Pink),,,,,5-Jun,"np, g"
+954,RHOV (White + Pink),18.25,19.5,10.4,0.52,5-Jun,
+955,RHOV (White + Pink),20.75,14.6,14.5,0.51,5-Jun,
+956,SAAP (White + Green),18.2,27.8,24.25,0.5,5-Jun,
+957,CEOL (Orange),,,,,5-Jun,"np, g"
+958,NO PLANT,,,,,,
+959,ENCA (Pink),,,,,5-Jun,np
+960,ENCA (Pink),,,,,5-Jun,dead
+961,RHOV (White + Pink),18.2,9.9,7.5,0.55,5-Jun,
+962,HEWH (White),24.75,22.5,5.8,,5-Jun,
+963,CEOL (Orange),,,,,5-Jun,dead
+964,MALA (White + Yellow),,,,,5-Jun,dead
+965,HEWH (White),25,27.4,19,,5-Jun,
+966,HEAR,,,,,5-Jun,np
+967,ADFA (Orange + Green),,,,,5-Jun,dead
+968,SAAP (White + Green),25,9.8,8.5,0.6,5-Jun,
+969,HEWH (White),,,,,5-Jun,np
+970,ENCA (Pink),,,,,5-Jun,np
+971,CEOL (Orange),18.5,13.7,7.4,0.39,5-Jun,
+972,ADFA (Orange + Green),50.4,45,10.5,2.6,5-Jun,
+973,MALA (White + Yellow),38.2,12.9,12.8,0.58,5-Jun,
+974,SANI (Orange + Yellow),12.9,8.75,7.3,0.42,5-Jun,
+975,CEOL (Orange),35.6,9,6,0.32,5-Jun,
+976,RHOV (White + Pink),,,,,5-Jun,dead
+977,SAAP (White + Green),33,28.75,19.9,0.7,5-Jun,
+978,RHOV (White + Pink),10.4,6.2,5.8,0.4,5-Jun,
+979,ENCA (Pink),59.5,25.75,18.5,0.9,5-Jun,
+980,ENCA (Pink),38.2,34.5,16,0.68,5-Jun,
+981,HEWH (White),,,,,5-Jun,np
+982,ADFA (Orange + Green),,,,,5-Jun,dead
+983,HEWH (White),,,,,5-Jun,np
+984,HEWH (White),36.25,33.5,5.4,,5-Jun,
+985,MALA (White + Yellow),38.4,27.9,23.25,0.75,5-Jun,
+986,SANI (Orange + Yellow),,,,,5-Jun,"np, g"
+987,CEOL (Orange),25.6,9.4,6.4,0.38,5-Jun,
+988,MALA (White + Yellow),8.5,17.6,3.9,0.39,5-Jun,
+989,SANI (Orange + Yellow),,,,,5-Jun,dead
+990,CEOL (Orange),,,,,5-Jun,np
+991,CEOL (Orange),,,,,5-Jun,"np, g"
+992,CEOL (Orange),24,11.2,9.7,0.48,5-Jun,
+993,ADFA (Orange + Green),,,,,5-Jun,"dead, g"
+994,ADFA (Orange + Green),54.6,37,32.4,2.7,5-Jun,
+995,HEWH (White),,,,,5-Jun,np
+996,ENCA (Pink),,,,,5-Jun,np
+997,ENCA (Pink),32.5,34.1,13,0.75,5-Jun,
+998,ADFA (Orange + Green),42.5,55,44,0.8,5-Jun,
+999,ENCA (Pink),,,,,5-Jun,np
+1000,RHOV (White + Pink),12.9,7,3.3,0.3,5-Jun,
+1001,CEOL (Orange),40.6,17.9,10.9,0.59,24-Jun,herbivorized
+1002,SAME (Orange + Pink),36.1,18.2,16.4,1.6,25-Jun,
+1003,MALA (White + Yellow),,,,,25-Jun,np
+1004,HEWH (White),,,,,25-Jun,dead
+1005,CEOL (Orange),,,,,25-Jun,dead
+1006,HEWH (White),21.3,34.4,19.4,,25-Jun,
+1007,ADFA (Orange + Green),52.9,46.1,28.1,0.9,25-Jun,
+1008,RHOV (White + Pink),,,,,25-Jun,dead
+1009,HEWH (White),42.5,51.5,41,,25-Jun,
+1010,ADFA (Orange + Green),,,,,25-Jun,dead
+1011,RHOV (White + Pink),18.6,8.3,8,0.3,25-Jun,
+1012,MALA (White + Yellow),,,,,25-Jun,np
+1013,SANI (Orange + Yellow),,,,,25-Jun,"np, g"
+1014,ENCA (Pink),54.5,43.1,17.6,1.1,26-Jun,
+1015,ENCA (Pink),,,,,26-Jun,np
+1016,MALA (White + Yellow),,,,,25-Jun,dead
+1017,HEWH (White),24.5,27,14.2,,25-Jun,
+1018,HEWH (White),,,,,25-Jun,dead
+1019,CEOL (Orange),38.5,26.4,23.8,0.4,25-Jun,
+1020,SAME (Orange + Pink),27.2,11.5,8.6,0.4,25-Jun,
+1021,RHOV (White + Pink),12.1,5.6,5.1,0.3,26-Jun,
+1022,CEOL (Orange),43.6,23.5,18.5,0.5,26-Jun,
+1023,CEOL (Orange),38.5,12.8,10.7,0.4,26-Jun,
+1024,CEOL (Orange),36.4,9.9,10.1,0.3,26-Jun,
+1025,HEWH (White),21.4,36,32.1,,26-Jun,
+1026,HEWH (White),10.4,31,23.9,,26-Jun,
+1027,CEOL (Orange),37.1,19.9,11.7,0.4,26-Jun,
+1028,HEWH (White),26.2,27.1,29.4,,26-Jun,
+1029,ADFA (Orange + Green),,,,,,
+1030,HEWH (White),37.6,33.3,26.1,,26-Jun,
+1031,RHOV (White + Pink),26.1,15.1,10.4,0.7,26-Jun,
+1032,ADFA (Orange + Green),45.9,39.8,31.2,0.7,26-Jun,
+1033,CEOL (Orange),27.6,8.1,9,0.3,25-Jun,
+1034,ADFA (Orange + Green),45.3,21.1,26.2,0.8,25-Jun,
+1035,CEOL (Orange),,,,,25-Jun,dead
+1036,RHOV (White + Pink),,,,,25-Jun,dead
+1037,HEWH (White),37.1,27.5,17.9,,25-Jun,
+1038,CEOL (Orange),,,,,25-Jun,dead
+1039,SAAP (White + Green),,,,,25-Jun,np
+1040,HEWH (White),28.9,48.9,11.8,,25-Jun,
+1041,HEWH (White),29.4,30.5,30.2,,25-Jun,
+1042,CEOL (Orange),,,,,25-Jun,np
+1043,RHOV (White + Pink),24.8,12.9,6.6,0.39,25-Jun,
+1044,MALA (White + Yellow),10.5,3.9,3.8,0.34,25-Jun,
+1045,ENCA (Pink),58.3,47.2,42.1,1.55,25-Jun,
+1046,ENCA (Pink),32,67,25.2,0.72,25-Jun,
+1047,HEWH (White),8.6,22.3,9.4,,25-Jun,
+1048,ADFA (Orange + Green),,,,,25-Jun,dead
+1049,CEOL (Orange),12.6,3.8,3.4,0.23,26-Jun,
+1050,SAAP (White + Green),41.8,28,19.8,0.55,25-Jun,
+1051,HEWH (White),33.1,31.2,29.7,,26-Jun,
+1052,RHOV (White + Pink),20.2,11.4,8,0.31,26-Jun,
+1053,MALA (White + Yellow),26.8,12.4,8.1,0.45,25-Jun,
+1054,HEWH (White),21.3,37.5,20.6,,25-Jun,
+1055,ENCA (Pink),32.3,30.5,26.8,0.42,25-Jun,
+1056,HEWH (White),27.2,22.2,16.8,,25-Jun,
+1057,SAME (Orange + Pink),11.2,9,6.2,0.26,25-Jun,
+1058,ENCA (Pink),31.8,51.9,37.8,0.54,26-Jun,
+1059,MALA (White + Yellow),18.8,5.5,5.2,0.24,25-Jun,
+1060,ADFA (Orange + Green),20.8,63.6,44.2,0.7,25-Jun,
+1061,CEOL (Orange),31.9,12.9,8.4,0.29,25-Jun,
+1062,CEOL (Orange),30.6,7.8,4.3,0.3,25-Jun,
+1063,HEWH (White),31.7,30.5,26.4,,25-Jun,
+1064,ADFA (Orange + Green),67.3,36.2,24.9,0.8,25-Jun,
+1065,MALA (White + Yellow),48.9,25.1,11.9,0.5,26-Jun,
+1066,SANI (Orange + Yellow),,,,,26-Jun,dead
+1067,HEWH (White),15.3,13.1,9.4,,26-Jun,
+1068,HEWH (White),29.7,34.2,27.2,,26-Jun,
+1069,ENCA (Pink),46.9,28.4,21.8,0.39,26-Jun,
+1070,SANI (Orange + Yellow),26.9,8.4,8.1,0.52,26-Jun,
+1071,RHOV (White + Pink),,,,,25-Jun,np
+1072,RHOV (White + Pink),,,,,25-Jun,np
+1073,HEWH (White),21.9,20,13.8,,25-Jun,
+1074,ENCA (Pink),53.1,27.9,18.8,0.65,25-Jun,
+1075,SAAP (White + Green),,,,,25-Jun,np
+1076,MALA (White + Yellow),18,34,7.8,0.4,25-Jun,
+1077,RHOV (White + Pink),,,,,,
+1078,HEWH (White),,,,,25-Jun,np
+1079,SAAP (White + Green),17.9,4.2,4,0.26,25-Jun,
+1080,ENCA (Pink),57.2,34.8,24.2,0.5,25-Jun,
+1081,CEOL (Orange),14.1,4.2,3.2,0.22,25-Jun,
+1082,ENCA (Pink),34.9,18.5,15.6,0.4,26-Jun,
+1083,HEWH (White),18.1,20.8,8.7,,26-Jun,
+1084,ENCA (Pink),64.7,17.6,10.5,0.58,26-Jun,
+1085,RHOV (White + Pink),13.6,10,6.8,0.31,26-Jun,
+1086,RHOV (White + Pink),23.8,12.1,11.8,0.47,26-Jun,
+1087,MALA (White + Yellow),,,,,26-Jun,np
+1088,RHOV (White + Pink),,,,,26-Jun,dead
+1089,SANI (Orange + Yellow),44,27.8,22.7,0.9,25-Jun,
+1090,HEWH (White),22.1,32.3,10.5,,25-Jun,
+1091,HEWH (White),,,,,25-Jun,np
+1092,CEOL (Orange),,,,,25-Jun,dead
+1093,ENCA (Pink),53.8,26.1,18.1,0.62,25-Jun,
+1094,CEOL (Orange),32.5,11.1,7.2,0.48,25-Jun,
+1095,ENCA (Pink),25.9,7.3,5.9,0.39,25-Jun,
+1096,HEWH (White),23.2,31.2,27.8,,25-Jun,
+1097,CEOL (Orange),31.8,6.8,4.9,0.32,26-Jun,
+1098,HEWH (White),33.8,12.5,12.1,,26-Jun,
+1099,CEOL (Orange),16.9,4,3.4,0.17,26-Jun,
+1100,SANI (Orange + Yellow),37.5,16.9,11.1,0.51,26-Jun,
+1101,RHOV (White + Pink),41.4,17.7,8.3,0.7,25-Jun,
+1102,RHOV (White + Pink),8.2,5.7,4.6,0.5,25-Jun,
+1103,SAAP (White + Green),40.2,37,21.3,0.7,25-Jun,
+1104,RHOV (White + Pink),6.5,6.5,3.7,0.3,25-Jun,
+1105,HEWH (White),15.2,10.3,2.3,,25-Jun,
+1106,RHOV (White + Pink),,,,,25-Jun,dead
+1107,SANI (Orange + Yellow),,,,,25-Jun,dead
+1108,ADFA (Orange + Green),,,,,25-Jun,dead
+1109,ADFA (Orange + Green),,,,,25-Jun,dead
+1110,HEWH (White),,,,,25-Jun,np
+1111,CEOL (Orange),,,,,25-Jun,dead
+1112,CEOL (Orange),,,,,25-Jun,np
+1113,SAME (Orange + Pink),6,1.9,1.2,0.2,25-Jun,
+1114,ENCA (Pink),41.1,29.1,17,0.7,25-Jun,
+1115,RHOV (White + Pink),16.1,7.2,8.3,0.4,25-Jun,
+1116,HEWH (White),21.2,11,5.2,,25-Jun,
+1117,ENCA (Pink),,,,,25-Jun,np
+1118,RHOV (White + Pink),21.2,11,5.2,,25-Jun,
+1119,CEOL (Orange),,,,,25-Jun,np
+1120,ADFA (Orange + Green),30.4,25.5,36.7,1.7,25-Jun,
+1121,CEOL (Orange),23.7,10.4,7,0.4,25-Jun,
+1122,ENCA (Pink),51.4,51.6,36.9,1.1,25-Jun,flowering
+1123,HEWH (White),,,,,,
+1124,RHOV (White + Pink),18.7,9.8,8,0.4,25-Jun,
+1125,SAAP (White + Green),,,,,25-Jun,dead
+1126,CEOL (Orange),12.5,3.1,12.7,0.3,25-Jun,g.a.
+1127,ADFA (Orange + Green),47,39.5,27,0.9,25-Jun,
+1128,HEWH (White),30.8,15.6,6.6,,25-Jun,
+1129,ENCA (Pink),,,,,25-Jun,np
+1130,SAME (Orange + Pink),,,,,25-Jun,dead
+1131,CEOL (Orange),,,,,26-Jun,dead
+1132,CEOL (Orange),,,,,26-Jun,np
+1133,ENCA (Pink),,,,,26-Jun,dead but flowered
+1134,SAME (Orange + Pink),,,,,26-Jun,np
+1135,ENCA (Pink),,,,,25-Jun,"dead, g"
+1136,ENCA (Pink),67.3,36.5,32,1,25-Jun,flowering
+1137,MALA (White + Yellow),,,,,26-Jun,dead
+1138,RHOV (White + Pink),,,,,26-Jun,np
+1139,SAME (Orange + Pink),29,9.4,5,0.4,26-Jun,
+1140,SAME (Orange + Pink),38.5,10.3,3.9,0.5,26-Jun,
+1141,HEWH (White),24.4,22.1,7.5,,26-Jun,
+1142,CEOL (Orange),8.6,3,1.4,0.2,26-Jun,
+1143,MALA (White + Yellow),,,,,26-Jun,np
+1144,HEWH (White),28,22,20.4,,26-Jun,
+1145,SANI (Orange + Yellow),,,,,26-Jun,dead
+1146,HEWH (White),,,,,26-Jun,np
+1147,HEWH (White),29.9,36,22.5,,26-Jun,
+1148,CEOL (Orange),,,,,26-Jun,dead
+1149,SANI (Orange + Yellow),26,10.4,9.1,0.5,26-Jun,
+1150,HEWH (White),,,,,26-Jun,np
+1151,CEOL (Orange),,,,,26-Jun,np
+1152,HEAR,,,,,26-Jun,dead
+1153,MALA (White + Yellow),39.1,12.1,9,0.4,26-Jun,
+1154,SANI (Orange + Yellow),5.3,3.6,3,0.4,26-Jun,
+1155,SAAP (White + Green),32.1,23.1,19,1,26-Jun,
+1156,SAME (Orange + Pink),10.6,3.4,2.6,0.3,26-Jun,
+1157,HEWH (White),,,,,26-Jun,np
+1158,SAAP (White + Green),,,,,26-Jun,dead
+1159,ADFA (Orange + Green),28.1,55.2,38,1.3,26-Jun,
+1160,HEWH (White),,,,,26-Jun,dead
+1161,ENCA (Pink),,,,,26-Jun,np
+1162,ENCA (Pink),,,,,26-Jun,np
+1163,SANI (Orange + Yellow),,,,,26-Jun,np
+1164,SAME (Orange + Pink),,,,,26-Jun,np
+1165,SAME (Orange + Pink),,,,,26-Jun,np
+1166,RHOV (White + Pink),,,,,26-Jun,np
+1167,HEWH (White),13.1,30.5,9.1,,26-Jun,
+1168,MALA (White + Yellow),,,,,26-Jun,dead
+1169,SAME (Orange + Pink),,,,,26-Jun,dead
+1170,CEOL (Orange),45.3,10.5,7,0.3,26-Jun,
+1171,SANI (Orange + Yellow),20.8,5,2.1,0.4,26-Jun,
+1172,CEOL (Orange),,,,,26-Jun,dead
+1173,SANI (Orange + Yellow),,,,,26-Jun,dead
+1174,ENCA (Pink),35.5,23.9,15.4,0.5,26-Jun,
+1175,ADFA (Orange + Green),66.1,35.5,23.6,0.6,26-Jun,
+1176,ENCA (Pink),,,,,26-Jun,dead
+1177,RHOV (White + Pink),16.5,10,9,0.5,26-Jun,
+1178,RHOV (White + Pink),,,,,26-Jun,np
+1179,ENCA (Pink),12.4,6,4.9,0.5,26-Jun,
+1180,MALA (White + Yellow),29.4,26.8,15.6,0.62,26-Jun,
+1181,CEOL (Orange),,,,,26-Jun,"dead, maybe bud"
+1182,HEWH (White),21.2,22.7,15.5,,26-Jun,
+1183,ADFA (Orange + Green),42.1,21.5,12.9,1.36,26-Jun,
+1184,CEOL (Orange),,,,,26-Jun,"np, g"
+1185,CEOL (Orange),41,18,16.2,0.61,26-Jun,
+1186,MALA (White + Yellow),,,,,26-Jun,"np, g"
+1187,RHOV (White + Pink),,,,,26-Jun,dead
+1188,CEOL (Orange),20,5.2,2.6,0.3,26-Jun,
+1189,CEOL (Orange),,,,,26-Jun,dead
+1190,CEOL (Orange),,,,,26-Jun,dead
+1191,ADFA (Orange + Green),53.2,33.9,30.5,0.9,26-Jun,
+1192,ENCA (Pink),,,,,26-Jun,
+1193,SAME (Orange + Pink),,,,,26-Jun,
+1194,ADFA (Orange + Green),,,,,26-Jun,
+1195,MALA (White + Yellow),,,,,26-Jun,
+1196,MALA (White + Yellow),,,,,26-Jun,np
+1197,SANI (Orange + Yellow),,,,,,
+1198,RHOV (White + Pink),28.6,12,10.9,0.4,26-Jun,
+1199,SAME (Orange + Pink),,,,,26-Jun,np
+1200,ENCA (Pink),47.3,21.2,14.5,0.58,26-Jun,
+1201,ADFA (Orange + Green),,,,,25-Jun,dead
+1202,SAAP (White + Green),,,,,25-Jun,dead
+1203,HEWH (White),27.3,21.6,14.3,,25-Jun,
+1204,RHOV (White + Pink),36.9,12.9,13.1,0.6,25-Jun,
+1205,SANI (Orange + Yellow),11.5,9.1,2.6,0.3,25-Jun,
+1206,CEOL (Orange),,,,,,
+1207,SANI (Orange + Yellow),,,,,25-Jun,dead
+1208,HEWH (White),,,,,25-Jun,np
+1209,ADFA (Orange + Green),,,,,25-Jun,dead
+1210,SAAP (White + Green),,,,,25-Jun,np
+1211,SANI (Orange + Yellow),30.6,17.3,17.2,1,25-Jun,
+1212,CEOL (Orange),31.4,16.2,12.1,0.5,25-Jun,
+1213,ENCA (Pink),36.7,13.4,10.5,0.5,25-Jun,
+1214,SAAP (White + Green),,,,,25-Jun,np
+1215,RHOV (White + Pink),20.9,11,7.9,0.4,25-Jun,
+1216,SAME (Orange + Pink),,,,,25-Jun,np
+1217,RHOV (White + Pink),,,,,25-Jun,np
+1218,MALA (White + Yellow),35.2,16,10.2,0.4,25-Jun,
+1219,CEOL (Orange),,,,,25-Jun,dead
+1220,SAAP (White + Green),,,,,25-Jun,dead
+1221,ENCA (Pink),,,,,25-Jun,dead
+1222,ADFA (Orange + Green),46.8,50.1,12.1,1.2,25-Jun,
+1223,HEWH (White),,,,,25-Jun,dead
+1224,ADFA (Orange + Green),20.7,21.1,12.8,,25-Jun,
+1225,MALA (White + Yellow),,,,,25-Jun,dead
+1226,ENCA (Pink),42.9,20.6,12.4,0.5,26-Jun,
+1227,ADFA (Orange + Green),36.1,45.3,34.1,1.19,25-Jun,
+1228,CEOL (Orange),,,,,26-Jun,dead
+1229,HEWH (White),,,,,26-Jun,np
+1230,SAAP (White + Green),,,,,26-Jun,dead
+1231,HEAR,,,,,26-Jun,np
+1232,HEWH (White),22,21.5,11.8,,26-Jun,"sad, g.a."
+1233,SAME (Orange + Pink),,,,,26-Jun,dead
+1234,CEOL (Orange),30,11.1,7.8,0.26,26-Jun,
+1235,MALA (White + Yellow),27.4,15.6,11.6,0.42,26-Jun,
+1236,RHOV (White + Pink),,,,,25-Jun,np
+1237,RHOV (White + Pink),,,,,26-Jun,np
+1238,ADFA (Orange + Green),55.4,32.4,24,1.34,26-Jun,
+1239,ADFA (Orange + Green),,,,,26-Jun,dead
+1240,ADFA (Orange + Green),,,,,26-Jun,dead
+1241,HEWH (White),21.2,26.8,15.3,,26-Jun,
+1242,SANI (Orange + Yellow),59.2,29.1,25.8,0.91,26-Jun,
+1243,ADFA (Orange + Green),,,,,26-Jun,dead
+1244,RHOV (White + Pink),25.8,10.9,8.7,0.4,25-Jun,
+1245,ADFA (Orange + Green),50.1,55.5,27.1,0.6,25-Jun,
+1246,SANI (Orange + Yellow),15.5,3.3,2.7,0.45,25-Jun,
+1247,ADFA (Orange + Green),52,41.2,33,1.19,25-Jun,
+1248,SANI (Orange + Yellow),22.1,19.6,18.4,0.6,25-Jun,
+1249,ADFA (Orange + Green),,,,,25-Jun,np
+1250,RHOV (White + Pink),,,,,25-Jun,np
+1251,ENCA (Pink),20.2,8.1,5.2,0.36,25-Jun,
+1252,HEWH (White),22.5,12.5,7.2,,25-Jun,
+1253,RHOV (White + Pink),14.4,5.7,4.8,0.3,25-Jun,
+1254,CEOL (Orange),,,,,25-Jun,np
+1255,RHOV (White + Pink),22,18.6,10.3,0.8,25-Jun,
+1256,HEWH (White),20.9,28.7,8.4,,25-Jun,
+1257,HEWH (White) RHOV,14,12.6,6.6,0.4,25-Jun,
+1258,RHOV (White + Pink),20.1,5.6,4.1,0.3,25-Jun,
+1259,CEOL (Orange),,,,,25-Jun,
+1260,RHOV (White + Pink),,,,,25-Jun,dead
+1261,RHOV (White + Pink),,,,,25-Jun,"np, g"
+1262,MALA (White + Yellow),32.3,33.2,11,0.53,25-Jun,
+1263,SANI (Orange + Yellow),,,,,25-Jun,np
+1264,RHOV (White + Pink),5,3.7,2.1,0.25,25-Jun,
+1265,HEWH (White),,,,,25-Jun,np
+1266,RHOV (White + Pink),15.9,18.1,4.2,0.3,25-Jun,
+1267,CEOL (Orange),,,,,25-Jun,dead
+1268,HEWH (White),,,,,25-Jun,dead
+1269,MALA (White + Yellow),,,,,25-Jun,dead
+1270,ADFA (Orange + Green),,,,,25-Jun,dead
+1271,SAME (Orange + Pink),,,,,25-Jun,"np, g"
+1272,ENCA (Pink),,,,,25-Jun,"np, g"
+1273,ENCA (Pink),49,22.1,16.4,1,25-Jun,
+1274,ADFA (Orange + Green),,,,,25-Jun,dead
+1275,ADFA (Orange + Green),,,,,24-Jun,dead
+1276,RHOV (White + Pink),,,,,24-Jun,np
+1277,MALA (White + Yellow),39.2,14,11.9,0.44,25-Jun,
+1278,SANI (Orange + Yellow),18.9,3,2.4,0.49,25-Jun,
+1279,HEWH (White),19.5,13.8,6.1,,25-Jun,
+1280,SANI (Orange + Yellow),23.8,25.4,13.1,0.51,25-Jun,
+1281,CEOL (Orange),20.1,4.9,2.6,0.26,25-Jun,
+1282,CEOL (Orange),,,,,25-Jun,dead
+1283,ENCA (Pink),,,,,25-Jun,not cut
+1284,HEWH (White),30,28.5,5.2,,25-Jun,
+1285,CEOL (Orange),42.1,9.9,8.4,0.4,25-Jun,
+1286,HEWH (White),28.8,44.5,34.7,,25-Jun,
+1287,HEWH (White),,,,,25-Jun,np
+1288,SAAP (White + Green),,,,,25-Jun,dead
+1289,ADFA (Orange + Green),63.9,38.7,32.3,1.5,25-Jun,
+1290,HEAR,,,,,25-Jun,dead
+1291,SAME (Orange + Pink),33,13.2,13,0.4,25-Jun,
+1292,ENCA (Pink),,,,0.43,25-Jun,
+1293,HEWH (White),11,4.1,2.9,,25-Jun,
+1294,RHOV (White + Pink),4.4,2.4,2,0.31,25-Jun,
+1295,CEOL (Orange),,,,,25-Jun,np
+1296,MALA (White + Yellow),32.8,13.1,6.3,0.46,25-Jun,
+1297,HEWH (White),29.5,51.2,24.9,,25-Jun,
+1298,ADFA (Orange + Green),41.5,37.3,31.3,0.95,25-Jun,
+1299,CEOL (Orange),10.2,8.4,5.4,0.22,25-Jun,
+1300,ENCA (Pink),,,,,26-Jun,np
+1301,ADFA (Orange + Green),26.1,42.8,34.1,0.7,26-Jun,
+1302,HEWH (White),25.1,17.1,17,,26-Jun,
+1303,ENCA (Pink),24.1,13.1,7.6,0.3,26-Jun,
+1304,ENCA (Pink),54.6,32.1,30.1,0.9,26-Jun,
+1305,ADFA (Orange + Green),60.7,43.3,40.5,2.4,26-Jun,
+1306,MALA (White + Yellow),34.1,13.7,8.3,0.4,26-Jun,
+1307,SAAP (White + Green),27.5,20,14.3,1,26-Jun,
+1308,ENCA (Pink),70.8,15.5,11.8,0.58,26-Jun,
+1309,NO PLANT,,,,,26-Jun,not cut
+1310,RHOV (White + Pink),21.9,7.4,5.2,0.37,26-Jun,
+1311,HEWH (White),,,,,26-Jun,dead
+1312,RHOV (White + Pink),18,9.5,6,0.4,26-Jun,
+1313,RHOV (White + Pink),25,13.2,11.1,0.6,26-Jun,
+1314,SAME (Orange + Pink),,,,,26-Jun,dead
+1315,ENCA (Pink),59.3,46.5,38.2,1.2,26-Jun,
+1316,SAME (Orange + Pink),32,14.1,10.5,0.4,26-Jun,
+1317,HEWH (White),24.1,36,31.5,,26-Jun,
+1318,SANI (Orange + Yellow),17.8,9.5,11.5,0.5,26-Jun,
+1319,SAAP (White + Green),,,,,26-Jun,np
+1320,SAME (Orange + Pink),47.6,17,14.5,0.5,26-Jun,
+1321,CEOL (Orange),5.1,5.9,3.2,0.2,26-Jun,herbivorized
+1322,RHOV (White + Pink),32.5,13.6,9.6,0.5,26-Jun,
+1323,HEWH (White),9.5,3,0.6,,26-Jun,
+1324,SAME (Orange + Pink),8.1,9.7,2,0.3,26-Jun,herbivorized
+1325,SAME (Orange + Pink),33.8,15,14.7,0.5,26-Jun,
+1326,MALA (White + Yellow),13.1,5,4.1,0.3,26-Jun,herbivorized
+1327,SANI (Orange + Yellow),,,,,26-Jun,dead
+1328,SAME (Orange + Pink),31.3,15.5,14.9,0.4,26-Jun,
+1329,HEWH (White),23.4,40.2,15,,26-Jun,
+1330,ENCA (Pink),41,15,13.1,0.5,26-Jun,
+1331,SAME (Orange + Pink),20.6,12.4,6.4,0.3,26-Jun,
+1332,ENCA (Pink),,,,,26-Jun,dead
+1333,HEWH (White),28.2,26,29.5,,26-Jun,
+1334,HEWH (White),24.1,48.6,35.2,,26-Jun,
+1335,ENCA (Pink),,,,,26-Jun,dead
+1336,NO PLANT,,,,,,
+1337,NO PLANT,,,,,,
+1338,CEOL (Orange),31.3,29,7.1,0.3,26-Jun,
+1339,HEWH (White),29.1,22.3,4.3,,26-Jun,
+1340,CEOL (Orange),,,,,26-Jun,np
+1341,SANI (Orange + Yellow),,,,,26-Jun,dead
+1342,ENCA (Pink),23.4,30.1,15.6,0.3,26-Jun,
+1343,SAAP (White + Green),32.6,22.9,19.4,0.9,26-Jun,
+1344,CEOL (Orange),,,,,26-Jun,dead
+1345,RHOV (White + Pink),26.4,14.5,11.1,0.4,26-Jun,
+1346,HEWH (White),18.5,11.1,6.8,,26-Jun,
+1347,ADFA (Orange + Green),60.1,45.5,41.1,1.7,26-Jun,
+1348,MALA (White + Yellow),,,,,26-Jun,dead
+1349,SAME (Orange + Pink),36.8,14.9,14.1,0.5,26-Jun,
+1350,RHOV (White + Pink),22.9,11.5,14.4,1,26-Jun,
+1351,ADFA (Orange + Green),62.1,43.2,29.4,0.9,26-Jun,
+1352,CEOL (Orange),,,,,26-Jun,dead
+1353,RHOV (White + Pink),,,,,26-Jun,dead
+1354,HEWH (White),27,23.4,4.2,,26-Jun,
+1355,SANI (Orange + Yellow),20.6,14.9,14.9,0.5,26-Jun,
+1356,RHOV (White + Pink),26.9,11.9,10,0.4,26-Jun,
+1357,ENCA (Pink),,,,,26-Jun,dead
+1358,CEOL (Orange),,,,,26-Jun,np
+1359,ADFA (Orange + Green),,,,,26-Jun,dead
+1360,CEOL (Orange),,,,,26-Jun,np
+1361,ENCA (Pink),,,,,26-Jun,np
+1362,ADFA (Orange + Green),44,40.3,35.6,0.65,26-Jun,
+1363,SAME (Orange + Pink),,,,,26-Jun,np
+1364,RHOV (White + Pink),13.8,7.3,5.8,0.24,26-Jun,
+1365,ENCA (Pink),,,,,26-Jun,"dead, maybe bud"
+1366,SAAP (White + Green),20,4.4,3.7,0.33,26-Jun,
+1367,RHOV (White + Pink),21,11.8,9.8,0.3,26-Jun,
+1368,RHOV (White + Pink),27.9,12.9,10.3,0.4,26-Jun,
+1369,ENCA (Pink),31.8,41.2,26.5,0.5,26-Jun,
+1370,HEWH (White),,,,,26-Jun,"np, g"
+1371,CEOL (Orange),,,,,26-Jun,"np, g"
+1372,HEWH (White),21.2,13.1,10.2,,26-Jun,
+1373,MALA (White + Yellow),19,22.3,7.8,0.35,26-Jun,
+1374,SANI (Orange + Yellow),,,,,26-Jun,"np, g"
+1375,CEOL (Orange),,,,,26-Jun,np
+1376,HEAR,24.2,11.9,8.7,0.33,26-Jun,
+1377,SANI (Orange + Yellow),32,29.4,10.9,0.46,26-Jun,
+1378,SAME (Orange + Pink),,,,,,
+1379,HEWH (White),,,,,26-Jun,"np, buried"
+1380,RHOV (White + Pink),,,,,26-Jun,dead
+1381,CEOL (Orange),,,,,26-Jun,np
+1382,SAME (Orange + Pink),,,,,26-Jun,np
+1383,RHOV (White + Pink),22,11.8,10.3,0.65,25-Jun,
+1384,CEOL (Orange),13.4,8,5.3,0.27,25-Jun,
+1385,SAAP (White + Green),,,,,26-Jun,np
+1386,RHOV (White + Pink),,,,,,
+1387,CEOL (Orange),37,17.5,11.8,0.3,26-Jun,
+1388,CEOL (Orange),,,,,26-Jun,np
+1389,HEWH (White),,,,,26-Jun,"np, buried"
+1390,RHOV (White + Pink),13.4,10.8,8.9,0.5,25-Jun,
+1391,CEOL (Orange),,,,,26-Jun,"dead, maybe bud"
+1392,CEOL (Orange),30.3,7.4,4.3,0.26,26-Jun,
+1393,SANI (Orange + Yellow),24.3,10.4,9,0.8,25-Jun,
+1394,ADFA (Orange + Green),54.5,55.6,36,0.72,26-Jun,
+1395,ADFA (Orange + Green),56.2,35.9,31,0.82,26-Jun,
+1396,HEWH (White),,,,,26-Jun,"np, g"
+1397,MALA (White + Yellow),,,,,,
+1398,HEWH,24.2,32,26.3,,26-Jun,
+1399,RHOV (White + Pink),28.5,17.3,11.2,0.57,26-Jun,
+1400,SAAP (White + Green),8.7,5.8,3.9,0.26,26-Jun,
+1401,CEOL (Orange),28.2,14.9,12.2,0.37,25-Jun,
+1402,RHOV (White + Pink),12.4,6.8,5,0.38,25-Jun,
+1403,MALA (White + Yellow),37.5,14.1,11.3,0.6,26-Jun,
+1404,HEAR,,,,,5-Jun,np
+1405,RHOV (White + Pink),,,,,26-Jun,"np, buried"
+1406,CEOL (Orange),27.4,5,4.2,0.24,26-Jun,
+1407,HEAR,14,9,8.5,0.27,5-Jun,
+1408,RHOV (White + Pink),,,,,,
+1409,HEAR,,,,,5-Jun,np
+1410,HEAR,15.7,7.8,7.2,0.3,5-Jun,
+1411,HEAR,13,7,6.6,0.35,5-Jun,
+1412,RHOV (White + Pink),37.5,14.5,11,0.51,26-Jun,
+1413,RHOV (White + Pink),16.8,10.9,7.3,0.39,26-Jun,
+1414,RHOV (White + Pink),17.8,9.8,7,0.32,26-Jun,
+1415,HEAR,,,,,26-Jun,dead
+1416,HEAR,,,,,,
+1417,HEAR,13.5,10.6,10.1,0.39,5-Jun,
+1418,ADFA (Orange + Green),52.3,40,23.9,1.4,26-Jun,
+1419,SAAP (White + Green),,,,,26-Jun,dead
+1420,HEAR,,,,,26-Jun,"dead, g"
+1421,HEAR,16.4,9.5,7.4,0.38,5-Jun,
+1422,HEAR,,,,,,
+1423,HEAR,13.7,7.2,6.4,0.2,5-Jun,
+1424,HEAR,,,,,26-Jun,dead
+1425,HEAR,7.8,10.6,7,0.4,5-Jun,
+1426,HEAR,,,,,5-Jun,np
+1427,HEAR,,,,,,
+1428,HEAR,,,,,24-Jun,np
+1429,HEAR,,,,,5-Jun,np
+1430,HEAR,,,,,26-Jun,dead
+1431,HEAR,,,,,,
+1432,HEAR,10,11.1,9.8,0.32,24-Jun,
+1433,HEAR,,,,,,
+1434,HEAR,,,,,26-Jun,dead
+1435,HEAR,,,,,24-Jun,dead
+1436,HEAR,9.5,10.3,8.2,0.48,24-Jun,sad
+1437,HEAR,9.8,8.3,7.8,0.4,24-Jun,
+1438,HEAR,,,,,24-Jun,"np, g"
+1439,HEAR,,,,,,
+1440,HEAR,,,,,25-Jun,dead
+1441,HEAR,10.4,5.7,4,0.25,25-Jun,sad
+1442,HEAR,,,,,26-Jun,np
+1443,HEAR,,,,,26-Jun,np
+1444,HEAR,,,,,25-Jun,dead
+1445,HEAR,,,,,,
+1446,HEAR,,,,,24-Jun,dead
+1447,HEAR,,,,,24-Jun,dead
+1448,HEAR,,,,,24-Jun,dead
+1449,HEAR,,,,,26-Jun,"np, g"
+1450,HEAR,,,,,24-Jun,np
+1451,HEAR,,,,,26-Jun,"np, g"
+1452,HEAR,,,,,26-Jun,"np, g"
+1453,HEAR,12.1,6.9,5,0.28,24-Jun,sad
+1454,HEAR,,,,,25-Jun,dead
+1455,HEAR,,,,,24-Jun,dead
+1456,HEAR,13.7,9.2,6.1,0.31,24-Jun,sad
+1457,HEAR,,,,,24-Jun,dead
+1458,HEAR,13.7,11,9.9,0.48,25-Jun,
+1459,HEAR,11.7,7.4,6,0.31,24-Jun,
+1460,HEAR,8.8,6,4.8,0.31,24-Jun,
+1461,HEAR,3.8,4.3,2.2,0.2,25-Jun,sad
+1462,ADFA (Orange + Green),,,,,24-Jun,dead
+1463,ADFA (Orange + Green),57.8,40,30.5,0.61,24-Jun,
+1464,ADFA (Orange + Green),37.5,57.6,18.9,1,25-Jun,
+1465,ADFA (Orange + Green),57.3,25,19.3,0.6,24-Jun,sad
+1466,ADFA (Orange + Green),70,18.6,18,0.68,24-Jun,g.a.
+1467,ADFA (Orange + Green),30.3,86,34.1,1.2,24-Jun,
+1468,ADFA (Orange + Green),34.6,32.6,26.6,0.7,5-Jun,
+1469,ADFA (Orange + Green),59.6,56.1,22.4,0.71,24-Jun,
+1470,ADFA (Orange + Green),67.7,37.8,35.5,0.95,24-Jun,
+1471,ADFA (Orange + Green),42.1,43.6,31.9,0.6,24-Jun,
+1472,ADFA (Orange + Green),43.1,32,27.9,0.6,5-Jun,
+1473,ADFA (Orange + Green),50.9,26.4,26.1,0.62,5-Jun,
+1474,ADFA (Orange + Green),34.6,32.2,21.5,0.75,5-Jun,
+1475,ADFA (Orange + Green),,,,,,
+1476,ADFA (Orange + Green),65.6,37.4,26.2,0.6,5-Jun,
+1477,ADFA (Orange + Green),38.6,42.4,27.4,0.4,5-Jun,
+1478,HEAR,,,,,,
+1479,SANI (Orange + Yellow),16.4,13.1,9.6,0.4,5-Jun,
+1480,HEAR,,,,,5-Jun,"np, g"
+1481,HEAR,,,,,5-Jun,dead
+1482,HEAR,3.75,5.9,3.2,0.38,5-Jun,
+1483,HEAR,,,,,5-Jun,dead
+1484,HEAR,,,,,5-Jun,np
+1485,HEAR,,,,,24-Jun,np
+1486,HEAR,6.2,2.6,1.9,0.4,24-Jun,herbivorized
+1487,HEAR,,,,,26-Jun,np
+1488,HEAR,,,,,26-Jun,"np, g"
+1489,NO PLANT,,,,,,
+1490,NO PLANT,,,,,,
+1491,HEAR,,,,,26-Jun,np
+1492,HEAR,,,,,24-Jun,np
+1493,HEAR,,,,,24-Jun,"dead, buried"
+1494,HEAR,,,,,24-Jun,"np, g"
+1495,HEAR,,,,,24-Jun,np
+1496,HEAR,,,,,,
+1497,HEAR,,,,,26-Jun,np
+1498,HEAR,,,,,26-Jun,dead
+1499,HEAR,,,,,26-Jun,np
+1500,HEAR,,,,,25-Jun,dead
+1501,SAME (Orange + Pink),11,4.8,4.4,0.2,5-Jun,
+1502,SANI (Orange + Yellow),,,,,,
+1503,SAME (Orange + Pink),17.4,6.6,6.5,0.35,,
+1504,SAME (Orange + Pink),,,,,,
+1505,SANI (Orange + Yellow),,,,,,
+1506,SANI (Orange + Yellow),,,,,,
+1507,HEAR,,,,,25-Jun,np
+1508,HEAR,,,,,25-Jun,dead
+1509,HEAR,,,,,25-Jun,np
+1510,HEAR,19.2,10.6,8.1,0.6,24-Jun,sad
+1511,HEAR,16.1,8.1,7.1,0.5,24-Jun,
+1512,HEAR,,,,,24-Jun,np
+1513,HEAR,,,,,24-Jun,np
+1514,HEAR,,,,,25-Jun,dead
+1515,HEAR,,,,,25-Jun,"dead, buried"
+1516,NO PLANT,,,,,,
+1517,SAME (Orange + Pink),27.5,12.4,9.5,0.5,25-Jun,
+1518,HEAR,28.2,15.9,18.9,0.5,24-Jun,
+1519,HEAR,,,,,24-Jun,dead
+1520,HEAR,,,,,25-Jun,np
+1521,HEAR,,,,,26-Jun,np
+1522,HEAR,,,,,26-Jun,np
+1523,HEAR,23.5,13.8,10.5,0.5,26-Jun,
+1524,HEAR,17.1,15.6,10.9,0.6,26-Jun,
+1525,HEAR,,,,,25-Jun,np
+1526,HEAR,7.1,5.5,4.3,0.4,26-Jun,
+1527,HEAR,,,,,25-Jun,dead
+1528,HEAR,,,,,26-Jun,dead
+1529,HEAR,,,,,26-Jun,np
+1530,HEAR,,,,,,
+1531,SANI (Orange + Yellow),,,,,25-Jun,dead
+1532,SAME (Orange + Pink),,,,,25-Jun,np
+1533,SANI (Orange + Yellow),,,,,25-Jun,np
+1534,SANI (Orange + Yellow),24,15.8,10,0.7,24-Jun,
+1535,HEAR,,,,,26-Jun,np
+1536,HEAR,,,,,26-Jun,np
+1537,HEAR,,,,,26-Jun,dead
+1538,HEAR,7.1,6.9,4.2,0.35,26-Jun,
+1539,HEAR,,,,,26-Jun,np
+1540,SANI (Orange + Yellow),9.7,4.8,4.6,0.3,25-Jun,
+1541,SANI (Orange + Yellow),,,,,24-Jun,"np, g"
+1542,SAME (Orange + Pink),42.2,22.1,20.6,1.4,24-Jun,
+1543,SAME (Orange + Pink),47.1,20.1,21.2,0.7,24-Jun,
+1544,SANI (Orange + Yellow),,,,,24-Jun,np
+1545,SAME (Orange + Pink),3.2,3.1,1.9,0.4,24-Jun,herbivorized
+1546,SAME (Orange + Pink),11.7,10.3,8.7,0.4,25-Jun,
+1547,SANI (Orange + Yellow),,,,,24-Jun,"np, g"
+1548,SANI (Orange + Yellow),,,,,25-Jun,"np, g"
+1549,SAME (Orange + Pink),31.2,21.6,22.4,0.5,25-Jun,
+1550,SANI (Orange + Yellow),,,,,24-Jun,"dead, herbivorized"
+1551,SANI (Orange + Yellow),17.2,7.6,6,0.6,24-Jun,
+1552,SANI (Orange + Yellow),24.6,13.5,10.9,0.4,25-Jun,
+1553,SANI (Orange + Yellow),,,,,25-Jun,"np, g"
+1554,SAME (Orange + Pink),,,,,25-Jun,"np, g"
+1555,SAME (Orange + Pink),17.6,7.4,6.5,0.5,26-Jun,
+1556,SAME (Orange + Pink),,,,,26-Jun,np
+1557,SANI (Orange + Yellow),23.9,15.1,12.8,0.45,26-Jun,
+1558,SAME (Orange + Pink),31,12,11.1,0.38,26-Jun,
+1559,SANI (Orange + Yellow),17.2,13.5,11.4,0.4,26-Jun,
+1560,SANI (Orange + Yellow),,,,,26-Jun,dead
+1561,SANI (Orange + Yellow),,,,,26-Jun,dead
+1562,SAME (Orange + Pink),12.8,8.9,8,0.3,26-Jun,
+1563,SANI (Orange + Yellow),,,,,26-Jun,np
+1564,SANI (Orange + Yellow),,,,,,
+1565,SAME (Orange + Pink),,,,,26-Jun,np
+1566,SANI (Orange + Yellow),,,,,26-Jun,np
+1567,SAME (Orange + Pink),,,,,26-Jun,"np,g"
+1568,SANI (Orange + Yellow),,,,,26-Jun,np
+1569,SANI (Orange + Yellow),21.5,9.7,7.7,0.46,26-Jun,
+1570,SAME (Orange + Pink),,,,,26-Jun,"np, g"
+1571,SANI (Orange + Yellow),38.4,18.1,12,0.54,26-Jun,
+1572,SAME (Orange + Pink),,,,,25-Jun,np
+1573,SANI (Orange + Yellow),,,,,25-Jun,np
+1574,SANI (Orange + Yellow),7.6,1.6,1.1,0.3,25-Jun,herbivorized
+1575,SAME (Orange + Pink),40.1,13.1,11.8,0.5,5-Jun,
+1576,SANI (Orange + Yellow),,,,,25-Jun,np
+1577,SANI (Orange + Yellow),,,,,25-Jun,np
+1578,SANI (Orange + Yellow),,,,,25-Jun,np
+1579,SANI (Orange + Yellow),15.3,7.4,7.3,0.29,24-Jun,
+1580,SAME (Orange + Pink),14,2.5,2.3,0.3,24-Jun,
+1581,SANI (Orange + Yellow),6.8,7.8,2.3,0.41,25-Jun,"herbivorized, g.a."
+1582,SAME (Orange + Pink),46,21.1,19.5,0.75,25-Jun,
+1583,SAME (Orange + Pink),,,,,24-Jun,np
+1584,SAME (Orange + Pink),,,,,24-Jun,"np, g"
+1585,SANI (Orange + Yellow),,,,,24-Jun,dead
+1586,SANI (Orange + Yellow),,,,,,
+1587,SANI (Orange + Yellow),,,,,24-Jun,np
+1588,SAME (Orange + Pink),,,,,24-Jun,np
+1589,SANI (Orange + Yellow),19.2,8.5,4.9,0.52,25-Jun,
+1590,HEAR,5.4,8.75,7.9,0.28,5-Jun,
+1591,HEAR,,,,,5-Jun,np
+1592,HEAR,,,,,5-Jun,dead
+1593,HEAR,,,,,24-Jun,dead
+1594,SANI (Orange + Yellow),13.9,10,7.8,0.3,24-Jun,
+1595,SAME (Orange + Pink),,,,,24-Jun,np
+1596,SAME (Orange + Pink),15.2,9.8,7.2,,24-Jun,
+1597,SANI (Orange + Yellow),,,,,24-Jun,np
+1598,SAME (Orange + Pink),,,,,24-Jun,np
+1599,SANI (Orange + Yellow),8.4,12.2,9.2,0.35,5-Jun,
+1600,SANI (Orange + Yellow),12.4,4.3,4.1,0.45,24-Jun,
+1601,SAME (Orange + Pink),18.7,9,8.5,0.36,5-Jun,
+1602,SANI (Orange + Yellow),,,,,5-Jun,"np, g"
+1603,SANI (Orange + Yellow),,,,,24-Jun,"np, g"
+1604,SAME (Orange + Pink),20.1,13,12.6,0.7,24-Jun,
+1605,HEAR,,,,,5-Jun,"np, g"
+1606,SAME (Orange + Pink),,,,,24-Jun,"np, g"
+1607,SANI (Orange + Yellow),,,,,25-Jun,np
+1608,SAME (Orange + Pink),,,,,24-Jun,np
+1609,SANI (Orange + Yellow),,,,,25-Jun,dead
+1610,SAME (Orange + Pink),13.4,8,6.9,0.4,24-Jun,
+1611,SANI (Orange + Yellow),,,,,24-Jun,dead
+1612,SAME (Orange + Pink),,,,,25-Jun,"np, g"
+1613,SANI (Orange + Yellow),15.8,9.1,4.4,0.5,24-Jun,
+1614,ADFA (Orange + Green),,,,,26-Jun,dead
+1615,SAME (Orange + Pink),,,,,25-Jun,np
+1616,SANI (Orange + Yellow),,,,,25-Jun,dead
+1617,ADFA (Orange + Green),64.2,37,29.2,1.02,26-Jun,
+1618,HEAR,,,,,5-Jun,dead
+1619,SANI (Orange + Yellow),,,,,24-Jun,np
+1620,ADFA (Orange + Green),40.8,30.9,28.9,0.8,25-Jun,
+1621,ADFA (Orange + Green),79.5,39.1,39.5,1,26-Jun,
+1622,ADFA (Orange + Green),47,68.9,45.3,0.78,26-Jun,
+1623,ADFA (Orange + Green),43.5,33.5,30.2,0.5,26-Jun,
+1624,ADFA (Orange + Green),51.8,62.7,30.1,1.5,25-Jun,
+1625,ADFA (Orange + Green),,,,,25-Jun,dead
+1626,ADFA (Orange + Green),,,,,,
+1627,ADFA (Orange + Green),54.9,43.6,57.6,1.9,25-Jun,
+1628,ADFA (Orange + Green),,,,,24-Jun,dead
+1629,HEAR,,,,,24-Jun,dead
+1630,ADFA (Orange + Green),59.1,48,38.5,2.4,24-Jun,g.a.
+1631,ADFA (Orange + Green),66.9,68.2,43.4,1.6,25-Jun,
+1632,ADFA (Orange + Green),65.8,52.9,39.1,1.41,25-Jun,
+1633,ADFA (Orange + Green),57.1,51.1,19,1.45,25-Jun,
+1634,HEAR,15.1,13.1,10.2,0.4,25-Jun,
+1635,ADFA (Orange + Green),60.6,69.3,54.8,1.12,25-Jun,
+1636,ADFA (Orange + Green),54,56.6,29.1,0.95,24-Jun,
+1637,ADFA (Orange + Green),,,,,25-Jun,dead
+1638,HEAR,,,,,24-Jun,dead
+1639,ADFA (Orange + Green),54,51.75,50.75,1.9,5-Jun,
+1640,SANI (Orange + Yellow),9.1,6.6,5.5,0.3,25-Jun,
+1641,ADFA (Orange + Green),52.6,30.8,37.5,2.25,5-Jun,
+1642,HEAR,,,,,5-Jun,np
+1643,HEAR,18.85,16,13.5,0.65,5-Jun,
+1644,ADFA (Orange + Green),,,,,24-Jun,"dead, g.a."
+1645,ADFA (Orange + Green),,,,,,
+1646,ADFA (Orange + Green),57.1,27.3,28,2.3,24-Jun,
+1647,SAME (Orange + Pink),,,,,25-Jun,"np, g"
+1648,SANI (Orange + Yellow),,,,,26-Jun,dead
+1649,SAME (Orange + Pink),24.7,11.5,9,0.32,26-Jun,ARCA volunteer
+1650,SANI (Orange + Yellow),8.3,4.3,3.7,0.15,26-Jun,
+1651,SAME (Orange + Pink),29.7,15.6,14,0.45,25-Jun,
+1652,SANI (Orange + Yellow),,,,,25-Jun,np
+1653,SAME (Orange + Pink),13.8,8.1,8,0.4,24-Jun,
+1654,SANI (Orange + Yellow),11.1,6.4,9.1,0.3,24-Jun,
+1655,SAME (Orange + Pink),,,,,5-Jun,np
+1656,SAME (Orange + Pink),11.5,12.4,8.9,0.5,5-Jun,
+1657,SANI (Orange + Yellow),,,,,25-Jun,"dead, g"
+1658,SANI (Orange + Yellow),16.9,5,2.8,0.4,25-Jun,
+1659,SAME (Orange + Pink),,,,,25-Jun,"np, g"
+1660,NO PLANT,,,,,,
+1661,SAME (Orange + Pink),,,,,,
+1662,SAME (Orange + Pink),,,,,25-Jun,"np, g"
+1663,SANI (Orange + Yellow),5,6.3,5.4,0.4,24-Jun,g.a.
+1664,SANI (Orange + Yellow),11.3,8.2,6.8,0.5,5-Jun,
+1665,SANI (Orange + Yellow),,,,,24-Jun,np
+1666,SAME (Orange + Pink),,,,,24-Jun,dead
