@@ -167,7 +167,10 @@ clusterEvalQ(clu,library(MuMIn, survival,logical.return =T))
 spring_all_dredge <- MuMIn::dredge(spring_all_dredge_input, trace=2, cluster=clu)
 spring_all_dredge_filter <- spring_all_dredge %>% 
   filter(delta < 2) %>% 
-  filter(df == min(df))
+  filter(df == min(df)) %>% 
+  as.data.frame()
+
+write.csv(spring_all_dredge_filter, here("data", "clean_data", "spring_all_dredge_filter.csv"), row.names = FALSE)
 
 options(na.action = "na.fail")
 early_spring_dredge_input <- survival::coxph(survival::Surv(end_time, dead) ~ les_1* temperature + les_1*soil_moisture + les_1* vpd + les_2 * temperature + les_2*soil_moisture + les_2* vpd + wue*temperature + wue* soil_moisture + wue*vpd + wood_density*temperature + wood_density*soil_moisture + wood_density*vpd + temperature*soil_moisture + temperature*vpd + soil_moisture*vpd + height*les_1 + height*les_2 + height*wood_density + height*wue, 
@@ -177,7 +180,10 @@ early_spring_dredge <- MuMIn::dredge(early_spring_dredge_input, trace=2, cluster
 
 early_spring_dredge_filter <- early_spring_dredge %>% 
   filter(delta < 2) %>% 
-  filter(df == min(df))
+  filter(df == min(df)) %>% 
+as.data.frame()
+
+write.csv(early_spring_dredge_filter, here("data", "clean_data", "early_spring_dredge_filter.csv"), row.names = FALSE)
 
 options(na.action = "na.fail")
 late_spring_dredge_input <- survival::coxph(survival::Surv(end_time, dead) ~ les_1* temperature + les_1*soil_moisture + les_1* vpd + les_2 * temperature + les_2*soil_moisture + les_2* vpd + wue*temperature + wue* soil_moisture + wue*vpd + wood_density*temperature + wood_density*soil_moisture + wood_density*vpd + temperature*soil_moisture + temperature*vpd + soil_moisture*vpd + height*les_1 + height*les_2 + height*wood_density + height*wue, 
@@ -187,7 +193,12 @@ late_spring_dredge <- MuMIn::dredge(late_spring_dredge_input, trace=2, cluster=c
 
 late_spring_dredge_filter <- late_spring_dredge %>% 
   filter(delta < 2) %>% 
-  filter(df == min(df))
+  filter(df == min(df)) %>% 
+as.data.frame()
+
+write.csv(late_spring_dredge_filter, here("data", "clean_data", "late_spring_dredge_filter.csv"), row.names = FALSE)
+
+
 ```
 
 ```{r}
@@ -204,7 +215,10 @@ clusterEvalQ(clu,library(MuMIn, survival,logical.return =T))
 summer_all_dredge <- MuMIn::dredge(summer_all_dredge_input, trace=2, cluster=clu)
 summer_all_dredge_filter <- summer_all_dredge %>% 
   filter(delta < 2) %>% 
-  filter(df == min(df))
+  filter(df == min(df)) %>% 
+  as.data.frame()
+
+write.csv(summer_all_dredge_filter, here("data", "clean_data", "summer_all_dredge_filter.csv"), row.names = FALSE)
 
 options(na.action = "na.fail")
 summer_dredge_input <- survival::coxph(survival::Surv(end_time, dead) ~ les_1* temperature + les_1*soil_moisture + les_1* vpd + les_2 * temperature + les_2*soil_moisture + les_2* vpd + wue*temperature + wue* soil_moisture + wue*vpd + wood_density*temperature + wood_density*soil_moisture + wood_density*vpd + temperature*soil_moisture + temperature*vpd + soil_moisture*vpd + height*les_1 + height*les_2 + height*wood_density + height*wue, 
@@ -214,7 +228,10 @@ summer_dredge <- MuMIn::dredge(summer_dredge_input, trace=2, cluster=clu)
 
 summer_dredge_filter <- summer_dredge %>% 
   filter(delta < 2) %>% 
-  filter(df == min(df))
+  filter(df == min(df)) %>% 
+as.data.frame()
+
+write.csv(summer_dredge_filter, here("data", "clean_data", "summer_dredge_filter.csv"), row.names = FALSE)
 
 options(na.action = "na.fail")
 fall_dredge_input <- survival::coxph(survival::Surv(end_time, dead) ~ les_1* temperature + les_1*soil_moisture + les_1* vpd + les_2 * temperature + les_2*soil_moisture + les_2* vpd + wue*temperature + wue* soil_moisture + wue*vpd + wood_density*temperature + wood_density*soil_moisture + wood_density*vpd + temperature*soil_moisture + temperature*vpd + soil_moisture*vpd + height*les_1 + height*les_2 + height*wood_density + height*wue, 
@@ -224,7 +241,10 @@ fall_dredge <- MuMIn::dredge(fall_dredge_input, trace=2, cluster=clu)
 
 fall_dredge_filter <- fall_dredge %>% 
   filter(delta < 2) %>% 
-  filter(df == min(df))
+  filter(df == min(df)) %>% 
+as.data.frame()
+
+write.csv(fall_dredge_filter, here("data", "clean_data", "fall_dredge_filter.csv"), row.names = FALSE)
 ```
 
 

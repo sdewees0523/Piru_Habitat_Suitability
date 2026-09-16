@@ -143,7 +143,6 @@ spring_all_dredge_filter <- spring_all_dredge %>%
   distinct() %>% 
   as.data.frame()
 
-write.csv(as.data.frame(spring_all_dredge), here("data", "models", "dredge_tables", "growth_spring_all_dredge.csv"), row.names = FALSE)
 write.csv(spring_all_dredge_filter, here("data", "models", "dredge_tables", "growth_spring_all_dredge_filtered.csv"), row.names = FALSE)
 
 options(na.action = "na.fail")
@@ -158,7 +157,6 @@ early_spring_dredge_filter <- early_spring_dredge %>%
   distinct() %>% 
   as.data.frame()
 
-write.csv(as.data.frame(early_spring_dredge), here("data", "models", "dredge_tables", "growth_early_spring_dredge.csv"), row.names = FALSE)
 write.csv(early_spring_dredge_filter, here("data", "models", "dredge_tables", "growth_early_spring_dredge_filtered.csv"), row.names = FALSE)
 
 options(na.action = "na.fail")
@@ -173,17 +171,10 @@ late_spring_dredge_filter <- late_spring_dredge %>%
   filter(df == min(df)) %>% 
   distinct()
 
-write.csv(as.data.frame(late_spring_dredge), here("data", "models", "dredge_tables", "growth_late_spring_dredge.csv"), row.names = FALSE)
-
 write.csv(late_spring_dredge_filter, here("data", "models", "dredge_tables", "growth_late_spring_dredge_filtered.csv"), row.names = FALSE)
 ```
 
-```{r}
-spring_growth_model <- glm(growth~les_1 + les_2 + planting_height + soil_moisture + temperature + les_1*planting_height + les_1*temperature, data = growth_earlyspring_data)
-plot(spring_growth_model)
-summary(spring_growth_model)
-save(spring_growth_model, file = here("data", "models", "spring_growth_model.rda"))
-```
+
 
 ```{r}
 options(na.action = "na.fail")
@@ -203,7 +194,6 @@ summer_all_dredge_filter <- summer_all_dredge %>%
   distinct() %>% 
   as.data.frame()
 
-write.csv(as.data.frame(summer_all_dredge), here("data", "models", "dredge_tables", "growth_summer_all_dredge.csv"), row.names = FALSE)
 write.csv(summer_all_dredge_filter, here("data", "models", "dredge_tables", "growth_summer_all_dredge_filtered.csv"), row.names = FALSE)
 
 options(na.action = "na.fail")
@@ -217,7 +207,6 @@ late_summer_dredge_filter <- late_summer_dredge %>%
   filter(df == min(df)) %>% 
   distinct() %>% 
   as.data.frame()
-write.csv(as.data.frame(late_summer_dredge), here("data", "models", "dredge_tables", "growth_late_summer_dredge.csv"), row.names = FALSE)
 write.csv(late_summer_dredge_filter, here("data", "models", "dredge_tables", "growth_late_summer_dredge_filtered.csv"), row.names = FALSE)
 
 
@@ -233,7 +222,6 @@ fall_dredge_filter <- fall_dredge %>%
   distinct() %>% 
   as.data.frame()
 
-write.csv(as.data.frame(fall_dredge), here("data", "models", "dredge_tables", "growth_fall_dredge.csv"), row.names = FALSE)
 write.csv(fall_dredge_filter, here("data", "models", "dredge_tables", "growth_fall_dredge_filtered.csv"), row.names = FALSE)
 ```
 
