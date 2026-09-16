@@ -1,5 +1,6 @@
 ---
-title: "Untitled"
+title: "Creating landscape regions based on environmental variables"
+author: "Shane Dewees"
 format: html
 ---
 

@@ -1,5 +1,6 @@
 ---
-title: "Untitled"
+title: "Trait model graphs for main figures"
+author: "Shane Dewees"
 output: html_document
 date: "2024-02-27"
 ---
@@ -14,8 +15,8 @@ library(patchwork)
 ```
 
 ```{r}
-load(here("data", "models", "early_spring_model.rda"))
-load(here("data", "models", "summer_model.rda"))
+load(here("data", "models", "early_spring_model.rds"))
+load(here("data", "models", "summer_model.rds"))
 plant_traits <- read.csv(here("data", "clean_data", "cox_plant_traits.csv")) %>% 
   mutate(les_1 = scale(les_1),
          les_2 = scale(les_2),
@@ -118,8 +119,8 @@ height_les1_spring <- expand.grid(les_1 = c(min(cox_early_spring$les_1),
          wue = median(cox_early_spring$wue),
          les_2 = median(cox_early_spring$les_2),
          wood_density = median(cox_early_spring$wood_density)) %>% 
-  mutate(hazard = predict(cox_early_spring_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
-         interval = predict(cox_early_spring_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+  mutate(hazard = predict(early_spring_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(early_spring_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
          lower_int = hazard - interval,
          upper_int = hazard + interval,
          les_1 = case_when(les_1 < -1 ~ "acquisitive",
@@ -142,8 +143,8 @@ height_les2_spring <- expand.grid(les_2 = c(min(cox_early_spring$les_2),
          wue = median(cox_early_spring$wue),
          les_1 = median(cox_early_spring$les_1),
          wood_density = median(cox_early_spring$wood_density)) %>% 
-  mutate(hazard = predict(cox_early_spring_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
-         interval = predict(cox_early_spring_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+  mutate(hazard = predict(early_spring_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(early_spring_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
          lower_int = hazard - interval,
          upper_int = hazard + interval) %>% 
   mutate(les_2 = round(les_2, digits = 2))
@@ -162,8 +163,8 @@ height_wue_spring <- expand.grid(wue = c(min(cox_early_spring$wue),
          les_1 = median(cox_early_spring$les_1),
          les_2 = median(cox_early_spring$les_2),
          wood_density = median(cox_early_spring$wood_density)) %>% 
-  mutate(hazard = predict(cox_early_spring_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
-         interval = predict(cox_early_spring_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+  mutate(hazard = predict(early_spring_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(early_spring_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
          lower_int = hazard - interval,
          upper_int = hazard + interval,
          wue = round(wue, digits = 2))
@@ -179,8 +180,8 @@ wood_density_spring <- plant_traits %>%
          wue = median(cox_early_spring$wue),
          les_2 = median(cox_early_spring$les_2),
          soil_moisture = median(cox_early_spring$soil_moisture)) %>% 
-  mutate(hazard = predict(cox_early_spring_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
-         interval = predict(cox_early_spring_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+  mutate(hazard = predict(early_spring_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(early_spring_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
          lower_int = hazard - interval,
          upper_int = hazard + interval)
 
@@ -196,8 +197,8 @@ soil_moisture_spring <- tibble(soil_moisture = seq(from = min(cox_early_spring$s
          wue = median(cox_early_spring$wue),
          les_2 = median(cox_early_spring$les_2),
          wood_density = median(cox_early_spring$wood_density)) %>% 
-  mutate(hazard = predict(cox_early_spring_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
-         interval = predict(cox_early_spring_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+  mutate(hazard = predict(early_spring_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(early_spring_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
          lower_int = hazard - interval,
          upper_int = hazard + interval)
 
@@ -213,8 +214,8 @@ vpd_spring <- tibble(vpd = seq(from = min(cox_early_spring$vpd, na.rm = T),
          wue = median(cox_early_spring$wue),
          les_2 = median(cox_early_spring$les_2),
          wood_density = median(cox_early_spring$wood_density)) %>% 
-  mutate(hazard = predict(cox_early_spring_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
-         interval = predict(cox_early_spring_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+  mutate(hazard = predict(early_spring_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(early_spring_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
          lower_int = hazard - interval,
          upper_int = hazard + interval)
 
@@ -321,8 +322,8 @@ height_les1_summer <- expand.grid(les_1 = c(min(cox_summer$les_1),
          vpd = median(cox_summer$vpd),
          wue = median(cox_summer$wue),
          wood_density = median(cox_summer$wood_density)) %>% 
-  mutate(hazard = predict(cox_summer_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
-         interval = predict(cox_summer_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+  mutate(hazard = predict(summer_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(summer_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
          lower_int = hazard - interval,
          upper_int = hazard + interval,
          les_1 = case_when(les_1 < -1 ~ "acquisitive",
@@ -344,8 +345,8 @@ vpd_les1_summer <- expand.grid(les_1 = c(min(cox_summer$les_1),
          height = median(cox_summer$height),
          wue = median(cox_summer$wue),
          wood_density = median(cox_summer$wood_density)) %>% 
-  mutate(hazard = predict(cox_summer_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
-         interval = predict(cox_summer_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+  mutate(hazard = predict(summer_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(summer_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
          lower_int = hazard - interval,
          upper_int = hazard + interval,
          les_1 = case_when(les_1 < -1 ~ "acquisitive",
@@ -365,8 +366,8 @@ soil_les1_summer <- expand.grid(les_1 = c(min(cox_summer$les_1),
          height = median(cox_summer$height),
          wue = median(cox_summer$wue),
          wood_density = median(cox_summer$wood_density)) %>% 
-  mutate(hazard = predict(cox_summer_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
-         interval = predict(cox_summer_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+  mutate(hazard = predict(summer_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(summer_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
          lower_int = hazard - interval,
          upper_int = hazard + interval,
          les_1 = case_when(les_1 < -1 ~ "acquisitive",
@@ -387,8 +388,8 @@ soil_moisture_summer <- tibble(soil_moisture = seq(from = min(cox_summer$soil_mo
          vpd = median(cox_summer$vpd),
          wue = median(cox_summer$wue),
          wood_density = median(cox_summer$wood_density)) %>% 
-  mutate(hazard = predict(cox_summer_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
-         interval = predict(cox_summer_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+  mutate(hazard = predict(summer_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(summer_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
          lower_int = hazard - interval,
          upper_int = hazard + interval)
 
@@ -404,8 +405,8 @@ wue_summer <- tibble(wue = seq(from = min(cox_summer$wue),
          vpd = median(cox_summer$vpd),
          soil_moisture = median(cox_summer$soil_moisture),
          wood_density = median(cox_summer$wood_density)) %>% 
-  mutate(hazard = predict(cox_summer_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
-         interval = predict(cox_summer_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
+  mutate(hazard = predict(summer_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[1]],
+         interval = predict(summer_model, newdata = ., type = "survival", se.fit = T, interval = "confidence")[[2]],
          lower_int = hazard - interval,
          upper_int = hazard + interval)
 

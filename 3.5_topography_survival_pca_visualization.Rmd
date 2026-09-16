@@ -1,5 +1,6 @@
 ---
-title: "Untitled"
+title: "Topography and survival PCA visualization"
+author: "Shane Dewees"
 output: html_document
 date: "2024-07-26"
 ---
@@ -14,7 +15,7 @@ library(patchwork)
 ```
 
 ```{r}
-load(here("data", "models", "summer_model.rda"))
+load(here("data", "models", "summer_model.rds"))
 plant_traits <- read.csv(here("data", "clean_data", "cox_plant_traits.csv")) %>% 
   mutate(les_1 = scale(les_1),
          les_2 = scale(les_2),
@@ -63,7 +64,7 @@ rhov_test <- summer_environmental %>%
          dead = 0) %>% 
   left_join(plant_traits, by = "species") %>% 
   left_join(mean_july_heights, by = "species") %>% 
-  mutate(prob_alive = predict(cox_summer_model, newdata = ., type = "survival")) %>% 
+  mutate(prob_alive = predict(summer_model, newdata = ., type = "survival")) %>% 
   filter(prob_alive >= 0.5)
 
 enca_test <- summer_environmental %>% 
@@ -74,7 +75,7 @@ enca_test <- summer_environmental %>%
          dead = 0) %>% 
   left_join(plant_traits, by = "species") %>% 
   left_join(mean_july_heights, by = "species") %>% 
-  mutate(prob_alive = predict(cox_summer_model, newdata = ., type = "survival")) %>% 
+  mutate(prob_alive = predict(summer_model, newdata = ., type = "survival")) %>% 
   filter(prob_alive >= 0.5)
 
 top_survivors <- rbind(rhov_test, enca_test) %>%

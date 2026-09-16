@@ -1,5 +1,6 @@
 ---
-title: "Untitled"
+title: "Dredge for seasonal growth models"
+author: "Shane Dewees"
 output: html_document
 date: "2024-04-11"
 ---
@@ -139,7 +140,11 @@ spring_all_dredge <- MuMIn::dredge(spring_all_dredge_input, trace=2, cluster=clu
 spring_all_dredge_filter <- spring_all_dredge %>% 
   filter(delta < 2) %>% 
   filter(df == min(df)) %>% 
-  distinct()
+  distinct() %>% 
+  as.data.frame()
+
+write.csv(as.data.frame(spring_all_dredge), here("data", "models", "dredge_tables", "growth_spring_all_dredge.csv"), row.names = FALSE)
+write.csv(spring_all_dredge_filter, here("data", "models", "dredge_tables", "growth_spring_all_dredge_filtered.csv"), row.names = FALSE)
 
 options(na.action = "na.fail")
 early_spring_dredge_input <- stats::glm(growth ~ les_1* temperature + les_1*soil_moisture + les_1* vpd + les_2 * temperature + les_2*soil_moisture + les_2* vpd + wue*temperature + wue* soil_moisture + wue*vpd + wood_density*temperature + wood_density*soil_moisture + wood_density*vpd + temperature*soil_moisture + temperature*vpd + soil_moisture*vpd + planting_height*les_1 + planting_height*les_2 + planting_height*wood_density + planting_height*wue, 
@@ -151,8 +156,10 @@ early_spring_dredge_filter <- early_spring_dredge %>%
   filter(delta < 2) %>% 
   filter(df == min(df)) %>% 
   distinct() %>% 
-  filter(delta == min(delta))
+  as.data.frame()
 
+write.csv(as.data.frame(early_spring_dredge), here("data", "models", "dredge_tables", "growth_early_spring_dredge.csv"), row.names = FALSE)
+write.csv(early_spring_dredge_filter, here("data", "models", "dredge_tables", "growth_early_spring_dredge_filtered.csv"), row.names = FALSE)
 
 options(na.action = "na.fail")
 late_spring_dredge_input <- stats::glm(growth ~ les_1* temperature + les_1*soil_moisture + les_1* vpd + les_2 * temperature + les_2*soil_moisture + les_2* vpd + wue*temperature + wue* soil_moisture + wue*vpd + wood_density*temperature + wood_density*soil_moisture + wood_density*vpd + temperature*soil_moisture + temperature*vpd + soil_moisture*vpd + planting_height*les_1 + planting_height*les_2 + planting_height*wood_density + planting_height*wue, 
@@ -161,9 +168,14 @@ clusterExport(clu, list("growth_latespring_data","late_spring_dredge_input"))
 late_spring_dredge <- MuMIn::dredge(late_spring_dredge_input, trace=2, cluster=clu)
 
 late_spring_dredge_filter <- late_spring_dredge %>% 
+  as.data.frame() %>%
   filter(delta < 2) %>% 
   filter(df == min(df)) %>% 
   distinct()
+
+write.csv(as.data.frame(late_spring_dredge), here("data", "models", "dredge_tables", "growth_late_spring_dredge.csv"), row.names = FALSE)
+
+write.csv(late_spring_dredge_filter, here("data", "models", "dredge_tables", "growth_late_spring_dredge_filtered.csv"), row.names = FALSE)
 ```
 
 ```{r}
@@ -188,7 +200,11 @@ summer_all_dredge <- MuMIn::dredge(summer_all_dredge_input, trace=2, cluster=clu
 summer_all_dredge_filter <- summer_all_dredge %>% 
   filter(delta < 2) %>% 
   filter(df == min(df)) %>% 
-  distinct()
+  distinct() %>% 
+  as.data.frame()
+
+write.csv(as.data.frame(summer_all_dredge), here("data", "models", "dredge_tables", "growth_summer_all_dredge.csv"), row.names = FALSE)
+write.csv(summer_all_dredge_filter, here("data", "models", "dredge_tables", "growth_summer_all_dredge_filtered.csv"), row.names = FALSE)
 
 options(na.action = "na.fail")
 late_summer_dredge_input <- stats::glm(growth ~ les_1* temperature + les_1*soil_moisture + les_1* vpd + les_2 * temperature + les_2*soil_moisture + les_2* vpd + wue*temperature + wue* soil_moisture + wue*vpd + wood_density*temperature + wood_density*soil_moisture + wood_density*vpd + temperature*soil_moisture + temperature*vpd + soil_moisture*vpd + july_height*les_1 + july_height*les_2 + july_height*wood_density + july_height*wue, 
@@ -199,7 +215,10 @@ late_summer_dredge <- MuMIn::dredge(late_summer_dredge_input, trace=2, cluster=c
 late_summer_dredge_filter <- late_summer_dredge %>% 
   filter(delta < 2) %>% 
   filter(df == min(df)) %>% 
-  distinct()
+  distinct() %>% 
+  as.data.frame()
+write.csv(as.data.frame(late_summer_dredge), here("data", "models", "dredge_tables", "growth_late_summer_dredge.csv"), row.names = FALSE)
+write.csv(late_summer_dredge_filter, here("data", "models", "dredge_tables", "growth_late_summer_dredge_filtered.csv"), row.names = FALSE)
 
 
 options(na.action = "na.fail")
@@ -211,14 +230,11 @@ fall_dredge <- MuMIn::dredge(fall_dredge_input, trace=2, cluster=clu)
 fall_dredge_filter <- fall_dredge %>% 
   filter(delta < 2) %>% 
   filter(df == min(df)) %>% 
-  distinct()
+  distinct() %>% 
+  as.data.frame()
+
+write.csv(as.data.frame(fall_dredge), here("data", "models", "dredge_tables", "growth_fall_dredge.csv"), row.names = FALSE)
+write.csv(fall_dredge_filter, here("data", "models", "dredge_tables", "growth_fall_dredge_filtered.csv"), row.names = FALSE)
 ```
 
-```{r}
-summer_growth_model <- glm(growth ~ les_2 + temperature + wood_density + wue + les_2*temperature, data = growth_summer_data)
-plot(summer_growth_model)
-summary(summer_growth_model)
-
-save(summer_growth_model, file = here("data", "models", "summer_growth_model.rda"))
-```
 

@@ -1,5 +1,6 @@
 ---
-title: "Untitled"
+title: "Community and Species hazards models"
+author: "Shane Dewees"
 output: html_document
 date: "2024-02-22"
 ---

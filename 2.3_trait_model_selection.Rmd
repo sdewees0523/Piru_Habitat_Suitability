@@ -1,5 +1,6 @@
 ---
-title: "Untitled"
+title: "Dredge for seasonal cox trait models"
+author: "Shane Dewees"
 output: html_document
 date: "2024-02-22"
 ---
@@ -189,22 +190,6 @@ late_spring_dredge_filter <- late_spring_dredge %>%
   filter(df == min(df))
 ```
 
-
-```{r}
-cox_early_spring_model <- coxph(Surv(end_time, dead) ~ height + les_1 + les_2 + wood_density + wue + soil_moisture + vpd + height*les_1 +
-                                  height*les_2 + height*wue,
-      data = cox_early_spring, x = T)
-cox.zph(cox_early_spring_model)
-plot(cox.zph(cox_early_spring_model))
-cox_early_spring_model %>% 
-  tbl_regression(exp = T)
-
-AICc(cox_early_spring_model)
-
-save(cox_early_spring_model, file = here("data", "models", "early_spring_model.rda"))
-```
-
-
 ```{r}
 options(na.action = "na.fail")
 nCores <- detectCores() - 1
@@ -242,15 +227,7 @@ fall_dredge_filter <- fall_dredge %>%
   filter(df == min(df))
 ```
 
-```{r}
-cox_summer_model <- coxph(Surv(end_time, dead) ~ height + les_1 + wue + soil_moisture + vpd +  height*les_1 + vpd*les_1,
-      data = cox_summer, x = T)
-cox.zph(cox_summer_model)
-cox_summer_model %>%
-  tbl_regression(exp = T)
 
-save(cox_summer_model, file = here("data", "models", "summer_model.rda"))
-```
 
 
 

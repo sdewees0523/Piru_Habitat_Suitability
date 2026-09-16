@@ -1,5 +1,6 @@
 ---
-title: "Untitled"
+title: "Making species specific survival curves for Supplementary Figure 5.1"
+author: "Shane Dewees"
 output: html_document
 date: "2024-02-22"
 ---
