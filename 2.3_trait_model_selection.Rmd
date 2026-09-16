@@ -15,6 +15,8 @@ library(rms)
 library(parallel)
 library(snow)
 library(gtsummary)
+
+dir.create(here("data", "models", "dredge_tables"), recursive = TRUE, showWarnings = FALSE)
 ```
 
 ```{r}
@@ -151,7 +153,11 @@ cox_fall <- height_environment_trait %>%
             drop_na()
 ```
 
-multimodel ensembling? 
+## Multi-model selection: planting through July (spring) candidate windows
+
+`na.action` is set once here (not repeated per-model) and restored to R's default
+at the very end of the second chunk below. One cluster is created per chunk and
+explicitly stopped at the end of that chunk, rather than left running.
 
 ```{r}
 options(na.action = "na.fail")
@@ -161,8 +167,9 @@ spring_all_dredge_input <- survival::coxph(survival::Surv(end_time, dead) ~ les_
       data = cox_spring_all)
 # Export all objects to be used to all the cores in the cluster
 clusterExport(clu, list("cox_spring_all","spring_all_dredge_input"))
-# Load packages to be used
-clusterEvalQ(clu,library(MuMIn, survival,logical.return =T))
+# Load packages to be used -- library()'s 2nd argument is `help`, not a 2nd
+# package, so both packages need their own call to actually load on the workers
+clusterEvalQ(clu, {library(MuMIn); library(survival)})
 
 spring_all_dredge <- MuMIn::dredge(spring_all_dredge_input, trace=2, cluster=clu)
 spring_all_dredge_filter <- spring_all_dredge %>% 
@@ -170,9 +177,8 @@ spring_all_dredge_filter <- spring_all_dredge %>%
   filter(df == min(df)) %>% 
   as.data.frame()
 
-write.csv(spring_all_dredge_filter, here("data", "clean_data", "spring_all_dredge_filter.csv"), row.names = FALSE)
+write.csv(spring_all_dredge_filter, here("data", "models", "dredge_tables", "spring_all_dredge_filtered.csv"), row.names = FALSE)
 
-options(na.action = "na.fail")
 early_spring_dredge_input <- survival::coxph(survival::Surv(end_time, dead) ~ les_1* temperature + les_1*soil_moisture + les_1* vpd + les_2 * temperature + les_2*soil_moisture + les_2* vpd + wue*temperature + wue* soil_moisture + wue*vpd + wood_density*temperature + wood_density*soil_moisture + wood_density*vpd + temperature*soil_moisture + temperature*vpd + soil_moisture*vpd + height*les_1 + height*les_2 + height*wood_density + height*wue, 
       data = cox_early_spring)
 clusterExport(clu, list("cox_early_spring","early_spring_dredge_input"))
@@ -183,9 +189,8 @@ early_spring_dredge_filter <- early_spring_dredge %>%
   filter(df == min(df)) %>% 
 as.data.frame()
 
-write.csv(early_spring_dredge_filter, here("data", "clean_data", "early_spring_dredge_filter.csv"), row.names = FALSE)
+write.csv(early_spring_dredge_filter, here("data", "models", "dredge_tables", "early_spring_dredge_filtered.csv"), row.names = FALSE)
 
-options(na.action = "na.fail")
 late_spring_dredge_input <- survival::coxph(survival::Surv(end_time, dead) ~ les_1* temperature + les_1*soil_moisture + les_1* vpd + les_2 * temperature + les_2*soil_moisture + les_2* vpd + wue*temperature + wue* soil_moisture + wue*vpd + wood_density*temperature + wood_density*soil_moisture + wood_density*vpd + temperature*soil_moisture + temperature*vpd + soil_moisture*vpd + height*les_1 + height*les_2 + height*wood_density + height*wue, 
       data = cox_late_spring)
 clusterExport(clu, list("cox_late_spring","late_spring_dredge_input"))
@@ -196,10 +201,12 @@ late_spring_dredge_filter <- late_spring_dredge %>%
   filter(df == min(df)) %>% 
 as.data.frame()
 
-write.csv(late_spring_dredge_filter, here("data", "clean_data", "late_spring_dredge_filter.csv"), row.names = FALSE)
+write.csv(late_spring_dredge_filter, here("data", "models", "dredge_tables", "late_spring_dredge_filtered.csv"), row.names = FALSE)
 
-
+stopCluster(clu)
 ```
+
+## Multi-model selection: July through autumn (summer) candidate windows
 
 ```{r}
 options(na.action = "na.fail")
@@ -210,7 +217,7 @@ summer_all_dredge_input <- survival::coxph(survival::Surv(end_time, dead) ~ les_
 # Export all objects to be used to all the cores in the cluster
 clusterExport(clu, list("cox_summer_all","summer_all_dredge_input"))
 # Load packages to be used
-clusterEvalQ(clu,library(MuMIn, survival,logical.return =T))
+clusterEvalQ(clu, {library(MuMIn); library(survival)})
 
 summer_all_dredge <- MuMIn::dredge(summer_all_dredge_input, trace=2, cluster=clu)
 summer_all_dredge_filter <- summer_all_dredge %>% 
@@ -218,9 +225,8 @@ summer_all_dredge_filter <- summer_all_dredge %>%
   filter(df == min(df)) %>% 
   as.data.frame()
 
-write.csv(summer_all_dredge_filter, here("data", "clean_data", "summer_all_dredge_filter.csv"), row.names = FALSE)
+write.csv(summer_all_dredge_filter, here("data", "models", "dredge_tables", "summer_all_dredge_filtered.csv"), row.names = FALSE)
 
-options(na.action = "na.fail")
 summer_dredge_input <- survival::coxph(survival::Surv(end_time, dead) ~ les_1* temperature + les_1*soil_moisture + les_1* vpd + les_2 * temperature + les_2*soil_moisture + les_2* vpd + wue*temperature + wue* soil_moisture + wue*vpd + wood_density*temperature + wood_density*soil_moisture + wood_density*vpd + temperature*soil_moisture + temperature*vpd + soil_moisture*vpd + height*les_1 + height*les_2 + height*wood_density + height*wue, 
       data = cox_summer)
 clusterExport(clu, list("cox_summer","summer_dredge_input"))
@@ -231,9 +237,8 @@ summer_dredge_filter <- summer_dredge %>%
   filter(df == min(df)) %>% 
 as.data.frame()
 
-write.csv(summer_dredge_filter, here("data", "clean_data", "summer_dredge_filter.csv"), row.names = FALSE)
+write.csv(summer_dredge_filter, here("data", "models", "dredge_tables", "summer_dredge_filtered.csv"), row.names = FALSE)
 
-options(na.action = "na.fail")
 fall_dredge_input <- survival::coxph(survival::Surv(end_time, dead) ~ les_1* temperature + les_1*soil_moisture + les_1* vpd + les_2 * temperature + les_2*soil_moisture + les_2* vpd + wue*temperature + wue* soil_moisture + wue*vpd + wood_density*temperature + wood_density*soil_moisture + wood_density*vpd + temperature*soil_moisture + temperature*vpd + soil_moisture*vpd + height*les_1 + height*les_2 + height*wood_density + height*wue, 
       data = cox_fall)
 clusterExport(clu, list("cox_fall","fall_dredge_input"))
@@ -244,9 +249,11 @@ fall_dredge_filter <- fall_dredge %>%
   filter(df == min(df)) %>% 
 as.data.frame()
 
-write.csv(fall_dredge_filter, here("data", "clean_data", "fall_dredge_filter.csv"), row.names = FALSE)
-```
+write.csv(fall_dredge_filter, here("data", "models", "dredge_tables", "fall_dredge_filtered.csv"), row.names = FALSE)
 
+stopCluster(clu)
+options(na.action = "na.omit")
+```
 
 
 

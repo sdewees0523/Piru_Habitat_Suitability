@@ -15,8 +15,7 @@ library(patchwork)
 ```
 
 ```{r}
-survival_gopher_raw <- read.csv(here("data", "clean_data", "survival_gopher_raw.csv"))%>% 
-  dplyr::select(!X) %>% 
+survival_gopher_raw <- read.csv(here("data", "clean_data", "survival_gopher_raw.csv"))%>%  
   group_by(plot_number) %>% 
   filter(!lag(gopher) == 1 | is.na(lag(gopher) == T)) %>%
   ungroup()

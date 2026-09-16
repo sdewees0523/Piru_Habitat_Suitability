@@ -9,8 +9,11 @@ date: "2024-04-11"
 library(here)
 library(tidyverse)
 library(lubridate)
+library(MuMIn)
 library(parallel)
 library(snow)
+
+dir.create(here("data", "models", "dredge_tables"), recursive = TRUE, showWarnings = FALSE)
 ```
 
 ```{r}
@@ -125,6 +128,12 @@ growth_fall_data <- fall_height %>%
   select(growth, les_1, les_2, wood_density, wue, temperature, soil_moisture, vpd, july_height)
 ```
 
+## Multi-model selection: planting-anchored (spring) candidate windows
+
+`na.action` is set once per chunk rather than before every model, and restored
+to R's default at the very end of the second chunk. Each chunk's cluster is
+explicitly stopped when that chunk's dredging is finished.
+
 ```{r}
 options(na.action = "na.fail")
 nCores <- detectCores() - 1
@@ -133,8 +142,9 @@ spring_all_dredge_input <- stats::glm(growth ~ les_1* temperature + les_1*soil_m
       data = growth_spring_data)
 # Export all objects to be used to all the cores in the cluster
 clusterExport(clu, list("growth_spring_data","spring_all_dredge_input"))
-# Load packages to be used
-clusterEvalQ(clu,library(MuMIn, stats,logical.return =T))
+# Load packages to be used -- library()'s 2nd argument is `help`, not a 2nd
+# package, so both packages need their own call to actually load on the workers
+clusterEvalQ(clu, {library(MuMIn); library(stats)})
 
 spring_all_dredge <- MuMIn::dredge(spring_all_dredge_input, trace=2, cluster=clu)
 spring_all_dredge_filter <- spring_all_dredge %>% 
@@ -145,7 +155,6 @@ spring_all_dredge_filter <- spring_all_dredge %>%
 
 write.csv(spring_all_dredge_filter, here("data", "models", "dredge_tables", "growth_spring_all_dredge_filtered.csv"), row.names = FALSE)
 
-options(na.action = "na.fail")
 early_spring_dredge_input <- stats::glm(growth ~ les_1* temperature + les_1*soil_moisture + les_1* vpd + les_2 * temperature + les_2*soil_moisture + les_2* vpd + wue*temperature + wue* soil_moisture + wue*vpd + wood_density*temperature + wood_density*soil_moisture + wood_density*vpd + temperature*soil_moisture + temperature*vpd + soil_moisture*vpd + planting_height*les_1 + planting_height*les_2 + planting_height*wood_density + planting_height*wue, 
       data = growth_earlyspring_data)
 clusterExport(clu, list("growth_earlyspring_data","early_spring_dredge_input"))
@@ -159,7 +168,6 @@ early_spring_dredge_filter <- early_spring_dredge %>%
 
 write.csv(early_spring_dredge_filter, here("data", "models", "dredge_tables", "growth_early_spring_dredge_filtered.csv"), row.names = FALSE)
 
-options(na.action = "na.fail")
 late_spring_dredge_input <- stats::glm(growth ~ les_1* temperature + les_1*soil_moisture + les_1* vpd + les_2 * temperature + les_2*soil_moisture + les_2* vpd + wue*temperature + wue* soil_moisture + wue*vpd + wood_density*temperature + wood_density*soil_moisture + wood_density*vpd + temperature*soil_moisture + temperature*vpd + soil_moisture*vpd + planting_height*les_1 + planting_height*les_2 + planting_height*wood_density + planting_height*wue, 
       data = growth_latespring_data)
 clusterExport(clu, list("growth_latespring_data","late_spring_dredge_input"))
@@ -172,9 +180,11 @@ late_spring_dredge_filter <- late_spring_dredge %>%
   distinct()
 
 write.csv(late_spring_dredge_filter, here("data", "models", "dredge_tables", "growth_late_spring_dredge_filtered.csv"), row.names = FALSE)
+
+stopCluster(clu)
 ```
 
-
+## Multi-model selection: July-anchored (summer/fall) candidate windows
 
 ```{r}
 options(na.action = "na.fail")
@@ -185,7 +195,7 @@ summer_all_dredge_input <- stats::glm(growth ~ les_1* temperature + les_1*soil_m
 # Export all objects to be used to all the cores in the cluster
 clusterExport(clu, list("growth_summer_data","summer_all_dredge_input"))
 # Load packages to be used
-clusterEvalQ(clu,library(MuMIn, stats,logical.return =T))
+clusterEvalQ(clu, {library(MuMIn); library(stats)})
 
 summer_all_dredge <- MuMIn::dredge(summer_all_dredge_input, trace=2, cluster=clu)
 summer_all_dredge_filter <- summer_all_dredge %>% 
@@ -196,7 +206,6 @@ summer_all_dredge_filter <- summer_all_dredge %>%
 
 write.csv(summer_all_dredge_filter, here("data", "models", "dredge_tables", "growth_summer_all_dredge_filtered.csv"), row.names = FALSE)
 
-options(na.action = "na.fail")
 late_summer_dredge_input <- stats::glm(growth ~ les_1* temperature + les_1*soil_moisture + les_1* vpd + les_2 * temperature + les_2*soil_moisture + les_2* vpd + wue*temperature + wue* soil_moisture + wue*vpd + wood_density*temperature + wood_density*soil_moisture + wood_density*vpd + temperature*soil_moisture + temperature*vpd + soil_moisture*vpd + july_height*les_1 + july_height*les_2 + july_height*wood_density + july_height*wue, 
       data = growth_latesummer_data)
 clusterExport(clu, list("growth_latesummer_data","late_summer_dredge_input"))
@@ -210,7 +219,6 @@ late_summer_dredge_filter <- late_summer_dredge %>%
 write.csv(late_summer_dredge_filter, here("data", "models", "dredge_tables", "growth_late_summer_dredge_filtered.csv"), row.names = FALSE)
 
 
-options(na.action = "na.fail")
 fall_dredge_input <- stats::glm(growth ~ les_1* temperature + les_1*soil_moisture + les_1* vpd + les_2 * temperature + les_2*soil_moisture + les_2* vpd + wue*temperature + wue* soil_moisture + wue*vpd + wood_density*temperature + wood_density*soil_moisture + wood_density*vpd + temperature*soil_moisture + temperature*vpd + soil_moisture*vpd + july_height*les_1 + july_height*les_2 + july_height*wood_density + july_height*wue, 
       data = growth_fall_data)
 clusterExport(clu, list("growth_fall_data","fall_dredge_input"))
@@ -223,6 +231,7 @@ fall_dredge_filter <- fall_dredge %>%
   as.data.frame()
 
 write.csv(fall_dredge_filter, here("data", "models", "dredge_tables", "growth_fall_dredge_filtered.csv"), row.names = FALSE)
+
+stopCluster(clu)
+options(na.action = "na.omit")
 ```
-
-
