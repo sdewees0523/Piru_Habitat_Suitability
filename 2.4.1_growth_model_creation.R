@@ -2,13 +2,17 @@ library(here)
 library(tidyverse)
 library(survival)
 
-spring <- read.csv(here("data", "models", "dredge_tables", "growth_spring_all_dredge_filtered.csv"))
-early_spring <- read.csv(here("data", "models", "dredge_tables", "growth_early_spring_dredge_filtered.csv"))
-late_spring <- read.csv(here("data", "models", "dredge_tables", "growth_late_spring_dredge_filtered.csv"))
+spring <- read.csv(here("data", "models", "dredge_tables", "growth_spring_all_dredge_filtered.csv")) %>% 
+  mutate(season = "spring_all")
+early_spring <- read.csv(here("data", "models", "dredge_tables", "growth_early_spring_dredge_filtered.csv")) %>% 
+  mutate(season = "early_spring")
+late_spring <- read.csv(here("data", "models", "dredge_tables", "growth_late_spring_dredge_filtered.csv")) %>% 
+  mutate(season = "late_spring")
 
-spring$AICc
-early_spring$AICc
-late_spring$AICc
+early_drought <- rbind(spring, early_spring, late_spring) %>% 
+  filter(AICc == min(AICc, na.rm = TRUE))
+
+print(early_drought$season)
 
 spring_height <- read.csv(here("data", "clean_data", "height_gopher_kapplin.csv")) %>% 
   mutate(height_date = case_when(start_time == 0 ~ "planting_height",
@@ -34,7 +38,7 @@ fall_height <- read.csv(here("data", "clean_data", "fall_growth.csv")) %>%
 
 plant_traits <- read.csv(here("data", "clean_data", "cox_plant_traits.csv")) %>% 
   mutate(les_1 = scale(les_1)[,1],
-         les_2 = scale(les_2)[,1],
+         les_2 = scale(les_2)[,1]*-1,
          wood_density = scale(wood_density)[,1],
          wue = scale(wue)[,1],
          wue = wue*-1)
@@ -47,62 +51,64 @@ environmental <- read.csv(here("data", "clean_data", "predicted_environmental.cs
   ungroup() |> 
   drop_na()
 
-environmental_latespring <- environmental %>% 
-  filter(date > "2020-05-30" & date <= "2020-06-26") %>% 
+environmental_earlyspring <- environmental %>% 
+  filter(date <= "2020-05-30") %>% 
   group_by(plot_number) %>% 
   reframe(soil_moisture = mean(soil_moisture),
           temperature = mean(temperature),
           vpd = mean(vpd))
 
-growth_latespring_data <- spring_height %>% 
+growth_early_spring_data <- spring_height %>% 
   inner_join(plant_traits, by = "species") %>% 
-  inner_join(environmental_latespring, by = "plot_number") %>% 
+  inner_join(environmental_earlyspring, by = "plot_number") %>% 
   select(growth, les_1, les_2, wood_density, wue, temperature, soil_moisture, vpd, planting_height)
 
-late_spring_model <- late_spring %>% 
-  select(-c(X.Intercept., df, logLik, AICc, delta, weight)) %>%
+early_spring_model <- early_drought %>% 
+  filter(AICc == min(AICc, na.rm = TRUE)) %>%
+  select(-c(X.Intercept., df, logLik, AICc, delta, weight, season)) %>%
   pivot_longer(cols = everything(), names_to = "variables", values_to = "coeficients") %>% 
   drop_na(coeficients) %>% 
   mutate(variables = str_replace(variables, "\\.", "*"))
 
-independent_vars <-paste(late_spring_model$variables, collapse = " + ")
+independent_vars <-paste(early_spring_model$variables, collapse = " + ")
 
-late_spring_model <- glm(as.formula(paste("growth ~", independent_vars)), 
-                         data = growth_latespring_data)
-summary(late_spring_model)
+early_spring_model <- glm(as.formula(paste("growth ~", independent_vars)), 
+                         data = growth_early_spring_data)
+summary(early_spring_model)
+save(early_spring_model, file = here("data", "models", "early_spring_growth_model.rda"))
 
-save(late_spring_model, file = here("data", "models", "late_spring_growth_model.rda"))
+summer_all <- read.csv(here("data", "models", "dredge_tables", "growth_summer_all_dredge_filtered.csv")) %>% 
+  mutate(season = "summer_all")
+summer <- read.csv(here("data", "models", "dredge_tables", "growth_late_summer_dredge_filtered.csv")) %>% 
+  mutate(season = "summer")
+fall <- read.csv(here("data", "models", "dredge_tables", "growth_fall_dredge_filtered.csv")) %>% 
+  mutate(season = "fall")
 
-summer_all <- read.csv(here("data", "models", "dredge_tables", "growth_summer_all_dredge_filtered.csv"))
-summer <- read.csv(here("data", "models", "dredge_tables", "growth_late_summer_dredge_filtered.csv"))
-fall <- read.csv(here("data", "models", "dredge_tables", "growth_fall_dredge_filtered.csv"))
+late_drought <- rbind(summer_all, summer, fall) %>% 
+  filter(AICc == min(AICc, na.rm = TRUE))
+print(late_drought$season)
 
-summer_all$AICc
-summer$AICc
-fall$AICc
-
-environmental_latesummer <- environmental %>% 
-  filter(date > "2020-06-26" & date <= "2020-09-30") %>% 
+environmental_fall <- environmental %>% 
+  filter(date > "2020-09-30") %>% 
   group_by(plot_number) %>% 
   reframe(soil_moisture = mean(soil_moisture),
           temperature = mean(temperature),
           vpd = mean(vpd))
 
-growth_latesummer_data <- fall_height %>% 
+growth_fall_data <- fall_height %>% 
   inner_join(plant_traits, by = "species") %>% 
-  inner_join(environmental_latesummer, by = "plot_number") %>% 
+  inner_join(environmental_fall, by = "plot_number") %>% 
   select(growth, les_1, les_2, wood_density, wue, temperature, soil_moisture, vpd, july_height)
 
-late_summer_model <- summer %>% 
-  select(-c(X.Intercept., df, logLik, AICc, delta, weight)) %>%
+fall_model <- late_drought %>% 
+  select(-c(X.Intercept., df, logLik, AICc, delta, weight, season)) %>%
   pivot_longer(cols = everything(), names_to = "variables", values_to = "coeficients") %>% 
   drop_na(coeficients) %>% 
   mutate(variables = str_replace(variables, "\\.", "*"))
 
-independent_vars_summer <-paste(late_summer_model$variables, collapse = " + ")
+independent_vars_fall <-paste(fall_model$variables, collapse = " + ")
 
-late_summer_model <- glm(as.formula(paste("growth ~", independent_vars_summer)), 
-                         data = growth_latesummer_data)
-summary(late_summer_model)
-
-save(late_summer_model, file = here("data", "models", "late_summer_growth_model.rda"))
+fall_model <- glm(as.formula(paste("growth ~", independent_vars_fall)), 
+                         data = growth_fall_data)
+summary(fall_model)
+save(fall_model, file = here("data", "models", "fall_growth_model.rda"))
