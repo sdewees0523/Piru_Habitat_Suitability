@@ -6,7 +6,7 @@ Code and data accompanying:
 > **Plant functional traits explain survival, growth and environmental responses
 > in an arid shrubland restoration study.** *Ecological Applications* 2026.
 
-**DOI:** https://doi.org/10.5281/zenodo.22836905
+**DOI:** https://doi.org/10.5281/zenodo.22836904
 **Repository:** https://github.com/sdewees0523/Piru_Habitat_Suitability
 **Contact:** Shane Dewees, University of California, Santa Barbara — sdewees@ucsb.edu
 
