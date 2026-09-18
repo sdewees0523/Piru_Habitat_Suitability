@@ -6,7 +6,7 @@ Code and data accompanying:
 > **Plant functional traits explain survival, growth and environmental responses
 > in an arid shrubland restoration study.** *Ecological Applications* 2026.
 
-**DOI:** _to be added upon Zenodo release_
+**DOI:** https://doi.org/10.5281/zenodo.22836905
 **Repository:** https://github.com/sdewees0523/Piru_Habitat_Suitability
 **Contact:** Shane Dewees, University of California, Santa Barbara — sdewees@ucsb.edu
 
@@ -129,4 +129,24 @@ citation to be finalized upon publication) and this repository's Zenodo DOI.
 
 ## License
 
-_To be added._
+MIT License
+
+Copyright (c) 2026 Shane Dewees
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
