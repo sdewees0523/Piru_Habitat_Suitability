@@ -4,7 +4,7 @@ Code and data accompanying:
 
 > Dewees, S., Saglimbeni, C., Anderegg, L., Molinari, N., & D'Antonio, C.
 > **Plant functional traits explain survival, growth and environmental responses
-> in an arid shrubland restoration study.** *Ecological Applications* (accepted).
+> in an arid shrubland restoration study.** *Ecological Applications* 2026.
 
 **DOI:** _to be added upon Zenodo release_
 **Repository:** https://github.com/sdewees0523/Piru_Habitat_Suitability
@@ -22,34 +22,31 @@ topographically variable planting landscape.
 
 The pipeline:
 
-1. builds fine-scale topographic and microclimate layers for the site,
-2. cleans field-collected survival, growth, and plant-trait data,
-3. fits random forests to predict daily soil moisture, temperature, and vapor
+1. Builds fine-scale topographic and microclimate layers for the site,
+2. Cleans field-collected survival, growth, and plant-trait data,
+3. Fits random forests to predict daily soil moisture, temperature, and vapor
    pressure deficit (VPD) at every planting location,
-4. reduces nine leaf traits to a leaf economic spectrum (LES) via PCA,
-5. uses `MuMIn::dredge()` multi-model selection to identify which
+4. Reduces nine leaf traits to a leaf economic spectrum (LES) via PCA,
+5. Uses `MuMIn::dredge()` multi-model selection to identify which
    trait × environment interactions best explain Cox proportional-hazards
    survival models and linear growth models, across several candidate time
    windows, and
-6. produces all manuscript figures and tables from those fitted models.
-
+6. Produces all manuscript figures and tables from those fitted models.
 ## Repository structure
 
 ```
-├── 1.1–1.8   topographic, environmental, survival/growth, and trait data
+├── 1.1–1.8   Topographic, environmental, survival/growth, and trait data
 │             cleaning; environmental random forests; trait PCA
-├── 2.1–2.4   survival curves, hazard ratios, and MuMIn::dredge() model
+├── 2.1–2.4   Survival curves, hazard ratios, and MuMIn::dredge() model
 │             selection for the trait/environment survival and growth models
-├── 2.3.1, 2.4.1   builds the final survival/growth models from the selected
+├── 2.3.1, 2.4.1   Builds the final survival/growth models from the selected
 │             dredge candidates (see "Model selection" below)
-├── 3.1–3.5   all manuscript and appendix figures
+├── 3.1–3.5   All manuscript and appendix figures
 ├── data/
-│   ├── raw_data/      as collected; not modified by any script
-│   ├── clean_data/    written by 1.1–1.8; read by everything downstream
-│   └── models/        fitted model objects and dredge selection tables
-├── figures/    manuscript and appendix figures
-└── Appendix_S1–S5.pdf   supplementary methods and results (weather station
-    gap-filling, random forest tuning, trait sampling, and model diagnostics)
+│   ├── raw_data/      As collected; not modified by any script
+│   ├── clean_data/    Written by 1.1–1.8; read by everything downstream
+│   └── models/        Fitted model objects and dredge selection tables
+├── figures/    Manuscript and appendix figures
 ```
 
 ## Running the pipeline
@@ -108,8 +105,7 @@ from `data/clean_data/hillshade` and are not scripted here.
 
 See `data/raw_data/` and `data/clean_data/` for the underlying data, and the
 Appendices for full field and lab methods. Column-level documentation for
-every file is out of scope of this README; consult the manuscript's Methods
-and Supporting Information for units, sampling design, and instrumentation.
+every file is provided in `data/metadata.txt`.
 
 Note that `data/clean_data/predicted_environmental.csv` mixes units across
 columns (a within-date z-score for soil moisture; °F for temperature; kPa for

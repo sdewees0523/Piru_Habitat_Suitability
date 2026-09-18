@@ -1,8 +1,8 @@
 ================================================================================
 METADATA
 Piru Habitat Suitability
-Dewees, Saglimbeni, Anderegg, Molinari & D'Antonio
-Ecological Applications (accepted)
+Shane Dewees, N. Saglimbeni, L. Anderegg, N. Molinari & C. D'Antonio
+Ecological Applications (2026)
 Repository: https://github.com/sdewees0523/Piru_Habitat_Suitability
 ================================================================================
 
@@ -12,12 +12,6 @@ conventions used across files (species codes, plot IDs, time, mortality
 coding, scaling). See README.md for the script pipeline that produces each
 file. See the manuscript Methods and Appendices S1-S5 for full field and
 laboratory protocols.
-
-Status note: most units and values below were confirmed by directly reading
-the data files. A small number of items could not be determined this way and
-are marked [CONFIRM] with the specific question that needs an answer from the
-data collector.
-
 
 --------------------------------------------------------------------------------
 1. CONVENTIONS USED THROUGHOUT
@@ -43,25 +37,19 @@ data collector.
 
   Aliases:
     - "YUCCA" in landscape_isotopes.csv is recoded to HEWH in 1.7.
-    - HEWH is excluded from all trait/survival/growth models (filtered out in
-      1.8's cox_plant_traits.csv output) because it has no wood-density
-      measurement and only one leaf specimen. It IS retained in the
-      species-level survival curves and hazard ratios (2.1, 2.2), where it
-      serves as the reference level.
 
 1.2 Field-sheet species labels
 
   The raw "Plant" column carries a flagging-tape colour with the code, e.g.
   "ENCA (Pink)", "SAME (Orange + Pink)". These where initially created to guide experimental set up/planting and thus are stripped in 1.2.
 
-  A small number of labels record ambiguity from the initial planting and are resolved to a single species in 1.2. These were resolved from subsequent field observations and confirmation of actual species value:
+  A small number of labels record ambiguity from the initial planting and are resolved to a single species in 1.2. 
+  These were resolved from subsequent field observations and confirmation of actual species value:
 
 1.3 Plot identifier
 
   "ID" in the raw field sheets; "plot_number" (or "plot") from 1.2 onward.
-  One plot = one planting location = at most one seedling. Values are
-  non-contiguous integers, roughly 1-1700. This is the join key linking
-  survival, growth, microclimate, and topography data.
+  One plot = one planting location = at most one seedling.
 
 1.4 Time
 
@@ -118,7 +106,7 @@ data collector.
     ID              int    Plot number -> plot_number
     Plant           chr    Species code + flagging colour (section 1.2)
     Height          num    Height at planting, cm
-    Width 1         num    Canopy width, cm (not used in any analysis script)
+    Width 1         num    Canopy width, cm (unused)
     Width 2         num    Canopy width perpendicular to Width 1, cm (unused)
     Stem Diameter   num    cm (unused)
     Pot Size        chr    Nursery container size (unused)
@@ -129,7 +117,7 @@ data collector.
 
   Four watering-visit column groups were laid out on the field sheet; only
   visit 2 was ever carried out (visits 1, 3, 4 are present as columns but
-  empty or unused). R renames the repeated "Alive"/"Notes" headers to
+  empty). R renames the repeated "Alive"/"Notes" headers to
   Alive, Alive.1, Alive.2, Alive.3 (and similarly for Notes) on read.
 
     Column                Type   Units / notes
@@ -286,7 +274,7 @@ data collector.
 
 3.1 survival_gopher_raw.csv
 
-  One row per individual per census interval. THE survival analysis dataset.
+  One row per individual per census interval. The survival analysis dataset.
 
     Column        Type   Units / notes
     plot_number   int    Plot / individual ID
@@ -397,26 +385,11 @@ data collector.
     percent_n             num    Leaf nitrogen, % dry mass
     percent_c             num    Leaf carbon, % dry mass
     c_n                   num    Carbon:nitrogen ratio, unitless
-    wue                   num    See below
+    wue                   num    carbon isotope discrimination (delta-13C), in per mil
     wood_density          num    g/cm^3 (NA for HEWH - see section 2.7)
     petiole_length        num    mm (from leaf_other.csv, literature-derived)
     leaf_lamina_length    num    mm ( " )
     leaf_width            num    mm ( " )
-
-  WUE - READ THIS BEFORE USING THIS COLUMN. It is computed as:
-
-    wue = (-8 - d13c) / (1 + d13c/1000)
-
-  which is carbon isotope discrimination (delta-13C), in per mil, assuming a
-  source-air delta-13C of -8 per mil. HIGHER discrimination means LOWER
-  water-use efficiency - the opposite sign convention from what the column
-  name suggests. This is why the manuscript's trait table caption specifies
-  that smaller values indicate higher WUE, and why every downstream model
-  script (2.3, 2.4, 3.5) multiplies the scaled variable by -1 before it
-  enters a model, so that a larger value in the FITTED MODELS means genuinely
-  higher water-use efficiency. Anyone using plant_traits_clean.csv or
-  cox_plant_traits.csv directly, without that sign flip, will get water-use
-  efficiency backwards.
 
 3.8 cox_plant_traits.csv
 
@@ -430,8 +403,7 @@ data collector.
                            Explains ~74% of trait variance.
     les_2           num    PC2 of the same PCA - ~16% of variance.
     wood_density    num    g/cm^3, unscaled
-    wue             num    Delta-13C, per mil, unscaled and NOT YET
-                           sign-flipped (see 3.7)
+    wue             num    Delta-13C, per mil.
 
   PCA input traits: sla, ldmc, leaf_thickness, c_n, percent_n, percent_c,
   petiole_length, leaf_lamina_length, leaf_width; center = TRUE, scale = TRUE.
@@ -520,29 +492,11 @@ data collector.
   performed in 2.3 (see 4.5 below). Also .rda-format files with a .rds
   extension (see note in 4.1).
 
-  Actual fitted formulas:
-
-    early_spring_model:
-      Surv(end_time, dead) ~ height + les_1 + les_2 + soil_moisture + vpd +
-        wood_density + wue + height*les_1 + height*les_2 + height*wue
-
-    summer_model:
-      Surv(end_time, dead) ~ height + les_1 + soil_moisture + vpd + wue +
-        height*les_1 + les_1*vpd
-
 4.3 late_spring_growth_model.rda, late_summer_growth_model.rda
 
   Final linear growth models (class glm), built by
   2.4.1_growth_model_creation.R from the corresponding filtered dredge
   tables (4.6).
-
-  Actual fitted formulas:
-
-    late_spring_growth_model:
-      growth ~ les_1 + les_2 + planting_height + les_1*planting_height
-
-    late_summer_growth_model:
-      growth ~ les_2 + temperature + wood_density + wue
 
 4.4 dredge_tables/  -  model-selection intermediate tables
 
@@ -570,7 +524,3 @@ data collector.
 
   2.3.1 and 2.4.1 read these filtered tables and build each final model's
   formula programmatically from whichever term columns are non-NA.
-
-  Not every window's filtered table produced a final saved model - see
-  section 4.2/4.3 for which window (early_spring vs. spring_all vs.
-  late_spring, etc.) was ultimately used for each season's reported result.
