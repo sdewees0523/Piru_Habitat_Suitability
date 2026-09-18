@@ -1,0 +1,576 @@
+================================================================================
+METADATA
+Piru Habitat Suitability
+Dewees, Saglimbeni, Anderegg, Molinari & D'Antonio
+Ecological Applications (accepted)
+Repository: https://github.com/sdewees0523/Piru_Habitat_Suitability
+================================================================================
+
+This file documents every data file in data/raw_data/, data/clean_data/, and
+data/models/: what it contains, its columns and their units, and the
+conventions used across files (species codes, plot IDs, time, mortality
+coding, scaling). See README.md for the script pipeline that produces each
+file. See the manuscript Methods and Appendices S1-S5 for full field and
+laboratory protocols.
+
+Status note: most units and values below were confirmed by directly reading
+the data files. A small number of items could not be determined this way and
+are marked [CONFIRM] with the specific question that needs an answer from the
+data collector.
+
+
+--------------------------------------------------------------------------------
+1. CONVENTIONS USED THROUGHOUT
+--------------------------------------------------------------------------------
+
+1.1 Species codes
+
+  Code   Species                        Community    Leaf habit          Planted
+  ADFA   Adenostoma fasciculatum        Chaparral    Evergreen           144
+  CEOL   Ceanothus oliganthus           Chaparral    Evergreen           254
+  HEAR   Heteromeles arbutifolia        Chaparral    Evergreen           110
+  MALA   Malosma laurina                Chaparral    Evergreen            88
+  RHOV   Rhus ovata                     Chaparral    Evergreen           196
+  ENCA   Encelia californica            Sage scrub   Drought deciduous   204
+  HEWH   Hesperoyucca whipplei          Sage scrub   Evergreen           248
+  SAAP   Salvia apiana                  Sage scrub   Drought deciduous    98
+  SAME   Salvia mellifera               Sage scrub   Drought deciduous   128
+  SANI   Sambucus nigra                 Sage scrub   Winter deciduous    154
+
+  The raw "Plant" column also appears as "species" from 1.7 onward (renamed at
+  the height/environmental/trait join in 2.3 and 2.4). Community grouping
+  (Chaparral / CSS) is assigned in 2.1.
+
+  Aliases:
+    - "YUCCA" in landscape_isotopes.csv is recoded to HEWH in 1.7.
+    - HEWH is excluded from all trait/survival/growth models (filtered out in
+      1.8's cox_plant_traits.csv output) because it has no wood-density
+      measurement and only one leaf specimen. It IS retained in the
+      species-level survival curves and hazard ratios (2.1, 2.2), where it
+      serves as the reference level.
+
+1.2 Field-sheet species labels
+
+  The raw "Plant" column carries a flagging-tape colour with the code, e.g.
+  "ENCA (Pink)", "SAME (Orange + Pink)". These where initially created to guide experimental set up/planting and thus are stripped in 1.2.
+
+  A small number of labels record ambiguity from the initial planting and are resolved to a single species in 1.2. These were resolved from subsequent field observations and confirmation of actual species value:
+
+1.3 Plot identifier
+
+  "ID" in the raw field sheets; "plot_number" (or "plot") from 1.2 onward.
+  One plot = one planting location = at most one seedling. Values are
+  non-contiguous integers, roughly 1-1700. This is the join key linking
+  survival, growth, microclimate, and topography data.
+
+1.4 Time
+
+  - start_date / end_date: calendar dates bounding a census interval.
+  - start_time / end_time: DAYS SINCE THAT INDIVIDUAL'S PLANTING DATE, not
+    calendar days and not days since a common origin. end_time is the
+    response variable passed to survival::Surv().
+  - Planting was staggered across individuals, so two rows with the same
+    end_time value are not necessarily the same calendar date.
+
+  Census dates: planting (rolling, Jan-Feb 2020), watering visit 2
+  (~May 2020), measuring (Jun-Jul 2020), measuring_2 (Oct-Dec 2020),
+  measuring_3 (Nov-Dec 2021). Seasonal model cutoffs used throughout the
+  pipeline: 2020-05-30 (early/late spring split), 2020-06-26 (planting-window
+  end), and 2020-09-30 (summer/fall split).
+
+1.5 Mortality and censoring
+
+  "dead": 0 = alive, 1 = dead at the end of the census interval.
+
+  A transient value of 2 exists ONLY inside 1.2's intermediate computation,
+  marking a gopher-attributed loss; those rows are censored and dead is reset
+  to 0 before the file is written.
+
+  "gopher": 0/1 flag on output files. 1 = the census note for that
+  plot/date indicated gopher activity. Trigger strings are hard-coded per
+  census file (see section 2.3 below).
+
+ 1.6 Scaling
+
+  Nothing in data/clean_data/ is scaled. All scaling happens at analysis
+  time in 2.3, 2.4, and the 3.x visualization scripts:
+
+    Variable                          Scaling
+    les_1, les_2, wood_density        scale() across the 9 modelled species
+    wue                               scale(), then multiplied by -1 (see 3.7)
+    temperature, vpd                  scale() WITHIN DATE (group_by(date))
+    height, planting_height,          scale() across all individuals
+      july_height
+    soil_moisture                     already within-date centred upstream
+                                       (see predicted_environmental.csv,
+                                       section 3.6); not re-scaled
+
+
+--------------------------------------------------------------------------------
+2. data/raw_data/  -  as collected; not modified by any script
+--------------------------------------------------------------------------------
+
+2.1 planting.csv  (1,864 rows)
+
+  One row per planting location.
+
+    Column          Type   Units / notes
+    ID              int    Plot number -> plot_number
+    Plant           chr    Species code + flagging colour (section 1.2)
+    Height          num    Height at planting, cm
+    Width 1         num    Canopy width, cm (not used in any analysis script)
+    Width 2         num    Canopy width perpendicular to Width 1, cm (unused)
+    Stem Diameter   num    cm (unused)
+    Pot Size        chr    Nursery container size (unused)
+    Date Planted    chr    m/d/Y; unparseable rows dropped in 1.2
+    Notes           chr    Free text
+
+2.2 watering.csv  (1,666 rows)
+
+  Four watering-visit column groups were laid out on the field sheet; only
+  visit 2 was ever carried out (visits 1, 3, 4 are present as columns but
+  empty or unused). R renames the repeated "Alive"/"Notes" headers to
+  Alive, Alive.1, Alive.2, Alive.3 (and similarly for Notes) on read.
+
+    Column                Type   Units / notes
+    ID                    int    Plot number
+    Plant                 chr    Species code + colour
+    Watering 1 Date       chr    Visit 1 (~Feb 2020) - not used downstream
+    Alive (1st)           chr    Visit 1 status - not used
+    Notes (1st)           chr    Visit 1 notes - not used
+    Watering 2 Date       chr    Visit 2 (~May 2020), "d-Mon" format. USED
+                                 as the first survival census.
+    Alive.1               chr    Visit 2 status: y/Y = alive, n/N/np/NP =
+                                 dead ("np" = no plant)
+    Notes.1               chr    Visit 2 notes; scanned for gopher-activity
+                                 strings
+    Watering 3/4 Date,    -      Empty; visits never occurred
+      Alive, Notes
+
+2.3 measuring.csv, measuring_2.csv, measuring_3.csv  (1,666 rows each)
+
+  Census 2 (Jun-Jul 2020), 3 (Oct-Dec 2020), and 4 (Nov-Dec 2021). Identical
+  column structure; the mortality/gopher note vocabulary differs by file.
+
+    Column          Type   Units / notes
+    ID              int    Plot number
+    Plant           chr    Species code (+ colour in measuring.csv only)
+    Height          num    cm; NA = dead or not found
+    Width 1         num    cm (unused)
+    Width 2         num    cm (unused)
+    Stem Diameter   num    cm (unused)
+    Date Measured   chr    "d-Mon"; year supplied by the cleaning script
+                           (2020 for measuring/measuring_2, 2021 for
+                           measuring_3)
+    Notes           chr    Free text
+
+2.4 soil_moisture_data/Data_loggers/  (10 files, 15 plots)
+
+  Continuous soil moisture from two logger platforms (METER Em50 and HOBO).
+  Plot numbers are embedded as column headers.
+
+    File                                    Platform    Plots
+    EM12384 22Oct20-1548.csv                METER Em50  1124,1130,1131,1132,1647
+    EM12384 28Apr22-1127.csv                METER Em50  (columns 2-6)
+    Hobo_Station_1_(1,2,3,14,15).csv        HOBO        417,423,425,434,1546
+    Hobo_Station_2_(12,13,4,5)_0.csv        HOBO        92,155,166,190,203
+    20841601.csv                            HOBO        (columns 3-7)
+    hobo_1.csv                              HOBO        1174,1175,1176,1179,1188
+    hobo_2.csv, hobo_3.csv                  HOBO        (columns 3-7)
+    hobo_4.csv, hobo_5.csv                  HOBO        (columns 3-7)
+
+  Values are volumetric water content as a FRACTION (e.g. 0.1843). Script 1.3
+  multiplies by 100 to give %, drops negative readings, and averages
+  sub-daily readings to a daily mean per plot.
+
+2.5 measuring.csv-adjacent iButton temperature/humidity data
+
+  Not itemised file-by-file here; see README.md pipeline step 1.3. Plot
+  number is parsed from each file's name. All temperature values are
+  normalised to degrees Fahrenheit on output regardless of the units logged
+  in the field (some batches log in Celsius).
+
+2.6 traits_raw/
+
+  landscape_leaf_areas.csv (52 specimens)
+    Column            Type   Units
+    species           chr    Species code
+    specimen          chr    Individual ID (mixed integers and letters
+                              within a species, e.g. ADFA has both 1-7 and
+                              A-C)
+    Leaf 1 - Leaf 11  num    Scanned area of each leaf, mm^2 (blank where a
+                              specimen had fewer than 11 leaves)
+
+  landscape_mass_data.csv (52 records)
+    Column          Type   Units
+    species         chr    Species code - joins to landscape_leaf_areas.csv
+                            on (species, specimen); the two files match
+                            exactly
+    specimen        chr    Individual ID
+    leaves          int    Number of leaves in the weighed sample
+    wet_weight_g    num    Rehydrated mass of the whole sample, g
+    dry_weight_g    num    Oven-dried mass of the whole sample, g
+
+  landscape_isotopes.csv (44 samples)
+    Column             Type   Units
+    sample             chr    Sample letter ID (not used downstream)
+    species            chr    Species code ("YUCCA" recoded to HEWH)
+    sample_weight_ug   num    micrograms (not used downstream)
+    d15n               num    delta-15N, per mil (not used downstream)
+    percent_n          num    Leaf nitrogen, % of dry mass
+    d13c               num    delta-13C, per mil - input to the "wue" proxy
+    percent_c          num    Leaf carbon, % of dry mass
+    mass_n_ug          num    micrograms (not used downstream)
+    mass_c_ug          num    micrograms (not used downstream)
+    c_n                num    Carbon:nitrogen ratio, unitless
+
+    Per-species sample sizes: RHOV 7, SAME 6, CEOL 5, YUCCA/HEWH 5, ADFA 4,
+    HEAR 4, MALA 4, SAAP 4, SANI 4, ENCA 1.
+
+  landscape_wood_density.csv (34 measurements)
+    Column               Type   Units
+    species              chr    Species code
+    wood_density_gcm3    num    g / cm^3
+
+    Per-species n: ADFA 6, CEOL 6, RHOV 5, SANI 5, ENCA 3, MALA 3, SAME 3,
+    SAAP 2, HEAR 1.
+
+  leaf_other.csv (10 rows, one per species - single literature-derived value
+  per species)
+    Column                 Type   Units
+    species                chr    Species code
+    petiole_length         num    mm (0 for ADFA and HEWH, which are sessile)
+    leaf_lamina_length     num    mm 
+    leaf_width             num    mm
+
+2.7 weather_station_temp.csv, weather_station_precip.csv, weather_norms.csv
+
+  Temescal weather station.
+
+    File                          Columns                  Units
+    weather_station_temp.csv      Date (day-of-month),      Temp: degrees F
+                                   Month (name), Year, Temp
+    weather_station_precip.csv    Month (name), Year, precip  precip: inches
+    weather_norms.csv             month (1-12), temperature,  20-yr normals
+                                   precipitation                (2000-2020);
+                                                                temperature
+                                                                deg C,
+                                                                precipitation
+                                                                mm
+
+2.9 Spatial rasters (all in data/raw_data/)
+
+  CRS = EPSG:26911 (NAD83 / UTM zone 11N), resolution = 1 m, grid = 301 x 235 cells (a ~301 x 235 m footprint).
+
+    File                Description                          Value range
+    elevation.tif       Digital elevation model, m            0 - 530.5
+                         (masked to > 300 m in script 1.1;
+                         actual site elevations run 383-530 m,
+                         see clean_data/elevation.tif below)
+    aspect.tif           Aspect, degrees (-1 = flat/undefined)  -1 - 360
+    slope.tif            Slope, degrees                          0 - 89.8
+    sol_rad.tif          3 bands: band 1 = summer, band 2 =      0.17 - 6161.7
+                          spring, band 3 = winter solar
+                          radiation, Wh/m^2
+    saga_wetness.tif     SAGA topographic wetness index,        -6.2 - 14.5
+                          computed in SAGA GIS
+    twi.tif              Topographic wetness index,             -6.3 - 9.7
+                          computed in SAGA GIS
+
+  plot_gps_points.shp (+ .dbf/.shx/.prj): 1,535 points, CRS = WGS84 geographic (unprojected lat/long); 
+  Single attribute field "plt_nmb" -> plot_number.
+
+--------------------------------------------------------------------------------
+3. data/clean_data/  -  written by scripts 1.1-1.8; read by everything downstream
+--------------------------------------------------------------------------------
+
+3.1 survival_gopher_raw.csv
+
+  One row per individual per census interval. THE survival analysis dataset.
+
+    Column        Type   Units / notes
+    plot_number   int    Plot / individual ID
+    Plant         chr    Species code
+    start_date    date   Interval start
+    start_time    num    Days since planting at interval start
+    end_date      date   Interval end
+    end_time      num    Days since planting at interval end - the Surv()
+                         response
+    dead          int    0 = survived the interval, 1 = died
+    gopher        int    0/1; 1 = gopher activity noted, individual censored
+
+3.2 height_gopher_kapplin.csv
+
+  As above, plus a height covariate; covers only the first two census
+  intervals (planting->Jun/Jul, Jun/Jul->autumn). Feeds the survival height
+  covariate (2.3) and the spring growth data (2.4).
+
+    Column        Type   Units / notes
+    (as 3.1)
+    height        num    Height at the START of the interval, cm - planting
+                         height for interval 1, Jun/Jul height for interval 2
+3.3 fall_growth.csv
+
+  One row per individual measured at BOTH the Jun/Jul and autumn censuses.
+
+    Column            Type   Units / notes
+    plot_number       int    Plot ID
+    Plant             chr    Species code
+    july_height       num    Height at the Jun/Jul census, cm
+    date_measured     date   Jun/Jul census date
+    dead.x            int    Mortality flag at the Jun/Jul census (join
+                             artefact name from 1.2's merge - functionally
+                             "dead_july")
+    date_measured_2   date   Autumn census date
+    dead.y            int    Mortality flag at the autumn census
+                             (functionally "dead_fall")
+    fall_height       num    Height at the autumn census, cm
+
+  2.4 derives growth = (fall_height - july_height) / (date_measured_2 -
+  date_measured), i.e. height increment in cm/day.
+
+3.4 soil_moisture_measured.csv
+
+  Daily mean soil moisture at the 15 logger-equipped plots.
+
+    Column           Type   Units
+    date             date   Measurement date
+    plot             int    Plot number
+    soil_moisture    num    Volumetric water content, % (logger fraction x
+                            100; negative readings dropped)
+
+3.5 temperature_measured.csv, humidity_measured.csv
+
+  Sub-daily iButton records, all download batches concatenated.
+
+    Column          Type    Units
+    plot            int     Plot number (parsed from source filename)
+    date            date    Date
+    time            chr     Time of day (lubridate period string, e.g.
+                            "5H 29M 0S")
+    temperature     num     degrees Fahrenheit (all batches normalised to F,
+                            regardless of the units originally logged)
+    humidity        num     Relative humidity, % (clamped to [0, 100] in 1.4)
+
+  1.4 applies QC (drops records above the station's daily max + 10 deg F, as
+  probable sensor overheating), then reduces each to a DAILY MAXIMUM per
+  plot before computing vapor pressure deficit:
+
+    svp = 610.78 * exp( T / (T + 237.3) * 17.2694 )     [Pa]
+    vpd = svp * (1 - RH/100) / 1000                     [kPa]
+
+3.6 predicted_environmental.csv
+
+  Random-forest-predicted microclimate at every GPS'd planting location,
+  daily. This is THE environmental input to every survival and growth model
+  in the manuscript.
+
+    Column          Type   Units / notes
+    plot_number     int    Plot ID
+    date            date   Daily, 2020-04-03 to 2020-12-03
+    soil_moisture   num    Predicted WITHIN-DATE Z-SCORE of VWC - unitless,
+                           NOT absolute soil moisture.
+    temperature     num    Predicted daily maximum temperature, degrees F
+    vpd             num    Predicted daily maximum VPD, kPa
+
+  Predictors (see soil_rf.rds / temp_rf.rds / vpd_rf.rds in section 4): the
+  13 topographic variables listed in section 3.9, plus date and the
+  station's observed daily maximum temperature. Note the column units are
+  heterogeneous (a z-score, degrees F, and kPa side by side) because this
+  file is a direct model output; 2.3 and 2.4 subsequently re-standardize
+  temperature and vpd within date before model fitting, bringing all three
+  onto comparable scales for modelling purposes.
+
+3.7 plant_traits_clean.csv
+
+  Species-level trait means, one row per species (10 rows).
+
+    Column                Type   Units
+    species               chr    Species code
+    sla                   num    Specific leaf area (mean leaf area / dry
+                                 mass per leaf), mm^2/g [divide by 100 for
+                                 cm^2/g]
+    ldmc                  num    Leaf dry matter content (dry mass / wet
+                                 mass), g/g
+    leaf_thickness        num    Derived proxy = 1 / (sla * ldmc); NOT a
+                                 direct measurement
+    percent_n             num    Leaf nitrogen, % dry mass
+    percent_c             num    Leaf carbon, % dry mass
+    c_n                   num    Carbon:nitrogen ratio, unitless
+    wue                   num    See below
+    wood_density          num    g/cm^3 (NA for HEWH - see section 2.7)
+    petiole_length        num    mm (from leaf_other.csv, literature-derived)
+    leaf_lamina_length    num    mm ( " )
+    leaf_width            num    mm ( " )
+
+  WUE - READ THIS BEFORE USING THIS COLUMN. It is computed as:
+
+    wue = (-8 - d13c) / (1 + d13c/1000)
+
+  which is carbon isotope discrimination (delta-13C), in per mil, assuming a
+  source-air delta-13C of -8 per mil. HIGHER discrimination means LOWER
+  water-use efficiency - the opposite sign convention from what the column
+  name suggests. This is why the manuscript's trait table caption specifies
+  that smaller values indicate higher WUE, and why every downstream model
+  script (2.3, 2.4, 3.5) multiplies the scaled variable by -1 before it
+  enters a model, so that a larger value in the FITTED MODELS means genuinely
+  higher water-use efficiency. Anyone using plant_traits_clean.csv or
+  cox_plant_traits.csv directly, without that sign flip, will get water-use
+  efficiency backwards.
+
+3.8 cox_plant_traits.csv
+
+  Trait inputs to the survival and growth dredge/model-selection scripts.
+  9 rows - HEWH excluded (see section 1.1).
+
+    Column          Type   Units
+    species         chr    Species code
+    les_1           num    PC1 of the 9-trait leaf-economics PCA (computed
+                           in 1.8) - HIGHER = MORE CONSERVATIVE leaf economy.
+                           Explains ~74% of trait variance.
+    les_2           num    PC2 of the same PCA - ~16% of variance.
+    wood_density    num    g/cm^3, unscaled
+    wue             num    Delta-13C, per mil, unscaled and NOT YET
+                           sign-flipped (see 3.7)
+
+  PCA input traits: sla, ldmc, leaf_thickness, c_n, percent_n, percent_c,
+  petiole_length, leaf_lamina_length, leaf_width; center = TRUE, scale = TRUE.
+
+3.9 Topographic rasters (data/clean_data/*.tif)
+
+  All derived from the raw rasters in script 1.1 using the spatialEco
+  package (same CRS/resolution/extent as the raw rasters, section 2.9).
+
+    File                          Derived via              Value range
+    elevation.tif                 (masked copy of raw)      383.0 - 530.5 m
+    heat_load_index.tif           spatialEco::hli()         0.28 - 1
+    diurnal_heat.tif               spatialEco::dahi()        -0.63 - 0.67
+    topographic_position.tif       spatialEco::tpi()          -1.35 - 0.50
+                                    (win="circle", scale=5)
+    sol_rad_aspect.tif             spatialEco::trasp()        0 - 1
+    terrain_ruggedness.tif         spatialEco::tri(s=7)       1.29 - 13.7
+    saga_wetness.tif               (masked copy of raw)       -6.2 - 9.37
+    twi.tif                        (masked copy of raw)       -6.27 - 9.70
+
+  These 13 variables (the 7 above plus elevation, aspect, slope, and the
+  3 sol_rad bands from the raw rasters - summer/spring/winter solar
+  radiation) are the full predictor set for the soil moisture, temperature,
+  and VPD random forests (section 4).
+
+3.10 plots_topography.shp (+ .dbf/.shx/.prj)
+
+  The 1,535 GPS points with all 13 topographic variables extracted at each
+  location, filtered to elevation != 0 (1,533 points remain). Field names
+  are truncated to the 10-character shapefile limit:
+
+    Field      Full variable
+    plt_nmb    plot_number
+    elevatn    elevation
+    aspect     aspect
+    slope      slope
+    wntr_s_    winter_solar_radiation
+    sprng__    spring_solar_radiation
+    smmr_s_    summer_solar_radiation
+    heat_ld    heat_load
+    drnl_ht    diurnal_heat
+    tp_pstn    topographic_position
+    sl_rd_s    sol_rad_aspect
+    trrn_rg    terrain_ruggedness
+    sg_wtns    saga_wetness
+    twi        twi
+
+3.11 landscape_regions.tif, landscape_regions_coarse.tif
+
+  Four-way landscape classification used to build manuscript Figure 7,
+  based on thresholding topographic_position, saga_wetness, and elevation
+  into "favorable"/"unfavorable" soil moisture and VPD zones (script 1.6).
+
+    Value   Meaning (per manuscript Figure 7 legend)
+    1       Hot and Dry
+    2       Cool and Dry
+    3       Hot and Wet
+    4       Cool and Wet
+
+3.12 soil_favorable.tif, vpd_favorable.tif
+
+  Binary indicator layers (intermediate products of the classification in
+  3.11): every valid cell has value 1; all other cells are NA.
+
+--------------------------------------------------------------------------------
+4. data/models/  -  fitted model objects and model-selection tables
+--------------------------------------------------------------------------------
+
+4.1 soil_rf.rds, temp_rf.rds, vpd_rf.rds
+
+  Random forest objects (class randomForest.formula) predicting daily soil
+  moisture, temperature, and VPD respectively from the 13 topographic
+  variables (3.9) plus date and station daily-max temperature. Used by 1.4
+  to build predicted_environmental.csv (3.6); performance metrics are
+  reported in Appendix S2.
+
+  NOTE ON FILE EXTENSION: these three files are written with R's save()
+  (native .rda/.RData format) but carry a .rds extension. They must be
+  loaded with load(), not readRDS() - attempting readRDS() on these files
+  will fail.
+
+4.2 early_spring_model.rds, summer_model.rds  (survival models)
+
+  Final Cox proportional-hazards models (class coxph), built by
+  2.3.1_trait_model_creation.R from the delta<2/min-df dredge selection
+  performed in 2.3 (see 4.5 below). Also .rda-format files with a .rds
+  extension (see note in 4.1).
+
+  Actual fitted formulas:
+
+    early_spring_model:
+      Surv(end_time, dead) ~ height + les_1 + les_2 + soil_moisture + vpd +
+        wood_density + wue + height*les_1 + height*les_2 + height*wue
+
+    summer_model:
+      Surv(end_time, dead) ~ height + les_1 + soil_moisture + vpd + wue +
+        height*les_1 + les_1*vpd
+
+4.3 late_spring_growth_model.rda, late_summer_growth_model.rda
+
+  Final linear growth models (class glm), built by
+  2.4.1_growth_model_creation.R from the corresponding filtered dredge
+  tables (4.6).
+
+  Actual fitted formulas:
+
+    late_spring_growth_model:
+      growth ~ les_1 + les_2 + planting_height + les_1*planting_height
+
+    late_summer_growth_model:
+      growth ~ les_2 + temperature + wood_density + wue
+
+4.4 dredge_tables/  -  model-selection intermediate tables
+
+  Written by 2.3 (survival) and 2.4 (growth). Each file is the output of
+  MuMIn::dredge() over a global model containing all pairwise trait x
+  environment interactions for one candidate time window, filtered to
+  models within 2 AICc units of the best model, then to the model(s) with
+  the fewest parameters among those.
+
+    Survival window tables            Growth window tables
+    spring_all_dredge_filtered.csv    growth_spring_all_dredge_filtered.csv
+    early_spring_dredge_filtered.csv  growth_early_spring_dredge_filtered.csv
+    late_spring_dredge_filtered.csv   growth_late_spring_dredge_filtered.csv
+    summer_all_dredge_filtered.csv    growth_summer_all_dredge_filtered.csv
+    summer_dredge_filtered.csv        growth_late_summer_dredge_filtered.csv
+    fall_dredge_filtered.csv          growth_fall_dredge_filtered.csv
+
+  Columns (standard MuMIn dredge output): one column per candidate term
+  (survival tables carry height, les_1, les_2, soil_moisture, temperature,
+  vpd, wood_density, wue, and all their pairwise interactions; growth tables
+  substitute planting_height or july_height for height), containing that
+  term's coefficient where it was retained in a given candidate model and
+  blank/NA where it was dropped, followed by summary columns df, logLik,
+  AICc, delta, and weight. "(Intercept)" is written as a column header.
+
+  2.3.1 and 2.4.1 read these filtered tables and build each final model's
+  formula programmatically from whichever term columns are non-NA.
+
+  Not every window's filtered table produced a final saved model - see
+  section 4.2/4.3 for which window (early_spring vs. spring_all vs.
+  late_spring, etc.) was ultimately used for each season's reported result.
